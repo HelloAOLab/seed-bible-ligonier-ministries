@@ -3,7 +3,6 @@ const { Button } = Components;
 const VideoPlayer = await thisBot.VideoSmallScreen();
 const AudioPlayer = await thisBot.AudioPlayer();
 const AttachLink = await thisBot.AttachLink();
-const RenderHTMLContent = await thisBot.RenderHTMLContent();
 
 const EditPlaylist =
   "https://auth-aux-aobot-prod-filesbucket-141297942820.s3.amazonaws.com/aoBot/a48b4bb0182ac0b5f8c8437e3d985f9af99c8b64c61249496ef797b9b8ac88df.svg";
@@ -137,7 +136,6 @@ const PlayerControls = ({ parentId = "default" }) => {
   // Audio
   const [mediaURL, setMediaURL] = useState("");
   const [videoSrc, setVideoSrc] = useState(false);
-  const [textInfo, setTextInfo] = useState("");
 
   const setIncrementalCount = async (data) => {
     if (!data) return;
@@ -286,19 +284,6 @@ const PlayerControls = ({ parentId = "default" }) => {
       ["heading", "date"].findIndex((ele) => ele === targetItem?.type) > -1 ||
       isLayersAndScripture
     ) {
-      if (
-        targetItem?.type === "heading" &&
-        // targetItem?.additionalInfo?.subType === "text" &&
-        !getIndexOnly
-      ) {
-        const isMobile =
-          (window?.innerWidth || gridPortalBot.tags.pixelWidth) <
-          MOBILE_VIEWPORT_THRESHOLD;
-        if (isMobile) {
-          globalThis.SetTextInfo(targetItem.content);
-        }
-      }
-
       if (targetItem?.type === "date" && !getIndexOnly) {
         globalThis.PlaylingItemVisitiedMap?.((prev) => ({
           ...prev,
@@ -459,7 +444,7 @@ const PlayerControls = ({ parentId = "default" }) => {
         .sort((a, b) => Number(a) - Number(b)) // Sort numerically
         .forEach((key, index) => {
           reorderedPlaylists[index] = { ...updatedPlaylists[key] };
-          if (!reorderedPlaylists[index]?.list?.length) {
+          if(!reorderedPlaylists[index]?.list?.length) {
             delete reorderedPlaylists[index];
           }
         });
@@ -482,7 +467,6 @@ const PlayerControls = ({ parentId = "default" }) => {
     globalThis.SetIncrementalCountPlayingPlaylist = setIncrementalCount;
     globalThis.SetVideoSrc = setVideoSrc;
     globalThis.SetMediaURL = setMediaURL;
-    globalThis.SetTextInfo = setTextInfo;
 
     globalThis.PlayingPlaylistCheckedItems = checkedItems;
     globalThis.PlayingPlaylists = playlists;
@@ -510,7 +494,6 @@ const PlayerControls = ({ parentId = "default" }) => {
       globalThis.HandleOnButtonPress = null;
       globalThis.SetIncrementalCountPlayingPlaylist = null;
       globalThis.SetVideoSrc = null;
-      globalThis.SetTextInfo = null;
       globalThis.SetMediaURL = null;
       globalThis.PlayingPlaylistCheckedItems = null;
       globalThis.PlayingPlaylists = null;
@@ -539,6 +522,7 @@ const PlayerControls = ({ parentId = "default" }) => {
     prevItemName,
     currentItem,
   ] = useMemo(() => {
+    
     const { name: currentPlaylistName } = playlists[currIndex.key];
 
     const targetItem = getCurrentItem(
@@ -598,18 +582,6 @@ const PlayerControls = ({ parentId = "default" }) => {
         targetItem?.type === "heading" ||
         (!!targetItem?.nextTargetItem?.id && currIndex.fromButton === 1)
       ) {
-        if (
-          targetItem?.type === "heading"
-          // &&
-          // targetItem?.additionalInfo?.subType === "text"
-        ) {
-          const isMobile =
-            (window?.innerWidth || gridPortalBot.tags.pixelWidth) <
-            MOBILE_VIEWPORT_THRESHOLD;
-          if (isMobile) {
-            globalThis.SetTextInfo(targetItem.content);
-          }
-        }
         if (globalThis.SetMediaURL) {
           globalThis.SetMediaURL(null);
         }
@@ -802,16 +774,10 @@ const PlayerControls = ({ parentId = "default" }) => {
             borderRadius: "8px",
             justifyContent: "center",
           }}>
-          {!!textInfo && (
-            <div className="textinfo-playlist">
-              <RenderHTMLContent htmlContent={textInfo} />
-            </div>
-          )}
           {!!videoSrc && (
             <VideoPlayer videoSrc={videoSrc} playlistItem={currentItem} />
           )}
           {!!mediaURL && <AudioPlayer mediaURL={mediaURL} />}
-
           {isItemLink && false && (
             <div>
               <p>Link showing refuse to connect Problems? </p>

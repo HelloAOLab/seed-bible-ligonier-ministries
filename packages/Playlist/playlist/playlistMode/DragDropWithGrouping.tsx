@@ -260,10 +260,8 @@ const DragDrop = ({ massAdd, attachLink, onGenClick = () => { }, setItemSelected
 
         {list.length === 0 && <div className="no-items-box">
             <h4 style={{ margin: "8px 0" }}>Add items below.</h4>
-            {DEV_ENV && <>
-                <p className='or' />
-                <p onClick={onGenClick}>Click here to generate playlist</p>
-            </>}
+            <p className='or' />
+            <p onClick={onGenClick}>Click here to generate playlist</p>
         </div>}
         {
             transformedHistory.map((data, index) => data.type?.includes("range") || (data.additionalInfo?.layers?.length > 0 && layers)

@@ -1,4 +1,4 @@
-const Overlay = ({ position, onClose,positionOverRide = {}, items, styles, children }) => {
+const Overlay = ({ position, onClose, items, styles, children }) => {
     return <>
         <div className="backdrop" onClick={() => onClose()} />
         <div
@@ -7,8 +7,7 @@ const Overlay = ({ position, onClose,positionOverRide = {}, items, styles, child
                 ...position,
                 width: '200px',
                 padding: '1rem',
-                ...styles,
-                ...positionOverRide
+                ...styles
             }}
             className="overlay linked-item-custom"
 

@@ -228,7 +228,7 @@ export const SplitApp = ({
 
 }) => {
     const { panelMode, screens } = useBibleContext();
-    const [forcedHeightPlaylist,setForcedHeightPlaylist] = useState(0);
+    const [forcedHeightPlaylist,setForcedHeightPlaylist] = useState(false);
     useEffect(() => {
         (function installScrollerScrollIndicator() {
             const timers = new WeakMap();
@@ -256,7 +256,7 @@ export const SplitApp = ({
         globalThis.SetPlaylistForcedHeight = setForcedHeightPlaylist;
 
         return () => {
-            globalThis.SetPlaylistForcedHeight = 0;
+            globalThis.SetPlaylistForcedHeight = false;
         }
     }, [])
     const { activeSpace } = useTabsContext();
@@ -347,7 +347,7 @@ export const SplitApp = ({
                     key={apps[0]?.id} 
                     style={{ 
                         width: isMobile ? '100%' : leftWidth, 
-                        height: forcedHeightPlaylist === 2 ? "0px" : forcedHeightPlaylist === 1 ?  (0.25 * currentContainerHeight) : isMobile ? topHeight : '100%', 
+                        height: forcedHeightPlaylist ? "0px" : isMobile ? topHeight : '100%', 
                         overflow: 'auto', 
                         padding: '0px', 
                         borderRadius: '12px' 

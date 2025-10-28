@@ -1051,7 +1051,8 @@ const CreatePlaylistUI = ({
                 </div>
                 <Tooltip
                   forRight={true}
-                  text="Annotation mode is the way to annotate the bible so you can see content while exploring other who have subscribed to you.">
+                  text="Annotation mode is the way to annotate the bible so you can see content while exploring other who have subscribed to you."
+                  gifUrl={ChecklistGIf}>
                   <p
                     className="what-this center"
                     style={{ margin: "0 0 0 0.5rem" }}>
@@ -1089,7 +1090,8 @@ const CreatePlaylistUI = ({
               </div>
               <Tooltip
                 forRight={true}
-                text="Playlist mode is to create playlist and share with other or play them.">
+                text="Playlist mode is to create playlist and share with other or play them."
+                gifUrl={ChecklistGIf}>
                 <p
                   className="what-this center"
                   style={{ margin: "0 0 0 0.5rem" }}>
@@ -1125,7 +1127,10 @@ const CreatePlaylistUI = ({
                     Project Mode
                   </label>
                 </div>
-                <Tooltip forRight={true} text="Project mode is awesome.">
+                <Tooltip
+                  forRight={true}
+                  text="Project mode is awesome."
+                  gifUrl={ChecklistGIf}>
                   <p
                     className="what-this center"
                     style={{ margin: "0 0 0 0.5rem" }}>
@@ -1153,15 +1158,13 @@ const CreatePlaylistUI = ({
               left: "none",
               right: "4rem",
               padding: "1rem",
-              top: '5rem',
             }}
             className="overlay linked-item-custom">
             <p>
               <b style={{ color: "white" }}>Publish settings</b>
             </p>
-            <span style={{ fontSize: "10px", color: "#c9c8c6" }}>
-              Your annotations will be available to everyone if public. If
-              private only you will have access.
+            <span style={{ fontSize: "10px" }}>
+              Your annotations will be published to the selected place below
             </span>
             <div
               className="more-menu-items"
@@ -1209,8 +1212,8 @@ const CreatePlaylistUI = ({
                 Playlist settings
               </b>
             </p>
-            <span style={{ fontSize: "10px", color: "#c9c8c6" }}>
-              Change playlist options below to create new kinds of lists.
+            <span style={{ fontSize: "10px" }}>
+              Playlist Setting can be changed according to your playlist needs.
             </span>
             <div
               className="more-menu-items"
@@ -1246,7 +1249,8 @@ const CreatePlaylistUI = ({
               </div>
               <Tooltip
                 forRight={true}
-                text="Checklist Mode gives your Playlist an option to checkout the visited items so you can keep track of your playlist progress.">
+                text="Checklist Mode gives your Playlist an option to checkout the visited items so you can keep track of your playlist progress."
+                gifUrl={ChecklistGIf}>
                 <p
                   className="what-this center"
                   style={{ margin: "0 0 0 0.5rem" }}>
@@ -1293,12 +1297,13 @@ const CreatePlaylistUI = ({
                     color: "white",
                   }}
                   for="playlistInclude">
-                  Reading Plan
+                  Plan
                 </label>
               </div>
               <Tooltip
                 forRight={true}
-                text="Plan Mode lets you add dates in your playlist which keeps the date and progress in track according to date.">
+                text="Plan Mode lets you add dates in your playlist which keeps the date and progress in track according to date."
+                gifUrl={ChecklistGIf}>
                 <p
                   className="what-this center"
                   style={{ margin: "0 0 0 0.5rem" }}>
