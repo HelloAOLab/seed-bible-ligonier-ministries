@@ -42,7 +42,7 @@ async function SetUpConextMenu(contextOptions, bot, label) {
 }
 
 async function SetUpApplication(applicationFunction, bot, toolbarConfig) {
-    function generateAppItem({ icon, iconUrl, label, AppComponent, hasToggle, showInPageToolbar, showInStarterToolbar }) {
+    function generateAppItem({ icon, iconUrl, label, AppComponent, hasToggle, showInPageToolbar, showInStarterToolbar, isCurrentIcon }) {
         const panelKey = `${label?.toUpperCase()?.replace(/\s/g, '_')}_PANEL_ID`;
         console.log('working', pkgName, panelKey)
         const onClick = async () => {
@@ -151,6 +151,7 @@ async function SetUpApplication(applicationFunction, bot, toolbarConfig) {
         icon: toolbarConfig.icon,
         label: toolbarConfig.label,
         AppComponent: App,
+        isCurrentIcon: toolbarConfig.isCurrentIcon,
         iconUrl: toolbarConfig?.iconUrl,
         hasToggle: toolbarConfig.hasToggle,
         showInPageToolbar: toolbarConfig.showInPageToolbar,
@@ -166,10 +167,11 @@ async function SetUpApplicationWithoutApp(toolbarConfig, bot) {
     const runFn = () => bot[toolbarConfig.run]();
 
     const toolbarOption = {
-        icon: !toolbarConfig?.iconUrl ? toolbarConfig.icon : toolbarConfig.iconUrl,
+        icon: toolbarConfig.isCurrentIcon ? toolbarConfig.icon : !toolbarConfig?.iconUrl ? toolbarConfig.icon : toolbarConfig.iconUrl,
         label: toolbarConfig.label,
         hasToggle: toolbarConfig.hasToggle,
         active: toolbarConfig.active,
+        isCurrentIcon: toolbarConfig.isCurrentIcon,
         showInPageToolbar: toolbarConfig.showInPageToolbar,
         showInStarterToolbar: toolbarConfig.showInStarterToolbar,
         onHold: runFn,

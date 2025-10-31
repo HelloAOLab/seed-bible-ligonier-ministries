@@ -30,10 +30,18 @@ function prepareAISearchParamOnChapter(chapterData) {
 // MoreResources component
 function MoreResources() {
   function openStudyNotes() {
-    if (globalThis.studyNotesPresent) {
-      RemoveApplicationByID(globalThis.STUDYNOTES_PANEL_ID);
-      globalThis.STUDYNOTES_PANEL_ID = null;
+    // Use the same state variables as the extension package for synchronization
+    const label = "Study Notes";
+    const panelKey = "STUDY_NOTES_PANEL_ID";
+    
+    // Check if panel is already open using the same logic as the extension
+    if (globalThis.makingApp === label && globalThis[panelKey]) {
+      RemoveApplicationByID(globalThis[panelKey]);
+      globalThis[panelKey] = null;
+      globalThis.makingApp = null;
       globalThis.studyNotesPresent = false;
+      // Also clear old variable for backward compatibility
+      globalThis.STUDYNOTES_PANEL_ID = null;
       return;
     }
 
@@ -45,9 +53,15 @@ function MoreResources() {
     }
 
     if (!globalThis.panelMode) {
+      const id = uuid();
+      
+      // Set all state variables for synchronization
       globalThis.studyNotesPresent = true;
-      let id = uuid();
+      globalThis.makingApp = label;
+      globalThis[panelKey] = id;
+      // Also set old variable for backward compatibility
       globalThis.STUDYNOTES_PANEL_ID = id;
+      
       AddApplication({
         id,
         App: (

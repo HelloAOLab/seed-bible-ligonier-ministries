@@ -169,6 +169,7 @@ await(async function mainInstaller(that) {
         label,
         hasToggle: toolbarConfig.hasToggle,
         active: toolbarConfig.active,
+        isCurrentIcon: toolbarConfig.isCurrentIcon,
         onHold,
         pkgName: name,
         onClick,
@@ -232,15 +233,16 @@ await(async function mainInstaller(that) {
     const runFn = () => bot[toolbarConfig.run]();
 
     const toolbarOption = {
-      icon: !toolbarConfig?.iconUrl
+      icon: toolbarConfig.isCurrentIcon ? toolbarConfig.icon : !toolbarConfig?.iconUrl
         ? toolbarConfig.icon
-        : toolbarConfig.iconUrl,
+        : toolbarConfig?.iconUrl,
       label: toolbarConfig.label,
       hasToggle: toolbarConfig.hasToggle,
       active:
         typeof toolbarConfig?.active === "boolean"
           ? toolbarConfig.active
           : true,
+      isCurrentIcon: toolbarConfig.isCurrentIcon,
       showInPageToolbar: toolbarConfig.showInPageToolbar,
       showInStarterToolbar: toolbarConfig.showInStarterToolbar,
       onHold: runFn,

@@ -6,6 +6,7 @@ import { useMouseMove } from "app.hooks.mouseMove";
 import SurroundingDivs from "app.components.surroundingDivs";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
+import {getIcon} from "app.components.icons";
 
 // Simple, single-toolbar component (no edit layer). Main logic unchanged.
 export function Toolbar() {
@@ -117,6 +118,9 @@ export function Toolbar() {
 
   if (!showToolbar) return <></>;
 
+  console.log(tools, "tools");
+  console.log(getIcon("LigonierSeedBibleIcon"), "LigonierSeedBibleIcon");
+
   return (
     <>
       <link
@@ -195,7 +199,14 @@ export function Toolbar() {
                       }}
                       onMouseLeave={() => clearTimeout(holdTimeoutRef.current)}
                     >
-                      {tool.isImg ? (
+                      {tool.isCurrentIcon ? (() => {
+                        const IconComponent = getIcon(tool.icon);
+                        return IconComponent ? <IconComponent size={22} /> : (
+                          <span className="material-symbols-outlined">
+                            {tool.icon}
+                          </span>
+                        );
+                      })() : tool.isImg ? (
                         <img
                           src={tool.icon}
                           style={{ width: "22px" }}

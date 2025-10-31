@@ -5,7 +5,8 @@
     "author": "Sujan Barman",
     "toolbarConfig": {
       "hasToggle": "true",
-      "icon": "book",
+      "icon": "LigonierSeedBibleIcon",
+      "isCurrentIcon": true,
       "iconUrl": "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png",
       "label": "Books",
       "run": "togglePanel",

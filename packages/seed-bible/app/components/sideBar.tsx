@@ -13,6 +13,7 @@ import {
   Panel4,
   Panel3Row,
   Panel4Row,
+  LigonierLogo,
 } from "app.components.icons";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useSideBarContext } from "app.hooks.sideBar";
@@ -668,10 +669,16 @@ function SideBar() {
     getAllTabsInSpace,
   } = useTabsContext();
   globalThis.AddTab = addTab;
+  globalThis.RemoveTab = removeTab;
 
   const getTabsInSpace = () => {
     console.log("getAllTabsInSpace: ", getAllTabsInSpace(activeSpace));
     return getAllTabsInSpace(activeSpace);
+  };
+
+  // Logo click handler
+  const handleLogoClick = () => {
+    window.open("https://www.ligonier.org/", "_blank", "noopener,noreferrer");
   };
 
   globalThis.GetTabsInSpace = getTabsInSpace;
@@ -1235,19 +1242,8 @@ function SideBar() {
                 >
                   menu_open
                 </span>
-                <div>
-                  {customIcon ? (
-                    <span
-                      onClick={() =>
-                        customIcon.link && os.openURL(customIcon.link)
-                      }
-                      className="material-symbols-outlined"
-                    >
-                      {customIcon.icon}
-                    </span>
-                  ) : (
-                    <span></span>
-                  )}
+                <div onClick={handleLogoClick} style={{ cursor: "pointer" }}>
+                  <LigonierLogo />
                 </div>
               </div>
               <div className="canvasOptions">
@@ -1481,6 +1477,9 @@ function SideBar() {
               cursor: "pointer",
             }}
           >
+            <div onClick={handleLogoClick} style={{ cursor: "pointer" }}>
+              <LigonierLogo />
+            </div>
             <span
               onclick={() => {
                 setSidebarWidth(280);
