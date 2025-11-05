@@ -6,10 +6,11 @@ const TT_URL = "https://tabletalkmagazine.com/";
 
 /**
  * Props:
+ *  - url?: string (URL to load in iframe, defaults to TT_URL)
  *  - height?: string (CSS size, default "70vh")
  *  - className?: string
  */
-function TableTalkEmbed({ height = "70vh", className = "" }) {
+function TableTalkEmbed({ url = TT_URL, height = "70vh", className = "" }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -20,7 +21,7 @@ function TableTalkEmbed({ height = "70vh", className = "" }) {
         </div>
 
         <iframe
-          src={TT_URL}
+          src={url || TT_URL}
           title="Tabletalk Magazine"
           loading="lazy"
           onLoad={() => setLoaded(true)}

@@ -118,9 +118,6 @@ export function Toolbar() {
 
   if (!showToolbar) return <></>;
 
-  console.log(tools, "tools");
-  console.log(getIcon("LigonierSeedBibleIcon"), "LigonierSeedBibleIcon");
-
   return (
     <>
       <link

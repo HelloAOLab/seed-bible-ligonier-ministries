@@ -1859,8 +1859,7 @@ function StudyNotes({ id, chapter: propChapter }) {
     const [tabs, setTabs] = useState(initialTabs);
     const [active, setActive] = useState(initialTab);
     const [searchType, setSearchType] = useState('apologist'); // 'apologist' or 'tapos'
-    const [previewUrl, setPreviewUrl] = useState('');
-    const [previewTitle, setPreviewTitle] = useState('');
+    const [devotionalPreviewUrl, setDevotionalPreviewUrl] = useState('');
     const [, setForceUpdate] = useState(0); // For forcing re-renders
 
     useEffect(() => {
@@ -1872,27 +1871,17 @@ function StudyNotes({ id, chapter: propChapter }) {
         globalThis.StudyNoteActiveTab = active;
     }, [active]);
     
-    // Functions to manage preview tab
+    // Functions to manage preview in devotional tab
     const openPreviewTab = (url, title) => {
-        const previewTabExists = tabs.find(t => t.id === 'preview');
-        
-        if (previewTabExists) {
-            // Update existing preview tab
-            setPreviewUrl(url);
-            setPreviewTitle(title);
-            setActive('preview');
-        } else {
-            // Create new preview tab
-            setTabs(prev => [...prev, { id: 'preview', label: 'Preview', closeable: true }]);
-            setPreviewUrl(url);
-            setPreviewTitle(title);
-            setActive('preview');
-        }
+        // Set the URL for the devotional tab to load
+        setDevotionalPreviewUrl(url);
+        // Switch to devotional tab
+        setActive('devotion');
     };
     
     const closePreviewTab = () => {
-        setTabs(prev => prev.filter(t => t.id !== 'preview'));
-        setActive('discover'); // Switch back to discover tab
+        // Reset devotional tab to default
+        setDevotionalPreviewUrl('');
     };
     
     // Expose globally for Apologist to use
@@ -1904,7 +1893,7 @@ function StudyNotes({ id, chapter: propChapter }) {
             globalThis.StudyNoteOpenPreview = null;
             globalThis.StudyNoteClosePreview = null;
         };
-    }, [tabs]);
+    }, []);
 
     // Force re-render when global search changes
     useEffect(() => {
@@ -1948,18 +1937,6 @@ function StudyNotes({ id, chapter: propChapter }) {
                         type="button"
                     >
                         {t.label}
-                        {t.closeable && (
-                            <span 
-                                className="sn-tab-close"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    closePreviewTab();
-                                }}
-                                title="Close preview"
-                            >
-                                ×
-                            </span>
-                        )}
                     </button>
                 ))}
             </div>
@@ -1971,7 +1948,7 @@ function StudyNotes({ id, chapter: propChapter }) {
 
                 <div className={`sn-panel ${active === 'devotion' ? 'show' : 'hide'}`}>
                     <div className="sg-searchWrap">
-                        <TableTalkEmbed />
+                        <TableTalkEmbed url={devotionalPreviewUrl} />
                     </div>
                 </div>
 
@@ -1984,100 +1961,9 @@ function StudyNotes({ id, chapter: propChapter }) {
                         )}
                     </div>
                 </div>
-                
-                <div className={`sn-panel ${active === 'preview' ? 'show' : 'hide'}`}>
-                    <div className="sn-preview-container">
-                        <div className="sn-preview-header">
-                            <span className="sn-preview-title">{previewTitle || 'Preview'}</span>
-                            <button 
-                                className="sn-preview-close-btn"
-                                onClick={closePreviewTab}
-                                title="Close preview"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <iframe 
-                            src={previewUrl}
-                            className="sn-preview-iframe"
-                            title={previewTitle || 'Preview'}
-                        />
-                    </div>
-                </div>
             </div>
 
             <style>{getStyleOf('studyNotes.css')}</style>
-            <style>{`
-                .sn-tab {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                
-                .sn-tab-close {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 18px;
-                    height: 18px;
-                    border-radius: 4px;
-                    font-size: 18px;
-                    line-height: 1;
-                    transition: background 0.2s;
-                    cursor: pointer;
-                }
-                
-                .sn-tab-close:hover {
-                    background: rgba(0, 0, 0, 0.1);
-                }
-                
-                .sn-preview-container {
-                    display: flex;
-                    flex-direction: column;
-                    height: 100%;
-                    width: 100%;
-                }
-                
-                .sn-preview-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 12px 16px;
-                    background: #f5f5f5;
-                    border-bottom: 1px solid #ddd;
-                }
-                
-                .sn-preview-title {
-                    font-size: 14px;
-                    font-weight: 500;
-                    color: #333;
-                }
-                
-                .sn-preview-close-btn {
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    line-height: 1;
-                    cursor: pointer;
-                    color: #666;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    transition: all 0.2s;
-                }
-                
-                .sn-preview-close-btn:hover {
-                    background: #e0e0e0;
-                    color: #333;
-                }
-                
-                .sn-preview-iframe {
-                    flex: 1;
-                    width: 100%;
-                    border: none;
-                    background: white;
-                }
-            `}</style>
         </div>
     );
 };
