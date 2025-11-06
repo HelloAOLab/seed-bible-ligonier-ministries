@@ -1915,7 +1915,7 @@ function StudyNotes({ id, chapter: propChapter }) {
     // Alt + S key switching between search types
     useEffect(() => {
         const handleKeyPress = (event) => {
-            if (event.altKey && event.key === 's') {
+            if (event.key === '`') {
                 event.preventDefault();
                 setSearchType(prev => prev === 'apologist' ? 'tapos' : 'apologist');
             }

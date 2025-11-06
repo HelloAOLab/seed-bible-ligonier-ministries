@@ -215,7 +215,7 @@ function SgSearch({
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState("");
     const [openIds, setOpenIds] = useState(new Set());
-    const [viewMode, setViewMode] = useState("list"); // "list" or "grid"
+    const [viewMode, setViewMode] = useState("grid"); // "list" or "grid"
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [displayedCount, setDisplayedCount] = useState(10);
@@ -321,7 +321,6 @@ function SgSearch({
     return (
         <div className={`sg-searchWrap ${className}`}>
             <div className="sg-header">
-                <h2 className="sg-heading">Related Content</h2>
                 {data && data.length > 0 && (
                     <div className="sg-headerTop">
                         <div className="sg-resultCount">{data.length} Results</div>
@@ -417,6 +416,66 @@ function SgSearch({
             </div>
 
             <style>{getStyleOf('apologist.css')}</style>
+            <style>{`
+                .sg-loadMore {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 10px 0;
+                    width: 100%;
+                    grid-column: 1 / -1; /* Span all columns in grid mode */
+                    text-align: center;
+                }
+                
+                .sg-loadMoreBtn {
+                    padding: 12px 24px;
+                    background: transparent;
+                    color: #8ca443;
+                    border-radius: 6px;
+                    border: 1px solid #8ca443;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                
+                .sg-loadMoreBtn:hover:not(:disabled) {
+                    background: #7a923a;
+                }
+                
+                .sg-loadMoreBtn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                
+                .sg-header {
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
+                    margin-bottom: 16px;
+                }
+                
+                .sg-headerTop {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    gap: 12px;
+                }
+                
+                .sg-resultCount {
+                    font-size: 14px;
+                    color: #666;
+                    font-weight: 500;
+                }
+                
+                .sg-viewToggle {
+                    display: flex;
+                    gap: 4px;
+                }
+            `}</style>
         </div>
     );
 }
