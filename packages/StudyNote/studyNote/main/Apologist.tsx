@@ -63,7 +63,7 @@ function formatDomain(domain) {
 // }
 
 function toEmbeddableUrl(item) {
-  const url = item?.listing_url || "";
+  const url = item?.url || "";
   if (!url) return "";
   if (
     item.type === "youtube" ||
@@ -74,14 +74,14 @@ function toEmbeddableUrl(item) {
     const vid = idMatch ? idMatch[1] : null;
     return vid ? `https://www.youtube.com/embed/${vid}` : url;
   }
-  if (item.type === "image") return ""; // never iframe images
   return url;
 }
 
-function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
+function SgCard({ item, isOpen, viewMode = "list" }) {
   const [previewH, setPreviewH] = useState(0);
   const previewRef = useMemo(() => ({ el: null }), []);
   const [frameKey, setFrameKey] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const date =
     formatDateISO(item.published_on) || formatDateISO(item.created_at) || null;
@@ -95,6 +95,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
 
   const isBook = item.type === "book";
   const isUrl = item.type === "url";
+  const isYoutube = item.type === "youtube";
+  const isEpisode = item.type === "episode";
   const isTableTalk = domain?.includes("tabletalkmagazine.com") || false;
 
   const openInNewTab = (e) => {
@@ -112,8 +114,56 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
     }
   };
 
-  const embUrl = toEmbeddableUrl(item);
-  const canPreview = !!item.image_url || isUrl;
+  const embUrl = useMemo(() => toEmbeddableUrl(item), [item.listing_url, item.type, item.url]);
+  const videoSrc = useMemo(() => {
+    if (!isYoutube || !embUrl) return "";
+    const separator = embUrl.includes("?") ? "&" : "?";
+    return `${embUrl}${separator}autoplay=1`;
+  }, [embUrl, isYoutube]);
+  const canPreview = !isYoutube && (!!item.image_url || isUrl);
+
+  const renderYoutubePlayer = () => (
+    <div className="sg-previewVideo">
+      {isVideoPlaying && videoSrc ? (
+        <iframe
+          key={frameKey}
+          src={videoSrc}
+          title={item.title || "YouTube video"}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      ) : (
+        <button
+          type="button"
+          className="sg-previewVideoButton"
+          onClick={() => {
+            setFrameKey((k) => k + 1);
+            setIsVideoPlaying(true);
+          }}
+          aria-label="Play video"
+        >
+          {item.image_url ? (
+            <img
+              className="sg-previewVideoThumb"
+              src={item.image_url}
+              alt={item.title || "Video thumbnail"}
+            />
+          ) : (
+            <div className="sg-previewVideoThumb sg-previewVideoThumb--fallback" aria-hidden="true" />
+          )}
+          <span className="sg-videoPlayIcon" aria-hidden="true">
+            <svg
+              viewBox="0 0 60 60"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="30" cy="30" r="30" fill="rgba(0,0,0,0.65)" />
+              <path d="M25 20L42 30L25 40V20Z" fill="white" />
+            </svg>
+          </span>
+        </button>
+      )}
+    </div>
+  );
 
   // short description (whatever exists in payload)
   const desc =
@@ -124,7 +174,17 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
       const h = previewRef.el.scrollHeight || 0;
       setPreviewH(h > 8 ? h : 8);
     }
-  }, [isOpen, frameKey, item.url]);
+  }, [isOpen, frameKey, item.url, isVideoPlaying]);
+
+  useEffect(() => {
+    if (!isOpen && !isYoutube) {
+      setIsVideoPlaying(false);
+    }
+  }, [isOpen, isYoutube]);
+
+  useEffect(() => {
+    setIsVideoPlaying(false);
+  }, [item.id]);
 
   useEffect(() => {
     const onVis = () => {
@@ -151,7 +211,11 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
               <span className="sg2-favicon sg2-fallback" />
             )}
             <span className="sg2-domain" title={domain}>
-              {formattedDomain || "external"}
+              {isYoutube
+                ? "YouTube"
+                : isEpisode
+                ? "Episode"
+                : formattedDomain || "external"}
             </span>
             {date && (
               <>
@@ -175,7 +239,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
             )}
           </div>
           <div className="sg2-headRight">
-            {url && (
+            {url && !isYoutube && (
               <a
                 className="sg2-open"
                 href={url}
@@ -229,22 +293,29 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
         </div>
       )}
 
+      {isYoutube && (
+        <div className="sg-youtubeEmbed">
+          {renderYoutubePlayer()}
+        </div>
+      )}
+
       {!isBook && desc ? <p className="sg2-desc">{desc}</p> : null}
 
-      <div
-        className="sg-previewAnim"
-        style={{ "--sg-preview-h": `${previewH}px` }}
-        aria-hidden={!isOpen}
-      >
-        {isOpen && canPreview && (
-          <div className="sg-preview" ref={(n) => (previewRef.el = n)}>
-            <div className="sg-previewImgContainer">
-              <img
-                className="sg-previewImg"
-                src={item.image_url}
-                alt={item.title || `preview-${item.id}`}
-              />
-            </div>
+      {!isYoutube && (
+        <div
+          className="sg-previewAnim"
+          style={{ "--sg-preview-h": `${previewH}px` }}
+          aria-hidden={!isOpen}
+        >
+          {isOpen && canPreview && (
+            <div className="sg-preview" ref={(n) => (previewRef.el = n)}>
+              <div className="sg-previewImgContainer">
+                <img
+                  className="sg-previewImg"
+                  src={item.image_url}
+                  alt={item.title || `preview-${item.id}`}
+                />
+              </div>
             {url && (
               <a
                 href={url}
@@ -270,9 +341,10 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
                 </svg>
               </a>
             )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }
@@ -315,6 +387,17 @@ function ApologistSearch({
   }, [globalThis.GlobalSearch]);
 
   useEffect(() => {
+    if (!enabled) {
+      setData([]);
+      setAllData([]);
+      setErr("");
+      setOpenIds(new Set());
+      setHasMore(false);
+      setDisplayedCount(10);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     console.log("searchParam: ", searchParam);
 
@@ -341,7 +424,9 @@ function ApologistSearch({
           ...(authHeader
             ? { Authorization: authHeader }
             : { Authorization: "Bearer apg_TS0V0FHInZlAavPDG5MA9gCGziBz" }),
-          // ...(cacheTtl ? { "x-cache-ttl": String(cacheTtl) } : { "x-cache-ttl": "300" }),
+          ...(cacheTtl != null
+            ? { "x-cache-ttl": String(cacheTtl) }
+            : {}),
         };
 
         const payload = {
@@ -368,10 +453,24 @@ function ApologistSearch({
           ? res.data.results
           : [];
 
-        // Sort results to prioritize 'url' type over 'book' type
-        const sortedResults = allResults.sort((a, b) => {
-          if (a.type === "url" && b.type !== "url") return -1;
-          if (a.type !== "url" && b.type === "url") return 1;
+        const allowedTypes = new Set(["youtube", "episode", "url", "book"]);
+        const filteredResults = allResults.filter((item) =>
+          allowedTypes.has(item?.type)
+        );
+
+        const priority = {
+          youtube: 0,
+          episode: 1,
+          url: 2,
+          book: 3,
+        };
+
+        const sortedResults = filteredResults.sort((a, b) => {
+          const priorityA = priority[a?.type] ?? Number.MAX_SAFE_INTEGER;
+          const priorityB = priority[b?.type] ?? Number.MAX_SAFE_INTEGER;
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+          }
           return 0;
         });
 
@@ -399,7 +498,7 @@ function ApologistSearch({
     return () => {
       cancelled = true;
     };
-  }, [searchParam]);
+  }, [searchParam, enabled, authHeader, cacheTtl, url]);
 
   const loadMore = () => {
     if (loadingMore || !hasMore) return;
@@ -419,7 +518,11 @@ function ApologistSearch({
       const newBookIds = newData
         .filter((item) => item.type === "book" && item.id)
         .map((item) => item.id);
-      setOpenIds(new Set(newBookIds));
+      setOpenIds((prev) => {
+        const merged = new Set(prev);
+        newBookIds.forEach((id) => merged.add(id));
+        return merged;
+      });
 
       setLoadingMore(false);
     }, 300);
@@ -607,23 +710,12 @@ function ApologistSearch({
       >
         {data && data.length > 0 ? (
           <>
-            {data.map((item, i) =>
+            {data.map((item) =>
               item?.id ? (
                 <SgCard
                   key={String(item.id)}
                   item={item}
                   isOpen={openIds.has(item.id)}
-                  onToggle={(id) => {
-                    setOpenIds((prev) => {
-                      const newSet = new Set(prev);
-                      if (newSet.has(id)) {
-                        newSet.delete(id);
-                      } else {
-                        newSet.add(id);
-                      }
-                      return newSet;
-                    });
-                  }}
                   viewMode={viewMode}
                 />
               ) : null
@@ -745,6 +837,79 @@ function ApologistSearch({
                 .sg-viewToggle {
                     display: flex;
                     gap: 4px;
+                }
+
+                .sg-youtubeEmbed {
+                    margin-top: 12px;
+                }
+
+                .sg-youtubeEmbed .sg-previewVideo {
+                    border-radius: 12px;
+                }
+
+                .sg-previewVideo {
+                    position: relative;
+                    width: 100%;
+                    aspect-ratio: 16 / 9;
+                    background: #000;
+                    border-radius: 10px;
+                    overflow: hidden;
+                }
+
+                .sg-previewVideo iframe {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    display: block;
+                }
+
+                .sg-previewVideoButton {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    padding: 0;
+                    cursor: pointer;
+                    background: none;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .sg-previewVideoThumb {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+
+                .sg-previewVideoThumb--fallback {
+                    background: linear-gradient(135deg, #1f1f1f, #3d3d3d);
+                }
+
+                .sg-previewVideoButton::after {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.45));
+                    pointer-events: none;
+                }
+
+                .sg-videoPlayIcon {
+                    position: absolute;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 70px;
+                    height: 70px;
+                    border-radius: 50%;
+                    background: rgba(0,0,0,0.6);
+                    color: #fff;
+                }
+
+                .sg-videoPlayIcon svg {
+                    width: 34px;
+                    height: 34px;
                 }
             `}</style>
     </div>
