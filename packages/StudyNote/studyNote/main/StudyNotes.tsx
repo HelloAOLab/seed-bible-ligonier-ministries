@@ -3,7 +3,7 @@ import { BibleDataManager } from 'app.hooks.bibleDataManager';
 const ApologistSearch = await thisBot.Apologist();
 const SgSearch = await thisBot.Tapos();
 const TableTalkEmbed = await thisBot.TableTalk();
-const { useEffect, useState, useRef, useLayoutEffect } = os.appHooks;
+const { useEffect, useState, useRef, useLayoutEffect, useCallback } = os.appHooks;
 
 const bibleBooks = [
     { id: "GEN", name: "GENESIS", realName: "Genesis" },
@@ -899,56 +899,78 @@ function StudyNotesWithoutWrap({ chapter }) {
 
     // whenever chapter changes, pull in the new notes
     useEffect(() => {
+        let cancelled = false;
+        const mainBot = getBot('system', 'studyNote.main');
+
+        const resetHighlights = () => {
+            setSearchKey(null);
+            setMatches([]);
+            setPointer(0);
+            setHighlightedPos(null);
+        };
+
         const getStudyNote = async () => {
-            const mainBot = getBot('system', 'studyNote.main');
-            const studyNoteDataURL = mainBot?.tags[bookId] ?? null;
-            if (studyNoteDataURL) {
+            setPageLoading(true);
+            try {
+                const studyNoteDataURL = mainBot?.tags[bookId] ?? null;
+
+                if (!studyNoteDataURL) {
+                    if (cancelled) return;
+                    setStudyNote([]);
+                    setSectionMap({});
+                    globalThis.VerseSectionMap = {};
+                    resetHighlights();
+                    return;
+                }
+
                 const studyNoteData = await os.getFile(studyNoteDataURL);
-                // if (!chapter || chapter < 0) return;
-                if (![studyNoteData[chapter]]) cancelled = true;
-                let note = [studyNoteData[chapter]];
+                if (cancelled) return;
+
+                const note = [studyNoteData[chapter]];
                 console.log(note);
                 setTagMask(mainBot, 'currentStudyNote', note);
                 setStudyNote(note);
-                setPageLoading(false);
-                // reset any old highlights
-                setSearchKey(null)
-                setMatches([])
-                setPointer(0)
-                setHighlightedPos(null)
+                resetHighlights();
+
                 const map = {};
-                ([studyNoteData[chapter]] ?? []).forEach((book, bIdx) => {
+                (note ?? []).forEach((book, bIdx) => {
                     if (book && book.sections) {
                         book.sections.forEach((verse, vIdx) => {
                             const raw = verse.section.toString();
                             const cleaned = raw
-                                .replace(/\d+:\d+/g, "")
-                                .replace(/\./g, "")
-                                .replace(/\s+/g, " ")
+                                .replace(/\d+:\d+/g, '')
+                                .replace(/\./g, '')
+                                .replace(/\s+/g, ' ')
                                 .trim();
                             map[cleaned] = { bookIdx: bIdx, verseIdx: vIdx, original: raw };
                         });
                     }
                 });
+
+                if (cancelled) return;
+
                 setSectionMap(map);
                 globalThis.VerseSectionMap = map;
-                // if(!tags.shouldHighlight) {
-                //     tags.shouldHighlight = true;
-                // }
 
-                // 🔔 Dispatch the “mapready” event, so everyone else can start animating
                 window.dispatchEvent(new CustomEvent('sectionMapReady', { detail: map }));
-            } else {
+            } catch (error) {
+                if (cancelled) return;
                 setStudyNote([]);
-                // reset any old highlights
-                setSearchKey(null)
-                setMatches([])
-                setPointer(0)
-                setHighlightedPos(null)
+                setSectionMap({});
+                globalThis.VerseSectionMap = {};
+                resetHighlights();
+            } finally {
+                if (!cancelled) {
+                    setPageLoading(false);
+                }
             }
-        }
+        };
 
         getStudyNote();
+
+        return () => {
+            cancelled = true;
+        };
     }, [chapter, bookId]);
 
     // debug/log after state actually updates
@@ -982,7 +1004,7 @@ function StudyNotesWithoutWrap({ chapter }) {
 
         const timer = setTimeout(() => {
             setHighlightedPos(null)
-        }, 5000);
+        }, 8000);
 
         return () => clearTimeout(timer);
     }, [highlightedPos]);
@@ -1058,7 +1080,7 @@ function StudyNotesWithoutWrap({ chapter }) {
         timeout = setTimeout(() => {
             globalThis.HighlightedSectionKey = '';
             window.dispatchEvent(new CustomEvent('highlightedSectionKeyChanged'));
-        }, 5000);
+        }, 8000);
     }
 
     let verseTimeout;
@@ -1095,7 +1117,7 @@ function StudyNotesWithoutWrap({ chapter }) {
         verseTimeout = setTimeout(() => {
             globalThis.HighlightedVerseNumber = '';
             window.dispatchEvent(new CustomEvent('highlightedVerseChanged'));
-        }, 5000)
+        }, 8000)
     }
 
     // highlight a single verse, a range string, an array, or range object(s)
@@ -1109,7 +1131,7 @@ function StudyNotesWithoutWrap({ chapter }) {
         versesTimeout = setTimeout(() => {
             globalThis.HighlightedVerses = '';
             window.dispatchEvent(new CustomEvent('highlightedVersesChanged'));
-        }, 5000);
+        }, 8000);
     }
 
     function scheduleStudyNoteHighlight(payload) {
@@ -1860,11 +1882,52 @@ function StudyNotes({ id, chapter: propChapter }) {
     const [active, setActive] = useState(initialTab);
     const [searchType, setSearchType] = useState('apologist'); // 'apologist' or 'tapos'
     const [devotionalPreviewUrl, setDevotionalPreviewUrl] = useState('');
-    const [, setForceUpdate] = useState(0); // For forcing re-renders
+    const [searchQuery, setSearchQuery] = useState(globalThis.GlobalSearch ?? "galations 5");
+    const [searchTrigger, setSearchTrigger] = useState(0);
 
     useEffect(() => {
         setTagMask(mainBot, 'studyNotesActiveTab', active);
     }, [active]);
+
+    useEffect(() => {
+        globalThis.GlobalSearch = searchQuery;
+    }, [searchQuery]);
+
+    const updateStudyNoteSearch = useCallback(
+        (rawQuery, options = {}) => {
+            const trimmed = (rawQuery ?? "").trim();
+            if (!trimmed) return;
+
+            const { forceSearchType, activateDiscover = false, forceRefresh = false } = options;
+
+            if (forceSearchType && (forceSearchType === 'apologist' || forceSearchType === 'tapos')) {
+                setSearchType(forceSearchType);
+            }
+
+            if (activateDiscover) {
+                setActive('discover');
+            }
+
+            globalThis.GlobalSearch = trimmed;
+
+            if (forceRefresh || trimmed !== searchQuery) {
+                setSearchQuery(trimmed);
+            }
+
+            setSearchTrigger(prev => prev + 1);
+        },
+        [setActive, setSearchType, searchQuery]
+    );
+
+    useEffect(() => {
+        globalThis.UpdateStudyNoteSearch = updateStudyNoteSearch;
+        globalThis.GetStudyNoteSearchType = () => searchType;
+
+        return () => {
+            globalThis.UpdateStudyNoteSearch = null;
+            globalThis.GetStudyNoteSearchType = null;
+        };
+    }, [updateStudyNoteSearch, searchType]);
     
     // Expose current tab globally so thePage can check before updating
     useEffect(() => {
@@ -1897,20 +1960,23 @@ function StudyNotes({ id, chapter: propChapter }) {
 
     // Force re-render when global search changes
     useEffect(() => {
-        let lastSearch = globalThis.GlobalSearch;
+        let lastSearch = globalThis.GlobalSearch ?? "";
+        if (!lastSearch && searchQuery) {
+            globalThis.GlobalSearch = searchQuery;
+            lastSearch = searchQuery;
+        }
 
-        const checkGlobalSearch = () => {
-            if (globalThis.GlobalSearch !== lastSearch) {
-                lastSearch = globalThis.GlobalSearch;
-                setForceUpdate(prev => prev + 1); // Trigger re-render
+        const interval = setInterval(() => {
+            const nextSearch = globalThis.GlobalSearch ?? "";
+            if (nextSearch !== lastSearch) {
+                lastSearch = nextSearch;
+                setSearchQuery(nextSearch);
+                setSearchTrigger(prev => prev + 1);
             }
-        };
-
-        // Check for global search changes periodically
-        const interval = setInterval(checkGlobalSearch, 100);
+        }, 200);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [searchQuery]);
 
     // Alt + S key switching between search types
     useEffect(() => {
@@ -1955,9 +2021,9 @@ function StudyNotes({ id, chapter: propChapter }) {
                 <div className={`sn-panel ${active === 'discover' ? 'show' : 'hide'}`}>
                     <div className="sg-searchWrap">
                         {searchType === 'apologist' ? (
-                            <ApologistSearch search={globalThis.GlobalSearch ?? "galations 5"} />
+                            <ApologistSearch search={searchQuery} trigger={searchTrigger} />
                         ) : (
-                            <SgSearch search={globalThis.GlobalSearch ?? "galations 5"} />
+                            <SgSearch search={searchQuery} trigger={searchTrigger} />
                         )}
                     </div>
                 </div>

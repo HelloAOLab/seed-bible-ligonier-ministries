@@ -187,7 +187,7 @@
 /* Additions ------> */
 
 .sectionText.highlighted {
-  border-color: #4F645B;
+  border-bottom-color: #4F645B;
 }
 
 .clickableCursor {

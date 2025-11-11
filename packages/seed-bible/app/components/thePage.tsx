@@ -1656,6 +1656,30 @@ function Section({
     return result;
   }, [verses, wordHighlights, book, chapter]);
 
+  const sendSearchQueryToStudyNote = (text) => {
+    const query = (text ?? "").trim();
+    if (!query) return;
+
+    const resolveSearchType = globalThis.GetStudyNoteSearchType;
+    const searchHelper = globalThis.UpdateStudyNoteSearch;
+    const currentSearchType =
+      typeof resolveSearchType === "function" ? resolveSearchType() : null;
+
+    if (typeof searchHelper === "function") {
+      const options = {
+        forceRefresh: true,
+      };
+
+      if (currentSearchType) {
+        options.forceSearchType = currentSearchType;
+      }
+
+      searchHelper(query, options);
+    } else {
+      globalThis.GlobalSearch = query;
+    }
+  };
+
   // Get context data for the selected verse
   const getContextData = (verseNumber) => {
     const verse = verses.find((v) => v.verseNumber === verseNumber);
@@ -1792,6 +1816,14 @@ function Section({
               holded?.[verse.verseNumber] ||
               selected[verse.verseNumber] ||
               blinker[verse.verseNumber];
+            const isPrimaryHighlight =
+              (highlighted?.[verse.verseNumber] &&
+                highlighted?.[verse.verseNumber].book === book &&
+                highlighted?.[verse.verseNumber].chapter === chapter) ||
+              commandHighlight.includes(verse.verseNumber);
+            const holdUnderline =
+              inHold === verse.verseNumber || isTextDecorUnderline;
+            const shouldUnderline = isPrimaryHighlight || holdUnderline;
 
             return (
               <span key={verse.verseNumber}>
@@ -1810,7 +1842,7 @@ function Section({
                       chapter,
                       verses: [verse.verseNumber],
                     });
-                    globalThis.GlobalSearch = verse.text;
+                  sendSearchQueryToStudyNote(verse.text);
                     shout("onVeresRightClick", {
                       verseNumber: verse.verseNumber,
                       text: verse.text,
@@ -1837,36 +1869,25 @@ function Section({
                     };
                     EmitData("verseClicked", verseClickData);
                     shout("onVerseClick", verseClickData);
+                  sendSearchQueryToStudyNote(verse.text);
                   }}
                   style={{
-                    "background-color":
-                      (highlighted?.[verse.verseNumber] &&
-                        highlighted?.[verse.verseNumber].book === book &&
-                        highlighted?.[verse.verseNumber].chapter === chapter) ||
-                      commandHighlight.includes(verse.verseNumber)
-                        ? wordHighlightsBC
-                        : "transparent",
-                    color:
-                      (highlighted?.[verse.verseNumber] &&
-                        highlighted?.[verse.verseNumber].book === book &&
-                        highlighted?.[verse.verseNumber].chapter === chapter) ||
-                      commandHighlight.includes(verse.verseNumber)
-                        ? wordHighlightsTC
-                        : "black",
-                    transition: "background-color 0.2s ease",
-                    "border-radius": highlighted?.[verse.verseNumber]
+                    backgroundColor: "transparent",
+                    color: isPrimaryHighlight ? wordHighlightsTC : "inherit",
+                    transition:
+                      "text-decoration-color 0.2s ease, text-decoration-thickness 0.2s ease",
+                    textDecorationLine: shouldUnderline ? "underline" : "none",
+                    textDecorationStyle: isPrimaryHighlight
+                      ? "solid"
+                      : holdUnderline
+                      ? "dotted"
+                      : "solid",
+                    textDecorationColor: isPrimaryHighlight
+                      ? wordHighlightsBC
+                      : undefined,
+                    textDecorationThickness: isPrimaryHighlight
                       ? "3px"
-                      : "0",
-                    padding: highlighted?.[verse.verseNumber] ? "2px 4px" : "0",
-                    margin: highlighted?.[verse.verseNumber] ? "0 1px" : "0",
-                    "text-decoration":
-                      inHold === verse.verseNumber || isTextDecorUnderline
-                        ? "underline"
-                        : "",
-                    "text-decoration-style":
-                      inHold === verse.verseNumber || isTextDecorUnderline
-                        ? "dotted"
-                        : "",
+                      : undefined,
                   }}
                   className={`sectionText ${
                     isVerseActive ? "highlighted" : ""

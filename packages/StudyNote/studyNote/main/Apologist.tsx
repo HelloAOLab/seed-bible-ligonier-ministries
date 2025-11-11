@@ -81,7 +81,6 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
   const [previewH, setPreviewH] = useState(0);
   const previewRef = useMemo(() => ({ el: null }), []);
   const [frameKey, setFrameKey] = useState(0);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const date =
     formatDateISO(item.published_on) || formatDateISO(item.created_at) || null;
@@ -118,13 +117,13 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
   const videoSrc = useMemo(() => {
     if (!isYoutube || !embUrl) return "";
     const separator = embUrl.includes("?") ? "&" : "?";
-    return `${embUrl}${separator}autoplay=1`;
+    return `${embUrl}${separator}autoplay=0&rel=0`;
   }, [embUrl, isYoutube]);
   const canPreview = !isYoutube && (!!item.image_url || isUrl);
 
   const renderYoutubePlayer = () => (
     <div className="sg-previewVideo">
-      {isVideoPlaying && videoSrc ? (
+      {videoSrc ? (
         <iframe
           key={frameKey}
           src={videoSrc}
@@ -132,35 +131,17 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
+      ) : item.image_url ? (
+        <img
+          className="sg-previewVideoThumb"
+          src={item.image_url}
+          alt={item.title || "Video thumbnail"}
+        />
       ) : (
-        <button
-          type="button"
-          className="sg-previewVideoButton"
-          onClick={() => {
-            setFrameKey((k) => k + 1);
-            setIsVideoPlaying(true);
-          }}
-          aria-label="Play video"
-        >
-          {item.image_url ? (
-            <img
-              className="sg-previewVideoThumb"
-              src={item.image_url}
-              alt={item.title || "Video thumbnail"}
-            />
-          ) : (
-            <div className="sg-previewVideoThumb sg-previewVideoThumb--fallback" aria-hidden="true" />
-          )}
-          <span className="sg-videoPlayIcon" aria-hidden="true">
-            <svg
-              viewBox="0 0 60 60"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="30" cy="30" r="30" fill="rgba(0,0,0,0.65)" />
-              <path d="M25 20L42 30L25 40V20Z" fill="white" />
-            </svg>
-          </span>
-        </button>
+        <div
+          className="sg-previewVideoThumb sg-previewVideoThumb--fallback"
+          aria-hidden="true"
+        />
       )}
     </div>
   );
@@ -174,17 +155,7 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
       const h = previewRef.el.scrollHeight || 0;
       setPreviewH(h > 8 ? h : 8);
     }
-  }, [isOpen, frameKey, item.url, isVideoPlaying]);
-
-  useEffect(() => {
-    if (!isOpen && !isYoutube) {
-      setIsVideoPlaying(false);
-    }
-  }, [isOpen, isYoutube]);
-
-  useEffect(() => {
-    setIsVideoPlaying(false);
-  }, [item.id]);
+  }, [isOpen, frameKey, item.url]);
 
   useEffect(() => {
     const onVis = () => {
@@ -364,6 +335,7 @@ const DEFAULT_URL =
  */
 function ApologistSearch({
   search,
+  trigger = 0,
   url = DEFAULT_URL,
   enabled = true,
   className = "",
@@ -375,6 +347,7 @@ function ApologistSearch({
   const [err, setErr] = useState("");
   const [openIds, setOpenIds] = useState(new Set());
   const [searchParam, setSearchParam] = useState("");
+  const [searchRunId, setSearchRunId] = useState(0);
   const [viewMode, setViewMode] = useState("grid"); // "list" or "grid"
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -382,9 +355,16 @@ function ApologistSearch({
   const [allData, setAllData] = useState([]);
 
   useEffect(() => {
-    if (globalThis.GlobalSearch && globalThis.GlobalSearch.trim())
-      setSearchParam(globalThis.GlobalSearch.trim());
-  }, [globalThis.GlobalSearch]);
+    const trimmed = (search ?? "").trim();
+    if (!trimmed) {
+      setSearchParam("");
+      setSearchRunId(trigger);
+      return;
+    }
+
+    setSearchParam(trimmed);
+    setSearchRunId(trigger);
+  }, [search, trigger]);
 
   useEffect(() => {
     if (!enabled) {
@@ -481,7 +461,10 @@ function ApologistSearch({
         const bookIds = sortedResults
           .filter((item) => item.type === "book" && item.id)
           .map((item) => item.id);
-        setOpenIds(new Set(bookIds));
+        const youtubeIds = sortedResults
+          .filter((item) => item.type === "youtube" && item.id)
+          .map((item) => item.id);
+        setOpenIds(new Set([...bookIds, ...youtubeIds]));
       } catch (e) {
         if (!cancelled) {
           setErr(e?.message || "Network error");
@@ -498,7 +481,7 @@ function ApologistSearch({
     return () => {
       cancelled = true;
     };
-  }, [searchParam, enabled, authHeader, cacheTtl, url]);
+  }, [searchParam, searchRunId, enabled, authHeader, cacheTtl, url]);
 
   const loadMore = () => {
     if (loadingMore || !hasMore) return;
