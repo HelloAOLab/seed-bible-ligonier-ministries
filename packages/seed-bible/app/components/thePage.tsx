@@ -25,6 +25,9 @@ import { ConfigurableFunctionCommands } from "app.components.commands";
 function prepareAISearchParamOnChapter(chapterData) {
   const combinedText = chapterData.book + " " + chapterData.chapter;
   globalThis.GlobalSearch = combinedText.trim();
+  globalThis.GlobalSearchLevel = "chapter";
+  globalThis.StudyNoteParentSearch = combinedText.trim();
+  globalThis.GlobalSearchLabel = combinedText.trim();
 }
 
 // MoreResources component
@@ -1656,7 +1659,7 @@ function Section({
     return result;
   }, [verses, wordHighlights, book, chapter]);
 
-  const sendSearchQueryToStudyNote = (text) => {
+  const sendSearchQueryToStudyNote = (text, verseNumbers) => {
     const query = (text ?? "").trim();
     if (!query) return;
 
@@ -1665,9 +1668,33 @@ function Section({
     const currentSearchType =
       typeof resolveSearchType === "function" ? resolveSearchType() : null;
 
+    globalThis.GlobalSearchLevel = verseNumbers ? "verse" : "chapter";
+    globalThis.GlobalSearch = query;
+
+    let label = `${book} ${chapter}`;
+    if (verseNumbers != null) {
+      const verseArray = Array.isArray(verseNumbers)
+        ? verseNumbers
+        : [verseNumbers];
+      if (verseArray.length > 0) {
+        const first = verseArray[0];
+        const last = verseArray[verseArray.length - 1];
+        label += ` - ${first}${first !== last ? `-${last}` : ""}`;
+      }
+    }
+
     if (typeof searchHelper === "function") {
+      globalThis.GlobalSearchLabel = label;
+
       const options = {
         forceRefresh: true,
+        level: verseNumbers ? "verse" : "chapter",
+        label,
+        meta: {
+          book,
+          chapter,
+          verses: verseNumbers,
+        },
       };
 
       if (currentSearchType) {
@@ -1676,7 +1703,10 @@ function Section({
 
       searchHelper(query, options);
     } else {
-      globalThis.GlobalSearch = query;
+      if (verseNumbers) {
+        globalThis.GlobalSearchLevel = "verse";
+      }
+      globalThis.GlobalSearchLabel = label;
     }
   };
 
@@ -1842,7 +1872,7 @@ function Section({
                       chapter,
                       verses: [verse.verseNumber],
                     });
-                  sendSearchQueryToStudyNote(verse.text);
+                  sendSearchQueryToStudyNote(verse.text, verse.verseNumber);
                     shout("onVeresRightClick", {
                       verseNumber: verse.verseNumber,
                       text: verse.text,
@@ -1869,7 +1899,7 @@ function Section({
                     };
                     EmitData("verseClicked", verseClickData);
                     shout("onVerseClick", verseClickData);
-                  sendSearchQueryToStudyNote(verse.text);
+                  sendSearchQueryToStudyNote(verse.text, verse.verseNumber);
                   }}
                   style={{
                     backgroundColor: "transparent",

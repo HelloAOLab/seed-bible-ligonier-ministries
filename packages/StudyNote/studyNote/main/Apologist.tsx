@@ -1,4 +1,4 @@
-const { useEffect, useState, useMemo } = os.appHooks;
+const { useEffect, useState, useMemo, useRef } = os.appHooks;
 const getStyleOf = await thisBot.GetStyle();
 
 function formatDateISO(s) {
@@ -53,6 +53,109 @@ function formatDomain(domain) {
 
   // Return domain as-is for others
   return domain;
+}
+
+const TYPE_ORDER = {
+  youtube: 0,
+  episode: 10,
+  url: 20,
+  book: 30,
+};
+
+const SOURCE_PRIORITY = {
+  youtube: 0,
+  tabletalk: 1,
+  ligonier: 2,
+  default: 5,
+};
+
+const TITLE_WHITESPACE_REGEX = /\s+/g;
+
+function normalizeTitleValue(value) {
+  if (!value) return "";
+  return value.trim().replace(TITLE_WHITESPACE_REGEX, " ").toLowerCase();
+}
+
+function getPrimaryUrl(item) {
+  return item?.url || item?.referral_url || item?.listing_url || "";
+}
+
+function getResultDomain(item) {
+  const domain = getDomain(getPrimaryUrl(item));
+  return domain ? domain.toLowerCase() : "";
+}
+
+function computeResultRank(item) {
+  const type = (item?.type || "").toLowerCase();
+  if (type === "youtube") {
+    return SOURCE_PRIORITY.youtube;
+  }
+
+  const domain = getResultDomain(item);
+  if (domain.includes("tabletalkmagazine.com")) {
+    return SOURCE_PRIORITY.tabletalk;
+  }
+  if (domain.includes("ligonier.org")) {
+    return SOURCE_PRIORITY.ligonier;
+  }
+
+  return SOURCE_PRIORITY.default + (TYPE_ORDER[type] ?? 50);
+}
+
+function compareResults(a, b) {
+  const rankDiff = computeResultRank(a) - computeResultRank(b);
+  if (rankDiff !== 0) return rankDiff;
+
+  const typeDiff =
+    (TYPE_ORDER[(a?.type || "").toLowerCase()] ?? 100) -
+    (TYPE_ORDER[(b?.type || "").toLowerCase()] ?? 100);
+  if (typeDiff !== 0) return typeDiff;
+
+  const titleA = normalizeTitleValue(a?.title || a?.Name || "");
+  const titleB = normalizeTitleValue(b?.title || b?.Name || "");
+  if (titleA < titleB) return -1;
+  if (titleA > titleB) return 1;
+  return 0;
+}
+
+function dedupeResults(results) {
+  const seen = new Map();
+  const deduped = [];
+
+  results.forEach((item) => {
+    const normalizedTitle = normalizeTitleValue(item?.title || item?.Name || "");
+    if (!normalizedTitle) {
+      deduped.push(item);
+      return;
+    }
+
+    const candidatePriority = computeResultRank(item);
+
+    if (!seen.has(normalizedTitle)) {
+      seen.set(normalizedTitle, { index: deduped.length, priority: candidatePriority });
+      deduped.push(item);
+      return;
+    }
+
+    const existing = seen.get(normalizedTitle);
+    if (candidatePriority < existing.priority) {
+      deduped[existing.index] = item;
+      existing.priority = candidatePriority;
+    }
+  });
+
+  return deduped;
+}
+
+function buildResultKey(item) {
+  if (!item) return null;
+  if (item.id) {
+    return `id:${item.id}`;
+  }
+  const titleKey = normalizeTitleValue(item?.title || item?.Name || "");
+  if (!titleKey) return null;
+  const domain = getResultDomain(item);
+  return `title:${titleKey}|domain:${domain}`;
 }
 
 // function getFavicon(u) {
@@ -341,6 +444,9 @@ function ApologistSearch({
   className = "",
   authHeader = null,
   cacheTtl = null,
+  level = "chapter",
+  baselineQuery = "",
+  label = "",
 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -351,8 +457,21 @@ function ApologistSearch({
   const [viewMode, setViewMode] = useState("grid"); // "list" or "grid"
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [displayedCount, setDisplayedCount] = useState(10);
+  const [displayedCount, setDisplayedCount] = useState(20);
   const [allData, setAllData] = useState([]);
+  const lastSearchKeyRef = useRef(null);
+  const lastResultKeysRef = useRef(new Set());
+  const baselineQueryRef = useRef(baselineQuery || "");
+  const baselineResultKeysRef = useRef(new Set());
+  const resolvedLevel = (level || "chapter").toLowerCase();
+  const isVerseLevel = resolvedLevel === "verse";
+  const currentBaselineQuery = baselineQuery || baselineQueryRef.current;
+  const showResetControl = Boolean(isVerseLevel && currentBaselineQuery);
+  const headerLabel =
+    label ||
+    (isVerseLevel && currentBaselineQuery
+      ? currentBaselineQuery
+      : searchParam);
 
   useEffect(() => {
     const trimmed = (search ?? "").trim();
@@ -367,15 +486,28 @@ function ApologistSearch({
   }, [search, trigger]);
 
   useEffect(() => {
+    baselineQueryRef.current = baselineQuery || baselineQueryRef.current;
+  }, [baselineQuery]);
+
+  useEffect(() => {
     if (!enabled) {
       setData([]);
       setAllData([]);
       setErr("");
       setOpenIds(new Set());
       setHasMore(false);
-      setDisplayedCount(10);
+      setDisplayedCount(20);
       setLoading(false);
       return;
+    }
+
+    if (!searchParam.trim()) {
+      lastSearchKeyRef.current = null;
+      lastResultKeysRef.current = new Set();
+      if (resolvedLevel === "chapter") {
+        baselineQueryRef.current = baselineQuery || "";
+        baselineResultKeysRef.current = new Set();
+      }
     }
 
     let cancelled = false;
@@ -388,16 +520,19 @@ function ApologistSearch({
         setErr("");
         setOpenIds(new Set());
         setHasMore(false);
-        setDisplayedCount(10);
+        setDisplayedCount(20);
         return;
       }
       setLoading(true);
       setErr("");
       setOpenIds(new Set());
       setHasMore(false);
-      setDisplayedCount(10);
+      setDisplayedCount(20);
 
       try {
+        const trimmedQuery = searchParam.trim();
+        const normalizedSearchKey = trimmedQuery.toLowerCase();
+
         const headers = {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -410,7 +545,7 @@ function ApologistSearch({
         };
 
         const payload = {
-          query: searchParam.trim(),
+          query: trimmedQuery,
           limit: 100, // Get all results
           filters: {
             team_id: 111,
@@ -438,33 +573,66 @@ function ApologistSearch({
           allowedTypes.has(item?.type)
         );
 
-        const priority = {
-          youtube: 0,
-          episode: 1,
-          url: 2,
-          book: 3,
-        };
+        const sortedResults = filteredResults.slice().sort(compareResults);
+        const dedupedResults = dedupeResults(sortedResults);
 
-        const sortedResults = filteredResults.sort((a, b) => {
-          const priorityA = priority[a?.type] ?? Number.MAX_SAFE_INTEGER;
-          const priorityB = priority[b?.type] ?? Number.MAX_SAFE_INTEGER;
-          if (priorityA !== priorityB) {
-            return priorityA - priorityB;
-          }
-          return 0;
-        });
+        if (resolvedLevel === "chapter") {
+          baselineQueryRef.current = trimmedQuery;
+          baselineResultKeysRef.current = new Set();
+          dedupedResults.forEach((item) => {
+            const key = buildResultKey(item);
+            if (key) {
+              baselineResultKeysRef.current.add(key);
+            }
+          });
+        }
 
-        setAllData(sortedResults);
-        setData(sortedResults.slice(0, 10)); // Show first 10
-        setHasMore(sortedResults.length > 10); // Show "Load More" if there are more than 10 results
+        let finalResults = dedupedResults;
+
+        if (
+          resolvedLevel !== "chapter" &&
+          baselineResultKeysRef.current.size
+        ) {
+          finalResults = finalResults.filter((item) => {
+            const key = buildResultKey(item);
+            if (!key) return true;
+            return !baselineResultKeysRef.current.has(key);
+          });
+        }
+
+        if (
+          lastSearchKeyRef.current &&
+          normalizedSearchKey &&
+          normalizedSearchKey !== lastSearchKeyRef.current &&
+          lastResultKeysRef.current.size
+        ) {
+          finalResults = finalResults.filter((item) => {
+            const key = buildResultKey(item);
+            if (!key) return true;
+            return !lastResultKeysRef.current.has(key);
+          });
+        }
+
+        setAllData(finalResults);
+        setData(finalResults.slice(0, 20)); // Show first 20
+        setHasMore(finalResults.length > 20); // Show "Load More" if there are more than 20 results
         // Open all book cards initially
-        const bookIds = sortedResults
+        const bookIds = finalResults
           .filter((item) => item.type === "book" && item.id)
           .map((item) => item.id);
-        const youtubeIds = sortedResults
+        const youtubeIds = finalResults
           .filter((item) => item.type === "youtube" && item.id)
           .map((item) => item.id);
         setOpenIds(new Set([...bookIds, ...youtubeIds]));
+
+        lastSearchKeyRef.current = normalizedSearchKey || null;
+        lastResultKeysRef.current = new Set();
+        finalResults.forEach((item) => {
+          const key = buildResultKey(item);
+          if (key) {
+            lastResultKeysRef.current.add(key);
+          }
+        });
       } catch (e) {
         if (!cancelled) {
           setErr(e?.message || "Network error");
@@ -481,7 +649,23 @@ function ApologistSearch({
     return () => {
       cancelled = true;
     };
-  }, [searchParam, searchRunId, enabled, authHeader, cacheTtl, url]);
+  }, [searchParam, searchRunId, enabled, authHeader, cacheTtl, url, level, baselineQuery]);
+
+  const handleResetToBaseline = () => {
+    if (!currentBaselineQuery) return;
+
+    const helper = globalThis.UpdateStudyNoteSearch;
+    if (typeof helper === "function") {
+      helper(currentBaselineQuery, {
+        level: "chapter",
+        forceRefresh: true,
+      });
+    } else {
+      globalThis.GlobalSearch = currentBaselineQuery;
+      globalThis.GlobalSearchLevel = "chapter";
+      globalThis.GlobalSearchLabel = currentBaselineQuery;
+    }
+  };
 
   const loadMore = () => {
     if (loadingMore || !hasMore) return;
@@ -608,7 +792,18 @@ function ApologistSearch({
       <div className="sg-header">
         {data && data.length > 0 && (
           <div className="sg-headerTop">
-            <div className="sg-resultCount">{data.length} Results</div>
+            {showResetControl && (
+              <button
+                type="button"
+                className="sg-resetBtn"
+                onClick={handleResetToBaseline}
+                title={`Back to ${currentBaselineQuery}`}
+                aria-label="Back to chapter search"
+              >
+                ×
+              </button>
+            )}
+            <div className="sg-resultCount">{headerLabel} | {data.length} Results</div>
             <div className="sg-viewToggle">
               <button
                 className={`sg-toggle-btn ${
@@ -820,6 +1015,23 @@ function ApologistSearch({
                 .sg-viewToggle {
                     display: flex;
                     gap: 4px;
+                }
+
+                .sg-resetBtn {
+                    border: none;
+                    background: transparent;
+                    color: #8ca443;
+                    cursor: pointer;
+                    padding: 4px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    line-height: 1;
+                }
+
+                .sg-resetBtn:hover {
+                    color: #7a923a;
                 }
 
                 .sg-youtubeEmbed {

@@ -1882,8 +1882,19 @@ function StudyNotes({ id, chapter: propChapter }) {
     const [active, setActive] = useState(initialTab);
     const [searchType, setSearchType] = useState('apologist'); // 'apologist' or 'tapos'
     const [devotionalPreviewUrl, setDevotionalPreviewUrl] = useState('');
-    const [searchQuery, setSearchQuery] = useState(globalThis.GlobalSearch ?? "galations 5");
+    const initialGlobalSearch = globalThis.GlobalSearch ?? "galations 5";
+    const initialLevel = globalThis.GlobalSearchLevel || "chapter";
+    const [searchQuery, setSearchQuery] = useState(initialGlobalSearch);
     const [searchTrigger, setSearchTrigger] = useState(0);
+    const [searchLevel, setSearchLevel] = useState(initialLevel);
+    const [baselineQuery, setBaselineQuery] = useState(
+        globalThis.StudyNoteParentSearch || initialGlobalSearch
+    );
+    const [searchLabel, setSearchLabel] = useState(
+        globalThis.GlobalSearchLabel ||
+            globalThis.StudyNoteParentSearch ||
+            initialGlobalSearch
+    );
 
     useEffect(() => {
         setTagMask(mainBot, 'studyNotesActiveTab', active);
@@ -1893,12 +1904,36 @@ function StudyNotes({ id, chapter: propChapter }) {
         globalThis.GlobalSearch = searchQuery;
     }, [searchQuery]);
 
+    useEffect(() => {
+        globalThis.GlobalSearchLevel = searchLevel;
+    }, [searchLevel]);
+
+    useEffect(() => {
+        if (baselineQuery) {
+            globalThis.StudyNoteParentSearch = baselineQuery;
+        }
+    }, [baselineQuery]);
+
+    useEffect(() => {
+        if (searchLabel) {
+            globalThis.GlobalSearchLabel = searchLabel;
+        }
+    }, [searchLabel]);
+
     const updateStudyNoteSearch = useCallback(
         (rawQuery, options = {}) => {
             const trimmed = (rawQuery ?? "").trim();
             if (!trimmed) return;
 
-            const { forceSearchType, activateDiscover = false, forceRefresh = false } = options;
+            const {
+                forceSearchType,
+                activateDiscover = false,
+                forceRefresh = false,
+                level,
+                label: labelOverride,
+            } = options;
+
+            const resolvedLevel = level || searchLevel || "chapter";
 
             if (forceSearchType && (forceSearchType === 'apologist' || forceSearchType === 'tapos')) {
                 setSearchType(forceSearchType);
@@ -1909,25 +1944,48 @@ function StudyNotes({ id, chapter: propChapter }) {
             }
 
             globalThis.GlobalSearch = trimmed;
+            globalThis.GlobalSearchLevel = resolvedLevel;
 
             if (forceRefresh || trimmed !== searchQuery) {
                 setSearchQuery(trimmed);
             }
 
+            if (resolvedLevel !== searchLevel) {
+                setSearchLevel(resolvedLevel);
+            }
+
+            if (resolvedLevel === "chapter") {
+                setBaselineQuery(trimmed);
+            }
+
+            if (labelOverride) {
+                setSearchLabel(labelOverride);
+            } else if (resolvedLevel === "chapter") {
+                setSearchLabel(trimmed);
+            } else if (baselineQuery) {
+                setSearchLabel(baselineQuery);
+            } else {
+                setSearchLabel(trimmed);
+            }
+
             setSearchTrigger(prev => prev + 1);
         },
-        [setActive, setSearchType, searchQuery]
+        [setActive, setSearchType, searchLevel, searchQuery, baselineQuery]
     );
 
     useEffect(() => {
         globalThis.UpdateStudyNoteSearch = updateStudyNoteSearch;
         globalThis.GetStudyNoteSearchType = () => searchType;
+        globalThis.GetStudyNoteSearchLevel = () => searchLevel;
+        globalThis.GetStudyNoteBaselineQuery = () => baselineQuery;
 
         return () => {
             globalThis.UpdateStudyNoteSearch = null;
             globalThis.GetStudyNoteSearchType = null;
+            globalThis.GetStudyNoteSearchLevel = null;
+            globalThis.GetStudyNoteBaselineQuery = null;
         };
-    }, [updateStudyNoteSearch, searchType]);
+    }, [updateStudyNoteSearch, searchType, searchLevel, baselineQuery]);
     
     // Expose current tab globally so thePage can check before updating
     useEffect(() => {
@@ -1968,15 +2026,34 @@ function StudyNotes({ id, chapter: propChapter }) {
 
         const interval = setInterval(() => {
             const nextSearch = globalThis.GlobalSearch ?? "";
+            const nextLevel = globalThis.GlobalSearchLevel || searchLevel || "chapter";
+            const nextLabel =
+                globalThis.GlobalSearchLabel ||
+                (nextLevel === "chapter"
+                    ? nextSearch
+                    : searchLabel);
+
             if (nextSearch !== lastSearch) {
                 lastSearch = nextSearch;
                 setSearchQuery(nextSearch);
                 setSearchTrigger(prev => prev + 1);
             }
+
+            if (nextLevel !== searchLevel) {
+                setSearchLevel(nextLevel);
+            }
+
+            if (nextLevel === "chapter" && nextSearch) {
+                setBaselineQuery(nextSearch);
+            }
+
+            if (nextLabel && nextLabel !== searchLabel) {
+                setSearchLabel(nextLabel);
+            }
         }, 200);
 
         return () => clearInterval(interval);
-    }, [searchQuery]);
+    }, [searchQuery, searchLevel, searchLabel]);
 
     // Alt + S key switching between search types
     useEffect(() => {
@@ -2021,7 +2098,13 @@ function StudyNotes({ id, chapter: propChapter }) {
                 <div className={`sn-panel ${active === 'discover' ? 'show' : 'hide'}`}>
                     <div className="sg-searchWrap">
                         {searchType === 'apologist' ? (
-                            <ApologistSearch search={searchQuery} trigger={searchTrigger} />
+                            <ApologistSearch
+                                search={searchQuery}
+                                trigger={searchTrigger}
+                                level={searchLevel}
+                                baselineQuery={baselineQuery}
+                                label={searchLabel}
+                            />
                         ) : (
                             <SgSearch search={searchQuery} trigger={searchTrigger} />
                         )}
