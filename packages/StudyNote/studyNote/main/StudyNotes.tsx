@@ -3,7 +3,8 @@ import { BibleDataManager } from 'app.hooks.bibleDataManager';
 const ApologistSearch = await thisBot.Apologist();
 const SgSearch = await thisBot.Tapos();
 const TableTalkEmbed = await thisBot.TableTalk();
-const { useEffect, useState, useRef, useLayoutEffect, useCallback } = os.appHooks;
+import { TextEditor } from 'app.components.editor';
+const { useEffect, useState, useRef, useLayoutEffect, useCallback, useMemo } = os.appHooks;
 
 const bibleBooks = [
     { id: "GEN", name: "GENESIS", realName: "Genesis" },
@@ -681,7 +682,7 @@ async function prefetchNeighborsViaCurrentBibleObject() {
 }
 
 
-function StudyNotesWithoutWrap({ chapter }) {
+function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     // Get extension bot for state management
     const mainBot = getBot('system', 'studyNote.main');
 
@@ -920,6 +921,10 @@ function StudyNotesWithoutWrap({ chapter }) {
                     setSectionMap({});
                     globalThis.VerseSectionMap = {};
                     resetHighlights();
+                    // Clear study note data in parent
+                    if (onStudyNoteChange) {
+                        onStudyNoteChange(null);
+                    }
                     return;
                 }
 
@@ -931,6 +936,11 @@ function StudyNotesWithoutWrap({ chapter }) {
                 setTagMask(mainBot, 'currentStudyNote', note);
                 setStudyNote(note);
                 resetHighlights();
+                
+                // Expose studyNote data to parent component for editor
+                if (onStudyNoteChange && note && note.length > 0) {
+                    onStudyNoteChange(note);
+                }
 
                 const map = {};
                 (note ?? []).forEach((book, bIdx) => {
@@ -959,6 +969,10 @@ function StudyNotesWithoutWrap({ chapter }) {
                 setSectionMap({});
                 globalThis.VerseSectionMap = {};
                 resetHighlights();
+                // Clear study note data in parent on error
+                if (onStudyNoteChange) {
+                    onStudyNoteChange(null);
+                }
             } finally {
                 if (!cancelled) {
                     setPageLoading(false);
@@ -971,7 +985,7 @@ function StudyNotesWithoutWrap({ chapter }) {
         return () => {
             cancelled = true;
         };
-    }, [chapter, bookId]);
+    }, [chapter, bookId, onStudyNoteChange]);
 
     // debug/log after state actually updates
     useEffect(() => {
@@ -1882,6 +1896,8 @@ function StudyNotes({ id, chapter: propChapter }) {
     const [active, setActive] = useState(initialTab);
     const [searchType, setSearchType] = useState('apologist'); // 'apologist' or 'tapos'
     const [devotionalPreviewUrl, setDevotionalPreviewUrl] = useState('');
+    const [enableEditor, setEnableEditor] = useState(false);
+    const [currentStudyNoteData, setCurrentStudyNoteData] = useState(null);
     const initialGlobalSearch = globalThis.GlobalSearch ?? "galations 5";
     const initialLevel = globalThis.GlobalSearchLevel || "chapter";
     const [searchQuery, setSearchQuery] = useState(initialGlobalSearch);
@@ -2055,18 +2071,41 @@ function StudyNotes({ id, chapter: propChapter }) {
         return () => clearInterval(interval);
     }, [searchQuery, searchLevel, searchLabel]);
 
-    // Alt + S key switching between search types
+    // Prepare editor data structure
+    const editorData = useMemo(() => {
+        const currentBookId = globalThis.BookId;
+        const currentChapter = (chapter ?? globalThis.GlobalChapter ?? 0) + 1;
+        const bookName = getBookNameById(currentBookId);
+        
+        if (!currentBookId || !currentChapter) return null;
+        
+        return {
+            book: bookName,
+            bookId: currentBookId,
+            chapter: currentChapter,
+            translation: 'BSB'
+        };
+    }, [chapter, bookId]);
+
+    // Tilde key handler - context-aware behavior
     useEffect(() => {
         const handleKeyPress = (event) => {
             if (event.key === '`') {
                 event.preventDefault();
-                setSearchType(prev => prev === 'apologist' ? 'tapos' : 'apologist');
+                
+                if (active === 'notes') {
+                    // Toggle editor on notes tab
+                    setEnableEditor(prev => !prev);
+                } else if (active === 'discover') {
+                    // Existing behavior: switch search type
+                    setSearchType(prev => prev === 'apologist' ? 'tapos' : 'apologist');
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyPress);
         return () => window.removeEventListener('keydown', handleKeyPress);
-    }, []);
+    }, [active, setSearchType]);
 
 
     return (
@@ -2086,7 +2125,18 @@ function StudyNotes({ id, chapter: propChapter }) {
 
             <div className="sn-panels">
                 <div className={`sn-panel ${active === 'notes' ? 'show' : 'hide'}`}>
-                    <StudyNotesWithoutWrap chapter={chapter} />
+                    {editorData && enableEditor ? (
+                        <TextEditor
+                            enableEditor={enableEditor}
+                            setEnableEditor={setEnableEditor}
+                            data={editorData}
+                            studyNotes={currentStudyNoteData && currentStudyNoteData.length > 0 ? currentStudyNoteData : [{ header: `${editorData.book} ${editorData.chapter}`, sections: [] }]}
+                            content={<StudyNotesWithoutWrap chapter={chapter} onStudyNoteChange={setCurrentStudyNoteData} />}
+                            tab={null}
+                        />
+                    ) : (
+                        <StudyNotesWithoutWrap chapter={chapter} onStudyNoteChange={setCurrentStudyNoteData} />
+                    )}
                 </div>
 
                 <div className={`sn-panel ${active === 'devotion' ? 'show' : 'hide'}`}>
