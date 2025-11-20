@@ -1,184 +1,409 @@
 // SgSearch.jsx
-const { useEffect, useState, useMemo } = os.appHooks;
+const { useEffect, useState, useMemo, useRef } = os.appHooks;
 const getStyleOf = await thisBot.GetStyle();
 
-function formatDate(ms) {
-    if (!ms) return null;
-    try {
-        return new Date(ms).toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "2-digit",
-        });
-    } catch { return null; }
-}
-
-function getDomain(u) {
-    if (!u) return "";
-    try {
-        if (!/^https?:\/\//i.test(u)) {
-            u = "http://" + u;
-        }
-
-        const hostname = new URL(u).hostname.replace(/^www\./, "");
-        const parts = hostname.split(".").filter(Boolean);
-        if (!parts.length) return "";
-
-        if (parts.length === 1) return parts[0];
-
-        // Remove top level domain (com, org, etc.)
-        parts.pop();
-
-        if (!parts.length) return "";
-
-        const commonSecondLevel = new Set([
-            "co",
-            "com",
-            "net",
-            "org",
-            "gov",
-            "edu",
-            "mil",
-            "ac"
-        ]);
-
-        const lastPart = parts[parts.length - 1];
-        if (parts.length > 1 && commonSecondLevel.has(lastPart.toLowerCase())) {
-            parts.pop();
-        }
-
-        if (!parts.length) return "";
-
-        if (parts.length > 1) {
-            return parts[0];
-        }
-
-        return parts[0];
-    } catch {
-        return "";
-    }
-}
-
-function Highlighted({ texts }) {
-    if (!texts || !texts.length) return null;
-    return (
-        <div className="sg-hl">
-            {texts.map((t, i) =>
-                t.type === "hit"
-                    ? <mark key={`hit-${i}`} className="sg-hit">{t.value}</mark>
-                    : <span key={`txt-${i}`}>{t.value}</span>
-            )}
-        </div>
-    );
-}
-
-function Chips({ items }) {
-    if (!items || !items.length) return null;
-    return (
-        <div className="sg-chips">
-            {items.map((k, i) => (
-                <span className="sg-chip" key={`${k}-${i}`}>{k}</span>
-            ))}
-        </div>
-    );
-}
-
-function CompactReferences({ refs }) {
-    if (!refs) return null;
-    const entries = Object.entries(refs).filter(([, arr]) => Array.isArray(arr) && arr.length > 0);
-    if (!entries.length) return null;
-    return (
-        <div className="sg-refs">
-            <div className="sg-refs-title">References</div>
-            <div className="sg-refs-grid">
-                {entries.map(([section, arr]) => (
-                    <div className="sg-ref-block" key={`sec-${section}`}>
-                        <div className="sg-ref-name">{section}</div>
-                        <ul className="sg-ref-list">
-                            {arr.map((v, i) => (
-                                <li key={`${section}-${i}`} className="sg-ref-item">{v}</li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
-    const date = formatDate(item.ContentDateUTC);
-    const hlName = Array.isArray(item.highlights) && item.highlights.find((h) => h.path === "Name");
-
-    const embUrl = item?.ContentLink || "";
-    const canPreview = Boolean(embUrl);
-    const domain = useMemo(
-        () => getDomain(item?.ContentLink || item?.Url || item?.SourceUrl),
-        [item?.ContentLink, item?.Url, item?.SourceUrl]
-    );
-
+function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadingContent, contentError }) {
     // preview animation height + iframe remount on tab switching
     const [previewH, setPreviewH] = useState(0);
-    const [frameKey, setFrameKey] = useState(0);
     const previewRef = useMemo(() => ({ el: null }), []);
-
-    useEffect(() => {
-        const onVis = () => { if (!document.hidden) setFrameKey(k => k + 1); };
-        document.addEventListener("visibilitychange", onVis);
-        return () => document.removeEventListener("visibilitychange", onVis);
-    }, []);
+    
+    // Media and transcript state
+    const mediaRef = useRef(null);
+    const youtubePlayerRef = useRef(null);
+    const vimeoPlayerRef = useRef(null);
+    const transcriptContainerRef = useRef(null);
+    const transcriptScrollRef = useRef(null);
+    const [visibleSentences, setVisibleSentences] = useState([]);
+    const [activeSentenceIndex, setActiveSentenceIndex] = useState(-1);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+    
+    // Media detection
+    const hasVideo = fullContent?.VideoUrl;
+    const hasAudio = fullContent?._StorageId && fullContent?.mimeType?.startsWith('audio/');
+    const audioUrl = hasAudio ? fullContent._StorageId : null;
+    const sentences = Array.isArray(fullContent?.Sentences) ? fullContent.Sentences : [];
+    
+    // Check if video is YouTube/Vimeo
+    const isYouTube = hasVideo && /youtube\.com|youtu\.be/.test(fullContent.VideoUrl);
+    const isVimeo = hasVideo && /vimeo\.com/.test(fullContent.VideoUrl);
 
     useEffect(() => {
         if (previewRef.el) {
             const h = previewRef.el.scrollHeight || 0;
             setPreviewH(h > 8 ? h : 8);
         }
-    }, [isOpen, frameKey, embUrl, item.Summary, item.Keywords, item.References]);
+    }, [isOpen, hasVideo, hasAudio, sentences.length]);
 
-    const openInNewTab = (e) => {
-        e.preventDefault();
-        if (!embUrl) return;
-        window.open(embUrl, "_blank", "noopener");
+    // Helper function to check if user is at bottom of transcript container
+    const isAtBottom = () => {
+        if (!transcriptScrollRef.current) return false;
+        const container = transcriptScrollRef.current;
+        const threshold = 50; // pixels from bottom
+        return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    };
+    
+    // Scroll to bottom handler
+    const scrollToBottom = () => {
+        if (transcriptScrollRef.current) {
+            transcriptScrollRef.current.scrollTo({
+                top: transcriptScrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    };
+    
+    // Track scroll position to show/hide scroll-to-bottom button
+    useEffect(() => {
+        if (!hasAudio || !transcriptScrollRef.current) {
+            setShowScrollToBottom(false);
+            return;
+        }
+        
+        const container = transcriptScrollRef.current;
+        
+        const handleScroll = () => {
+            const threshold = 50; // pixels from bottom
+            const scrollBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+            const isAtBottom = scrollBottom < threshold;
+            setShowScrollToBottom(!isAtBottom);
+        };
+        
+        container.addEventListener('scroll', handleScroll);
+        // Check initial state
+        handleScroll();
+        
+        // Also check when new sentences appear (content height changes)
+        const checkInterval = setInterval(() => {
+            handleScroll();
+        }, 150);
+        
+        // Also use MutationObserver to detect when new content is added
+        const observer = new MutationObserver(() => {
+            // Small delay to let DOM update
+            setTimeout(handleScroll, 50);
+        });
+        
+        observer.observe(container, {
+            childList: true,
+            subtree: true
+        });
+        
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            clearInterval(checkInterval);
+            observer.disconnect();
+        };
+    }, [hasAudio, visibleSentences.length]);
+    
+    // Helper function to update transcript visibility
+    const updateTranscriptVisibility = (time) => {
+        // Find visible sentences (where start <= currentTime) - only show on demand
+        const visible = sentences.filter(s => s.start !== undefined && s.start <= time);
+        const wasAtBottom = isAtBottom();
+        const hadNewSentences = visible.length > visibleSentences.length;
+        
+        setVisibleSentences(visible);
+        
+        // Find active sentence (current or next)
+        let activeIdx = -1;
+        for (let i = 0; i < sentences.length; i++) {
+            const s = sentences[i];
+            const nextS = sentences[i + 1];
+            if (s.start !== undefined && s.start <= time && (!nextS || nextS.start === undefined || nextS.start > time)) {
+                activeIdx = i;
+                break;
+            }
+        }
+        setActiveSentenceIndex(activeIdx);
+        
+        // Smart scrolling: only scroll if user was at bottom and new sentences appeared
+        if (hadNewSentences && wasAtBottom && activeIdx >= 0 && transcriptScrollRef.current) {
+            // Use setTimeout to ensure DOM has updated with new sentences
+            setTimeout(() => {
+                const container = transcriptScrollRef.current;
+                if (!container) return;
+                
+                // Scroll to bottom to show new content
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+                
+                // Update scroll-to-bottom button state after scroll
+                setTimeout(() => {
+                    const threshold = 50;
+                    const isAtBottomNow = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+                    setShowScrollToBottom(!isAtBottomNow);
+                }, 100);
+            }, 100);
+        }
+    };
+
+    // Initialize YouTube iframe API
+    useEffect(() => {
+        if (!isYouTube || !isOpen) return;
+        
+        // Load YouTube iframe API if not already loaded
+        if (!window.YT) {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+        
+        // Wait for API to be ready
+        const checkYT = setInterval(() => {
+            if (window.YT && window.YT.Player) {
+                clearInterval(checkYT);
+                const match = fullContent.VideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+                if (match) {
+                    const iframeId = `youtube-player-${item._id}`;
+                    
+                    // Small delay to ensure iframe exists
+                    setTimeout(() => {
+                        const iframe = document.getElementById(iframeId);
+                        if (iframe && !youtubePlayerRef.current) {
+                            youtubePlayerRef.current = new window.YT.Player(iframeId, {
+                                events: {
+                                    onReady: () => {
+                                        // Player is ready
+                                    }
+                                }
+                            });
+                        }
+                    }, 500);
+                }
+            }
+        }, 100);
+        
+        return () => {
+            clearInterval(checkYT);
+            if (youtubePlayerRef.current) {
+                youtubePlayerRef.current.destroy();
+                youtubePlayerRef.current = null;
+            }
+        };
+    }, [isYouTube, isOpen, fullContent?.VideoUrl, item._id]);
+
+    // Initialize Vimeo iframe API
+    useEffect(() => {
+        if (!isVimeo || !isOpen) return;
+        
+        // Load Vimeo iframe API if not already loaded
+        if (!window.Vimeo) {
+            const tag = document.createElement('script');
+            tag.src = 'https://player.vimeo.com/api/player.js';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+        
+        // Wait for API to be ready
+        const checkVimeo = setInterval(() => {
+            if (window.Vimeo && window.Vimeo.Player) {
+                clearInterval(checkVimeo);
+                const iframeId = `vimeo-player-${item._id}`;
+                
+                setTimeout(() => {
+                    const iframe = document.getElementById(iframeId);
+                    if (iframe && !vimeoPlayerRef.current) {
+                        vimeoPlayerRef.current = new window.Vimeo.Player(iframeId);
+                    }
+                }, 500);
+            }
+        }, 100);
+        
+        return () => {
+            clearInterval(checkVimeo);
+            vimeoPlayerRef.current = null;
+        };
+    }, [isVimeo, isOpen, item._id]);
+
+    // Time tracking for transcript synchronization - ONLY for audio, not video
+    useEffect(() => {
+        // Only track time for audio, not video
+        if (!hasAudio || sentences.length === 0 || !isOpen) return;
+        
+        // Wait for audio element to be mounted and verify it's actually an audio element
+        // mediaRef is ONLY attached to the audio element, never to video
+        const setupAudioTracking = () => {
+            const element = mediaRef.current;
+            
+            // Verify it's an audio element with our data attribute (not video)
+            if (!element || 
+                element.tagName !== 'AUDIO' || 
+                element.getAttribute('data-audio-player') !== 'true') {
+                return null;
+            }
+            
+            const audio = element;
+            
+            const handleTimeUpdate = () => {
+                // Triple-check it's still the audio element
+                if (audio && 
+                    audio.tagName === 'AUDIO' && 
+                    audio.getAttribute('data-audio-player') === 'true' &&
+                    hasAudio) {
+                    const time = audio.currentTime;
+                    updateTranscriptVisibility(time);
+                }
+            };
+            
+            audio.addEventListener('timeupdate', handleTimeUpdate);
+            return () => {
+                audio.removeEventListener('timeupdate', handleTimeUpdate);
+            };
+        };
+        
+        // Try immediately
+        let cleanup = setupAudioTracking();
+        if (cleanup) return cleanup;
+        
+        // If audio element not ready yet, wait a bit and retry
+        const timeout = setTimeout(() => {
+            cleanup = setupAudioTracking();
+        }, 200);
+        
+        return () => {
+            clearTimeout(timeout);
+            if (cleanup) cleanup();
+        };
+    }, [hasAudio, sentences.length, isOpen]);
+
+    // Click handler for transcript sentences - only seek audio, not video
+    const handleSentenceClick = (sentence) => {
+        if (sentence.start === undefined || !hasAudio) return;
+        
+        // Only seek audio player, never video
+        // Verify it's the audio element using data attribute
+        const audio = mediaRef.current;
+        if (audio && 
+            audio.tagName === 'AUDIO' && 
+            audio.getAttribute('data-audio-player') === 'true') {
+            audio.currentTime = sentence.start;
+            audio.play();
+        }
+    };
+    
+    // Convert video URL to embed URL
+    const getVideoEmbedUrl = (url) => {
+        if (!url) return null;
+        
+        const urlIsYouTube = /youtube\.com|youtu\.be/.test(url);
+        const urlIsVimeo = /vimeo\.com/.test(url);
+        
+        if (urlIsYouTube) {
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+            if (match) return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1`;
+        } else if (urlIsVimeo) {
+            const match = url.match(/vimeo\.com\/(\d+)/);
+            if (match) return `https://player.vimeo.com/video/${match[1]}?api=1`;
+        }
+        
+        return null; // Return null for direct video URLs (use native video element)
+    };
+    
+    // Render video player
+    const renderVideo = () => {
+        if (!hasVideo) return null;
+        
+        const embedUrl = getVideoEmbedUrl(fullContent.VideoUrl);
+        
+        if (embedUrl) {
+            // YouTube or Vimeo - use iframe with unique ID
+            const iframeId = isYouTube ? `youtube-player-${item._id}` : `vimeo-player-${item._id}`;
+            return (
+                <div className="sg-iframeBox">
+                    <iframe
+                        id={iframeId}
+                        src={embedUrl}
+                        title={fullContent.Name || 'Video'}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    />
+                </div>
+            );
+        } else {
+            // Direct video URL - use native video element
+            return (
+                <video
+                    src={fullContent.VideoUrl}
+                    controls
+                    className="sg-media-player"
+                >
+                    Your browser does not support the video tag.
+                </video>
+            );
+        }
+    };
+    
+    // Render audio player
+    const renderAudio = () => {
+        if (!hasAudio) return null;
+        
+        return (
+            <audio
+                ref={mediaRef}
+                src={audioUrl}
+                controls
+                className="sg-media-player"
+                data-audio-player="true"
+            >
+                Your browser does not support the audio tag.
+            </audio>
+        );
+    };
+    
+    // Render transcript
+    const renderTranscript = () => {
+        // Only show transcript if audio exists
+        if (!hasAudio || !sentences.length) return null;
+        
+        return (
+            <div className="sg-transcript-container" ref={transcriptContainerRef}>
+                <div className="sg-transcript-header">Transcript</div>
+                <div className="sg-transcript-scroll" ref={transcriptScrollRef}>
+                    {sentences.map((sentence, idx) => {
+                        const isVisible = visibleSentences.some(vs => vs.index === sentence.index);
+                        const isActive = activeSentenceIndex === idx;
+                        
+                        // Only show visible sentences (on demand)
+                        if (!isVisible) return null;
+                        
+                        return (
+                            <div
+                                key={`sentence-${sentence.index}`}
+                                data-sentence-index={idx}
+                                className={`sg-transcript-sentence ${isActive ? 'sg-transcript-active' : ''}`}
+                                onClick={() => handleSentenceClick(sentence)}
+                            >
+                                {sentence.text}
+                            </div>
+                        );
+                    })}
+                </div>
+                {/* Floating scroll-to-bottom button */}
+                {showScrollToBottom && (
+                    <button
+                        className="sg-transcript-scroll-to-bottom"
+                        onClick={scrollToBottom}
+                        aria-label="Scroll to bottom"
+                        type="button"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 14L5 9L6.41 7.59L10 11.17L13.59 7.59L15 9L10 14Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                )}
+            </div>
+        );
     };
 
     return (
-        <article className={`sg-card sg2 ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"} ${isOpen ? "is-open" : ""}`}>
-
-            <header className="sg2-head">
-                <div className="sg2-headLeft">
-                    <span className="sg2-favicon sg2-fallback" />
-                    <span className="sg2-domain" title={domain || "result"}>{domain || "result"}</span>
-                    {date && <>
-                        <span className="sg2-dot" />
-                        <span className="sg2-date">{date}</span>
-                    </>}
-                </div>
-                <div className="sg2-headRight">
-                    {canPreview && (
-                        <a
-                            className="sg2-open"
-                            href={embUrl}
-                            onClick={openInNewTab}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            referrerPolicy="no-referrer"
-                            title="Open in new tab"
-                            aria-label="Open in new tab"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1 12C0.733333 12 0.5 11.9 0.3 11.7C0.1 11.5 0 11.2667 0 11V1C0 0.733333 0.1 0.5 0.3 0.3C0.5 0.1 0.733333 0 1 0H5.65V1H1V11H11V6.35H12V11C12 11.2667 11.9 11.5 11.7 11.7C11.5 11.9 11.2667 12 11 12H1ZM4.36667 8.35L3.66667 7.63333L10.3 1H6.65V0H12V5.35H11V1.71667L4.36667 8.35Z" fill="#859E3B" />
-                            </svg>
-                        </a>
-                    )}
-                </div>
-            </header>
-
+        <article className={`sg-card sg2 ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"} ${isOpen ? "is-open" : ""} ${hasAudio ? "sg-card-audio" : ""}`}>
+            {/* Title only */}
             <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
-            {item.Summary
-                ? <p className="sg2-desc">{item.Summary}</p>
-                : null}
 
-            {canPreview && (
+            {(hasVideo || hasAudio) && (
                 <div className="sg2-previewActions">
                     {!isOpen ? (
                         <button
@@ -212,25 +437,41 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
                 style={{ "--sg-preview-h": `${previewH}px` }}
                 aria-hidden={!isOpen}
             >
-                {isOpen && canPreview && (
+                {isOpen && (hasVideo || hasAudio) && (
                     <div className="sg-preview" ref={(n) => (previewRef.el = n)}>
-                        <div className="sg-cardBody">
-                            {hlName && <Highlighted texts={hlName.texts} />}
-                            {item.Summary && <p className="sg-summary">{item.Summary}</p>}
-                            <Chips items={item.Keywords} />
-                            <CompactReferences refs={item.References} />
-                        </div>
-
-                        <div className="sg-iframeWrap">
-                            <div className="sg-iframeBox">
-                                <iframe
-                                    key={frameKey}
-                                    src={embUrl}
-                                    title={item.Name || `preview-${item._id}`}
-                                    loading="lazy"
-                                />
+                        {loadingContent && (
+                            <div className="sg-media-loading">
+                                <div className="sg-spinner-small"></div>
+                                <span>Loading media...</span>
                             </div>
-                        </div>
+                        )}
+                        
+                        {contentError && (
+                            <div className="sg-media-error">
+                                <span>⚠️ Failed to load content: {contentError}</span>
+                            </div>
+                        )}
+                        
+                        {!loadingContent && !contentError && (
+                            <>
+                                {/* Video first (if exists) */}
+                                {hasVideo && (
+                                    <div className="sg-media-wrapper">
+                                        {renderVideo()}
+                                    </div>
+                                )}
+
+                                {/* Audio second (if exists) */}
+                                {hasAudio && (
+                                    <div className="sg-media-wrapper">
+                                        {renderAudio()}
+                                    </div>
+                                )}
+
+                                {/* Transcript third (only for audio, linked to audio player) */}
+                                {hasAudio && sentences.length > 0 && renderTranscript()}
+                            </>
+                        )}
                     </div>
                 )}
             </div>
@@ -240,6 +481,62 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list" }) {
 
 const DEFAULT_URL = "https://splinteredglass.retool.com/url/search";
 const DEFAULT_ORG = "67355031aea5f406546577d0";
+const CONTENT_URL = "https://splinteredglass.retool.com/url/content";
+
+async function fetchSingleContent(contentId, authHeader, setContentMap, setLoadingContent, setContentErrors) {
+    if (!contentId) return;
+    
+    setLoadingContent(prev => new Set(prev).add(contentId));
+    
+    try {
+        const res = await web.post(
+            CONTENT_URL,
+            { content_id: contentId },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    ...(authHeader ? { "Authorization": authHeader } : {}),
+                },
+            }
+        );
+        
+        if (res.status === 200 && res.data?.data?.[0]) {
+            setContentMap(prev => new Map(prev).set(contentId, res.data.data[0]));
+            setContentErrors(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(contentId);
+                return newMap;
+            });
+        } else {
+            throw new Error(res?.error || `HTTP ${res.status}`);
+        }
+    } catch (error) {
+        setContentErrors(prev => new Map(prev).set(contentId, error?.message || "Failed to load content"));
+    } finally {
+        setLoadingContent(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(contentId);
+            return newSet;
+        });
+    }
+}
+
+async function batchFetchContent(ids, batchSize, authHeader, setContentMap, setLoadingContent, setContentErrors) {
+    if (!ids || ids.length === 0) return;
+    
+    const batches = [];
+    for (let i = 0; i < ids.length; i += batchSize) {
+        batches.push(ids.slice(i, i + batchSize));
+    }
+    
+    for (const batch of batches) {
+        const promises = batch.map(id => 
+            fetchSingleContent(id, authHeader, setContentMap, setLoadingContent, setContentErrors)
+        );
+        await Promise.allSettled(promises);
+    }
+}
 
 function SgSearch({
     search,
@@ -259,6 +556,9 @@ function SgSearch({
     const [loadingMore, setLoadingMore] = useState(false);
     const [displayedCount, setDisplayedCount] = useState(10);
     const [allData, setAllData] = useState([]);
+    const [contentMap, setContentMap] = useState(new Map());
+    const [loadingContent, setLoadingContent] = useState(new Set());
+    const [contentErrors, setContentErrors] = useState(new Map());
 
     useEffect(() => {
         let cancelled = false;
@@ -301,6 +601,20 @@ function SgSearch({
                 setHasMore(allResults.length > 10); // Show "Load More" if there are more than 10 results
                 // Open all cards initially
                 setOpenIds(new Set(allResults.map((item) => item._id)));
+                
+                // Reset content maps for new search
+                setContentMap(new Map());
+                setLoadingContent(new Set());
+                setContentErrors(new Map());
+                
+                // Batch fetch content for first 10 displayed items
+                const firstBatchIds = allResults.slice(0, 10)
+                    .map(item => item._id)
+                    .filter(Boolean);
+                
+                if (firstBatchIds.length > 0) {
+                    batchFetchContent(firstBatchIds, 10, authHeader, setContentMap, setLoadingContent, setContentErrors);
+                }
             } catch (e) {
                 if (!cancelled) {
                     setErr(e?.message || "Network error");
@@ -329,6 +643,15 @@ function SgSearch({
             setDisplayedCount(newDisplayedCount);
             setHasMore(newDisplayedCount < allData.length);
             setLoadingMore(false);
+            
+            // Fetch content for newly displayed items
+            const newIds = allData.slice(displayedCount, newDisplayedCount)
+                .map(item => item._id)
+                .filter(id => id && !contentMap.has(id) && !loadingContent.has(id));
+            
+            if (newIds.length > 0) {
+                batchFetchContent(newIds, 10, authHeader, setContentMap, setLoadingContent, setContentErrors);
+            }
         }, 300);
     };
 
@@ -423,6 +746,9 @@ function SgSearch({
                                     });
                                 }}
                                 viewMode={viewMode}
+                                fullContent={contentMap.get(item._id)}
+                                loadingContent={loadingContent.has(item._id)}
+                                contentError={contentErrors.get(item._id)}
                             />
                         ))}
                         {hasMore && (
