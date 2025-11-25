@@ -1894,7 +1894,11 @@ function StudyNotes({ id, chapter: propChapter }) {
     const initialTab = mainBot?.tags.studyNotesActiveTab || 'notes';
     const [tabs, setTabs] = useState(initialTabs);
     const [active, setActive] = useState(initialTab);
-    const [searchType, setSearchType] = useState('apologist'); // 'apologist' or 'tapos'
+    const [searchType, setSearchType] = useState(() => {
+        return globalThis.StudyNoteSearchType || 
+               localStorage.getItem('studyNoteSearchType') || 
+               'apologist';
+    });
     const [devotionalPreviewUrl, setDevotionalPreviewUrl] = useState('');
     const [enableEditor, setEnableEditor] = useState(false);
     const [currentStudyNoteData, setCurrentStudyNoteData] = useState(null);
@@ -1935,6 +1939,12 @@ function StudyNotes({ id, chapter: propChapter }) {
             globalThis.GlobalSearchLabel = searchLabel;
         }
     }, [searchLabel]);
+
+    // Persist searchType across verse changes
+    useEffect(() => {
+        globalThis.StudyNoteSearchType = searchType;
+        localStorage.setItem('studyNoteSearchType', searchType);
+    }, [searchType]);
 
     const updateStudyNoteSearch = useCallback(
         (rawQuery, options = {}) => {
