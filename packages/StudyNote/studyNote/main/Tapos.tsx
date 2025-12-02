@@ -41,34 +41,20 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
         if (!dateString) return '';
         try {
             const date = new Date(dateString);
-            return date.toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
+            return date.toDateString();
         } catch {
             return dateString;
         }
     };
     
     // Description - format as "Community: Ligonier Ministries" + date
-    // Try common date field names from fullContent and item objects
-    const dateField = fullContent?.CreatedDate || 
-                      fullContent?.Created || 
-                      fullContent?.PublishDate || 
-                      fullContent?.Published || 
-                      fullContent?.Date ||
-                      fullContent?._created ||
-                      item?.CreatedDate ||
-                      item?.Created ||
-                      item?.PublishDate ||
-                      item?.Published ||
-                      item?.Date ||
-                      item?._created ||
+    // Only rely on CreatedOn fields provided by the API
+    const dateField = fullContent?._CreatedOn || 
+                      item?._CreatedOn ||
                       null;
     
     const formattedDate = dateField ? formatDate(dateField) : '';
-    const description = formattedDate ? `Community: Ligonier Ministries\n${formattedDate}` : 'Community: Ligonier Ministries';
+    const communityLabel = 'Community: Ligonier Ministries';
     
     // Check if video is YouTube
     const isYouTube = hasVideo && /youtube\.com|youtu\.be/.test(fullContent.VideoUrl);
@@ -80,7 +66,11 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
 
     // Search Logic
     useEffect(() => {
-        if (!transcriptSearchQuery.trim()) {
+        if (
+            !showTranscriptContainer ||
+            visibleSentences.length === 0 ||
+            !transcriptSearchQuery.trim()
+        ) {
             setSearchMatches([]);
             setCurrentMatchIndex(-1);
             return;
@@ -89,20 +79,22 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
         const query = transcriptSearchQuery.toLowerCase();
         const matches = [];
         
-        sentences.forEach((s, idx) => {
-            if (s.text && s.text.toLowerCase().includes(query)) {
-                matches.push(idx);
+        visibleSentences.forEach((sentence) => {
+            if (!sentence?.text) return;
+            const originalIdx = sentences.findIndex(s => s === sentence);
+            if (originalIdx === -1) return;
+            if (sentence.text.toLowerCase().includes(query)) {
+                matches.push(originalIdx);
             }
         });
         
         setSearchMatches(matches);
-        // If we have matches, select the first one
         if (matches.length > 0) {
             setCurrentMatchIndex(0);
         } else {
             setCurrentMatchIndex(-1);
         }
-    }, [sentences, transcriptSearchQuery]);
+    }, [showTranscriptContainer, visibleSentences, sentences, transcriptSearchQuery]);
 
     // Scroll to match when currentMatchIndex changes
     useEffect(() => {
@@ -309,18 +301,12 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                             
                                             // Use requestAnimationFrame for smooth updates
                                             const trackTime = () => {
-                                                // Store player reference to avoid context issues
                                                 const player = youtubePlayerRef.current;
-                                                if (!player) {
-                                                    return;
-                                                }
+                                                if (!player) return;
                                                 
                                                 try {
-                                                    // Store methods to ensure correct context
-                                                    const getPlayerState = player.getPlayerState.bind(player);
-                                                    const getCurrentTime = player.getCurrentTime.bind(player);
-                                                    
-                                                    const playerState = getPlayerState();
+                                                    // Call methods directly on the player to avoid "Illegal invocation"
+                                                    const playerState = player.getPlayerState();
                                                     
                                                     if (DEBUG_VIDEO_TRACKING) {
                                                         console.log('[YouTube] trackTime loop - state:', playerState);
@@ -328,18 +314,22 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                                     
                                                     // Only continue tracking if playing (state 1)
                                                     if (playerState === 1) {
-                                                        // Get current time and update transcript
-                                                        const currentTime = getCurrentTime();
+                                                        const currentTime = player.getCurrentTime();
                                                         if (DEBUG_VIDEO_TRACKING) {
                                                             console.log('[YouTube] trackTime - currentTime:', currentTime);
                                                         }
                                                         
-                                                        if (currentTime !== undefined && typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
+                                                        if (
+                                                            currentTime !== undefined &&
+                                                            typeof currentTime === 'number' &&
+                                                            !isNaN(currentTime) &&
+                                                            currentTime >= 0
+                                                        ) {
                                                             updateTranscriptVisibility(currentTime);
                                                         }
                                                         
                                                         // ALWAYS continue the loop while playing - schedule next frame
-                                                        player._trackingFrameId = requestAnimationFrame(trackTime);
+                                                        player._trackingFrameId = window.requestAnimationFrame(trackTime);
                                                     } else {
                                                         // Video paused, ended, or unstarted - stop tracking
                                                         player._trackingFrameId = null;
@@ -351,7 +341,6 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                                     if (DEBUG_VIDEO_TRACKING) {
                                                         console.error('[YouTube] Error in time tracking:', err);
                                                     }
-                                                    // Stop tracking on error
                                                     if (player) {
                                                         player._trackingFrameId = null;
                                                     }
@@ -362,7 +351,17 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                             if (DEBUG_VIDEO_TRACKING) {
                                                 console.log('[YouTube] Starting requestAnimationFrame loop');
                                             }
-                                            youtubePlayerRef.current._trackingFrameId = requestAnimationFrame(trackTime);
+                                            try {
+                                                youtubePlayerRef.current._trackingFrameId =
+                                                    window.requestAnimationFrame(trackTime);
+                                            } catch (err) {
+                                                if (DEBUG_VIDEO_TRACKING) {
+                                                    console.error('[YouTube] Error starting RAF loop:', err);
+                                                }
+                                                if (youtubePlayerRef.current) {
+                                                    youtubePlayerRef.current._trackingFrameId = null;
+                                                }
+                                            }
                                         } else if (event.data === 2 || event.data === 0) { // Paused or Ended
                                             // Cancel tracking when paused or ended
                                             if (youtubePlayerRef.current?._trackingFrameId) {
@@ -454,10 +453,17 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                         updateTranscriptVisibility(time);
                     }
                 };
+                const handleSeeked = () => {
+                    if (audio && audio.tagName === 'AUDIO' && audio.getAttribute('data-audio-player') === 'true' && hasAudio) {
+                        updateTranscriptVisibility(audio.currentTime);
+                    }
+                };
                 
                 audio.addEventListener('timeupdate', handleTimeUpdate);
+                audio.addEventListener('seeked', handleSeeked);
                 return () => {
                     audio.removeEventListener('timeupdate', handleTimeUpdate);
+                    audio.removeEventListener('seeked', handleSeeked);
                 };
             };
             
@@ -665,7 +671,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 onClick={() => onToggle(item._id)}
             >
                 <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
-                {description && <p className="sg2-desc" style={{ whiteSpace: 'pre-line' }}>{description}</p>}
+                <p className="sg2-community">{communityLabel}</p>
+                {formattedDate && <p className="sg2-date">{formattedDate}</p>}
             </article>
         );
     }
@@ -692,7 +699,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                     </button>
                 </div>
 
-                {description && <p className="sg-summary" style={{ whiteSpace: 'pre-line' }}>{description}</p>}
+                <p className="sg-community">{communityLabel}</p>
+                {formattedDate && <p className="sg-date">{formattedDate}</p>}
                 
                 <hr className="sg-separator" />
             </div>
@@ -722,33 +730,35 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
 
             {/* 3. Search & Transcript (Bottom) */}
             <div className="sg-search-section">
-                <div className="sg-search-nav">
-                    <div className="sg-search-pill-wrap">
-                        <span className="material-symbols-outlined sg-search-icon">search</span>
-                        <input
-                            type="text"
-                            placeholder="Keyword Search"
-                            value={transcriptSearchQuery}
-                            onChange={(e) => setTranscriptSearchQuery(e.target.value)}
-                            className="sg-search-pill-input"
-                        />
+                {showTranscriptContainer && visibleSentences.length > 0 && (
+                    <div className="sg-search-nav">
+                        <div className="sg-search-pill-wrap">
+                            <span className="material-symbols-outlined sg-search-icon">search</span>
+                            <input
+                                type="text"
+                                placeholder="Keyword Search"
+                                value={transcriptSearchQuery}
+                                onChange={(e) => setTranscriptSearchQuery(e.target.value)}
+                                className="sg-search-pill-input"
+                            />
+                        </div>
+                        <div className="sg-search-controls">
+                            <span className="sg-search-counter">
+                                {searchMatches.length > 0 ? `${currentMatchIndex + 1}/${searchMatches.length}` : '0/0'}
+                            </span>
+                            <button className="sg-search-btn" onClick={handlePrevMatch} disabled={searchMatches.length === 0} title="Previous Match">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </button>
+                            <button className="sg-search-btn" onClick={handleNextMatch} disabled={searchMatches.length === 0} title="Next Match">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 5V19M12 19L5 12M12 19L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <div className="sg-search-controls">
-                        <span className="sg-search-counter">
-                            {searchMatches.length > 0 ? `${currentMatchIndex + 1}/${searchMatches.length}` : '0/0'}
-                        </span>
-                        <button className="sg-search-btn" onClick={handlePrevMatch} disabled={searchMatches.length === 0} title="Previous Match">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </button>
-                        <button className="sg-search-btn" onClick={handleNextMatch} disabled={searchMatches.length === 0} title="Next Match">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 5V19M12 19L5 12M12 19L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                )}
                 
                 {/* Transcript below search */}
                 {renderTranscript()}
@@ -1116,6 +1126,91 @@ function SgSearch({
                 .sg-viewToggle {
                     display: flex;
                     gap: 4px;
+                }
+                
+                /* Sermon card polish */
+                .sg-card.sg2 {
+                    background: #ffffff;
+                    border-radius: 18px;
+                    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+                    padding: 10px 18px;
+                }
+                
+                .sg-card.sg2 .sg-card-header-section {
+                    text-align: center;
+                    padding: 20px 24px 12px;
+                    position: relative;
+                }
+                
+                .sg-cardHead {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    position: relative;
+                }
+                
+                .sg-cardToggle {
+                    position: absolute;
+                    right: 0;
+                    top: -6px;
+                }
+                
+                .sg-titleWrap {
+                    flex: 1;
+                }
+                
+                .sg-title,
+                .sg2-title {
+                    margin: 0;
+                    text-align: center;
+                }
+                
+                .sg-community,
+                .sg2-community {
+                    margin: 6px 0 0;
+                    color: #4B5563;
+                    text-align: center;
+                }
+                
+                .sg-date,
+                .sg2-date {
+                    margin: 4px 0 0;
+                    color: #6B7280;
+                    text-align: center;
+                }
+                
+                .sg-separator {
+                    margin-top: 16px;
+                    border: 0;
+                    border-top: 1px solid rgba(148, 163, 184, 0.35);
+                }
+                
+                .sg-transcript-container {
+                    border: 1px solid rgba(148, 163, 184, 0.4);
+                    border-radius: 12px;
+                    padding: 6px;
+                    background: #fff;
+                }
+                
+                .sg-transcript-sentence {
+                    padding: 6px 8px;
+                    border-radius: 8px;
+                    margin-bottom: 4px;
+                    transition: background 0.2s;
+                }
+                
+                .sg-transcript-active {
+                    background: rgba(140, 164, 67, 0.12);
+                }
+                
+                .sg-transcript-current-match {
+                    box-shadow: 0 0 0 2px rgba(140, 164, 67, 0.4) inset;
+                }
+                
+                .sg-transcript-scroll-to-bottom {
+                    background: #8ca443;
+                    color: #fff;
+                    border: none;
                 }
             `}</style>
         </div>

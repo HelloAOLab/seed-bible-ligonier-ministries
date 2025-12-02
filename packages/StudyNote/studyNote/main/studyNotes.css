@@ -23,7 +23,7 @@
 
 /* each book block */
 .studyTextContainer {
-  font-family: 'EB Garamond', serif;
+  font-family: var(--text-verse-font, 'EB Garamond', serif);
   margin-bottom: 40px;
   margin-top: 5px;
   /* space between books */
@@ -31,8 +31,11 @@
 
 /* big chapter header */
 .mainHeader {
+  font-family: var(--text-heading-font, var(--text-verse-font, 'EB Garamond', serif));
   font-size: 30px;
-  font-weight: 600;
+  font-weight: var(--text-heading-weight, 600);
+  font-style: var(--text-heading-font-style, italic);
+  color: var(--text-heading-color, #7a7a7a);
   margin: 40px 0 40px;
   /* plenty of top & bottom space */
 }
@@ -45,14 +48,25 @@
 
 /* verse number */
 .verseNumber {
-  font-size: 20px;
-  margin-bottom: 5px;
+  font-family: var(--text-heading-font, var(--text-verse-font, 'EB Garamond', serif));
+  color: var(--text-heading-color, inherit);
+  font-size: 18px;
+  font-style: var(--text-heading-font-style, normal);
+  font-weight: var(--text-heading-weight, 600);
+  text-align: var(--text-heading-alignment, left);
+  text-decoration: var(--text-heading-text-decoration, none);
+  margin-top: var(--text-heading-margin-top, 0);
+  margin-bottom: var(--text-heading-margin-bottom, 5px);
+  margin-left: var(--text-heading-margin-left, 0);
+  margin-right: var(--text-heading-margin-right, 0);
   cursor: pointer;
 }
 
 /* verse text */
 .verseText {
+  font-family: var(--text-verse-font, 'EB Garamond', serif);
   font-size: 20px;
+  font-weight: var(--text-verse-weight, 400);
   line-height: 1.6;
   margin-left: 0;
 }
@@ -119,7 +133,7 @@
   /* spacing + animation handled inline via transform/opacity */
   padding: 14px 5px;
   transition: transform 200ms ease, opacity 200ms ease;
-  font-family: 'EB Garamond', serif;
+  font-family: var(--text-verse-font, 'EB Garamond', serif);
 }
 
 /* close button (top-right) */
@@ -154,22 +168,26 @@
 .cite-heading {
   color: #859E3B;
   /* green similar to screenshot */
-  font-weight: 700;
+  font-family: var(--text-heading-font, var(--text-verse-font, 'EB Garamond', serif));
+  font-weight: var(--text-heading-weight, 700);
   font-size: 18px;
   margin: 0px 0 6px;
 }
 
 /* optional section title under the book ref */
 .cite-section-title {
+  font-family: var(--text-heading-font, var(--text-verse-font, 'EB Garamond', serif));
   font-size: 18px;
-  font-weight: 600;
+  font-weight: var(--text-heading-weight, 600);
   color: #353c3b;
   margin: 0 0 6px;
 }
 
 /* verse line */
 .cite-verse {
+  font-family: var(--text-verse-font, 'EB Garamond', serif);
   font-size: 18px;
+  font-weight: var(--text-verse-weight, 400);
   color: #2b2f2e;
   line-height: 1.5;
   margin: 0 0 8px;
@@ -496,7 +514,7 @@
   padding: 8px 16px;
   cursor: pointer;
   transition: all 0.15s ease;
-  font-family: 'Helvetica Neue', sans-serif;
+  font-family: var(--text-verse-font, 'Helvetica Neue', sans-serif);
 }
 
 .search-toggle-btn:hover {
