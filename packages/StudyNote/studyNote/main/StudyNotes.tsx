@@ -2166,7 +2166,13 @@ function StudyNotes({ id, chapter: propChapter }) {
                                 label={searchLabel}
                             />
                         ) : (
-                            <SgSearch search={searchQuery} trigger={searchTrigger} />
+                            <SgSearch 
+                                search={searchQuery} 
+                                trigger={searchTrigger}
+                                level={searchLevel}
+                                baselineQuery={baselineQuery}
+                                label={searchLabel}
+                            />
                         )}
                     </div>
                 </div>

@@ -315,9 +315,6 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                                     // Only continue tracking if playing (state 1)
                                                     if (playerState === 1) {
                                                         const currentTime = player.getCurrentTime();
-                                                        if (DEBUG_VIDEO_TRACKING) {
-                                                            console.log('[YouTube] trackTime - currentTime:', currentTime);
-                                                        }
                                                         
                                                         if (
                                                             currentTime !== undefined &&
@@ -544,7 +541,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
         if (embedUrl) {
             const iframeId = `youtube-player-${item._id}`;
             return (
-                <div className="sg-iframeBox">
+                <div className="sg-previewVideo">
                     <iframe
                         id={iframeId}
                         src={embedUrl}
@@ -556,13 +553,16 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
             );
         } else {
             return (
-                <video
-                    src={fullContent.VideoUrl}
-                    controls
-                    className="sg-media-player"
-                >
-                    Your browser does not support the video tag.
-                </video>
+                <div className="sg-previewVideo">
+                    <video
+                        src={fullContent.VideoUrl}
+                        controls
+                        className="sg-media-player"
+                        style={{ width: '100%', height: '100%' }}
+                    >
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
             );
         }
     };
@@ -670,9 +670,26 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 className={`sg-card sg2 ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"}`}
                 onClick={() => onToggle(item._id)}
             >
-                <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
-                <p className="sg2-community">{communityLabel}</p>
-                {formattedDate && <p className="sg2-date">{formattedDate}</p>}
+                <header className="sg2-head">
+                    <div className="sg2-headLeft">
+                        <span className="sg2-favicon sg2-fallback" />
+                        <span className="sg2-domain">Ligonier Ministries</span>
+                        {formattedDate && (
+                            <>
+                                <span className="sg2-dot" />
+                                <span className="sg2-calendar" aria-hidden="true">
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1.25 10C1.05 10 0.875 9.925 0.725 9.775C0.575 9.625 0.5 9.45 0.5 9.25V1.5C0.5 1.3 0.575 1.125 0.725 0.975C0.875 0.825 1.05 0.75 1.25 0.75H2.0625V0H2.875V0.75H7.125V0H7.9375V0.75H8.75C8.95 0.75 9.125 0.825 9.275 0.975C9.425 1.125 9.5 1.3 9.5 1.5V9.25C9.5 9.45 9.425 9.625 9.275 9.775C9.125 9.925 8.95 10 8.75 10H1.25ZM1.25 9.25H8.75V3.875H1.25V9.25ZM1.25 3.125H8.75V1.5H1.25V3.125ZM5 6C4.85833 6 4.73958 5.95208 4.64375 5.85625C4.54792 5.76042 4.5 5.64167 4.5 5.5C4.5 5.35833 4.54792 5.23958 4.64375 5.14375C4.73958 5.04792 4.85833 5 5 5C5.14167 5 5.26042 5.04792 5.35625 5.14375C5.45208 5.23958 5.5 5.35833 5.5 5.5C5.5 5.64167 5.45208 5.76042 5.35625 5.85625C5.26042 5.95208 5.14167 6 5 6ZM3 6C2.85833 6 2.73957 5.95208 2.64375 5.85625C2.54792 5.76042 2.5 5.64167 2.5 5.5C2.5 5.35833 2.54792 5.23958 2.64375 5.14375C2.73957 5.04792 2.85833 5 3 5C3.14167 5 3.26042 5.04792 3.35625 5.14375C3.45207 5.23958 3.5 5.35833 3.5 5.5C3.5 5.64167 3.45207 5.76042 3.35625 5.85625C3.26042 5.95208 3.14167 6 3 6ZM7 6C6.85833 6 6.73958 5.95208 6.64375 5.85625C6.54792 5.76042 6.5 5.64167 6.5 5.5C6.5 5.35833 6.54792 5.23958 6.64375 5.14375C6.73958 5.04792 6.85833 5 7 5C7.14167 5 7.26042 5.04792 7.35625 5.14375C7.45208 5.23958 7.5 5.35833 7.5 5.5C7.5 5.64167 7.45208 5.76042 7.35625 5.85625C7.26042 5.95208 7.14167 6 7 6ZM5 8C4.85833 8 4.73958 7.95208 4.64375 7.85625C4.54792 7.76042 4.5 7.64167 4.5 7.5C4.5 7.35833 4.54792 7.23958 4.64375 7.14375C4.73958 7.04792 4.85833 7 5 7C5.14167 7 5.26042 7.04792 5.35625 7.14375C5.45208 7.23958 5.5 7.35833 5.5 7.5C5.5 7.64167 5.45208 7.76042 5.35625 7.85625C5.26042 7.95208 5.14167 8 5 8ZM3 8C2.85833 8 2.73957 7.95208 2.64375 7.85625C2.54792 7.76042 2.5 7.64167 2.5 7.5C2.5 7.35833 2.54792 7.23958 2.64375 7.14375C2.73957 7.04792 2.85833 7 3 7C3.14167 7 3.26042 7.04792 3.35625 7.14375C3.45207 7.23958 3.5 7.35833 3.5 7.5C3.5 7.64167 3.45207 7.76042 3.35625 7.85625C3.26042 7.95208 3.14167 8 3 8ZM7 8C6.85833 8 6.73958 7.95208 6.64375 7.85625C6.54792 7.76042 6.5 7.64167 6.5 7.5C6.5 7.35833 6.54792 7.23958 6.64375 7.14375C6.73958 7.04792 6.85833 7 7 7C7.14167 7 7.26042 7.04792 7.35625 7.14375C7.45208 7.23958 7.5 7.35833 7.5 7.5C7.5 7.64167 7.45208 7.76042 7.35625 7.85625C7.26042 7.95208 7.14167 8 7 8Z" fill="#949494"/>
+                                    </svg>
+                                </span>
+                                <span className="sg2-date">{formattedDate}</span>
+                            </>
+                        )}
+                    </div>
+                </header>
+                <div className="sg2-bodyTitle">
+                    <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
+                </div>
             </article>
         );
     }
@@ -683,26 +700,27 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
             
             {/* 1. Title & Info (Top) */}
             <div className="sg-card-header-section">
-                <div className="sg-cardHead">
-                    <div className="sg-titleWrap">
-                        <h3 className="sg-title" title={item.Name}>{item.Name}</h3>
-                         <div className="sg-submeta">
-                            {/* Metadata */}
-                         </div>
+                <div className="sg2-head">
+                    <div className="sg2-headLeft">
+                        <span className="sg2-favicon sg2-fallback" />
+                        <span className="sg2-domain">Ligonier Ministries</span>
+                        {/* {formattedDate && (
+                            <>
+                                <span className="sg2-dot" />
+                                <span className="sg2-calendar" aria-hidden="true">
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1.25 10C1.05 10 0.875 9.925 0.725 9.775C0.575 9.625 0.5 9.45 0.5 9.25V1.5C0.5 1.3 0.575 1.125 0.725 0.975C0.875 0.825 1.05 0.75 1.25 0.75H2.0625V0H2.875V0.75H7.125V0H7.9375V0.75H8.75C8.95 0.75 9.125 0.825 9.275 0.975C9.425 1.125 9.5 1.3 9.5 1.5V9.25C9.5 9.45 9.425 9.625 9.275 9.775C9.125 9.925 8.95 10 8.75 10H1.25ZM1.25 9.25H8.75V3.875H1.25V9.25ZM1.25 3.125H8.75V1.5H1.25V3.125ZM5 6C4.85833 6 4.73958 5.95208 4.64375 5.85625C4.54792 5.76042 4.5 5.64167 4.5 5.5C4.5 5.35833 4.54792 5.23958 4.64375 5.14375C4.73958 5.04792 4.85833 5 5 5C5.14167 5 5.26042 5.04792 5.35625 5.14375C5.45208 5.23958 5.5 5.35833 5.5 5.5C5.5 5.64167 5.45208 5.76042 5.35625 5.85625C5.26042 5.95208 5.14167 6 5 6ZM3 6C2.85833 6 2.73957 5.95208 2.64375 5.85625C2.54792 5.76042 2.5 5.64167 2.5 5.5C2.5 5.35833 2.54792 5.23958 2.64375 5.14375C2.73957 5.04792 2.85833 5 3 5C3.14167 5 3.26042 5.04792 3.35625 5.14375C3.45207 5.23958 3.5 5.35833 3.5 5.5C3.5 5.64167 3.45207 5.76042 3.35625 5.85625C3.26042 5.95208 3.14167 6 3 6ZM7 6C6.85833 6 6.73958 5.95208 6.64375 5.85625C6.54792 5.76042 6.5 5.64167 6.5 5.5C6.5 5.35833 6.54792 5.23958 6.64375 5.14375C6.73958 5.04792 6.85833 5 7 5C7.14167 5 7.26042 5.04792 7.35625 5.14375C7.45208 5.23958 7.5 5.35833 7.5 5.5C7.5 5.64167 7.45208 5.76042 7.35625 5.85625C7.26042 5.95208 7.14167 6 7 6ZM5 8C4.85833 8 4.73958 7.95208 4.64375 7.85625C4.54792 7.76042 4.5 7.64167 4.5 7.5C4.5 7.35833 4.54792 7.23958 4.64375 7.14375C4.73958 7.04792 4.85833 7 5 7C5.14167 7 5.26042 7.04792 5.35625 7.14375C5.45208 7.23958 5.5 7.35833 5.5 7.5C5.5 7.64167 5.45208 7.76042 5.35625 7.85625C5.26042 7.95208 5.14167 8 5 8ZM3 8C2.85833 8 2.73957 7.95208 2.64375 7.85625C2.54792 7.76042 2.5 7.64167 2.5 7.5C2.5 7.35833 2.54792 7.23958 2.64375 7.14375C2.73957 7.04792 2.85833 7 3 7C3.14167 7 3.26042 7.04792 3.35625 7.14375C3.45207 7.23958 3.5 7.35833 3.5 7.5C3.5 7.64167 3.45207 7.76042 3.35625 7.85625C3.26042 7.95208 3.14167 8 3 8ZM7 8C6.85833 8 6.73958 7.95208 6.64375 7.85625C6.54792 7.76042 6.5 7.64167 6.5 7.5C6.5 7.35833 6.54792 7.23958 6.64375 7.14375C6.73958 7.04792 6.85833 7 7 7C7.14167 7 7.26042 7.04792 7.35625 7.14375C7.45208 7.23958 7.5 7.35833 7.5 7.5C7.5 7.64167 7.45208 7.76042 7.35625 7.85625C7.26042 7.95208 7.14167 8 7 8Z" fill="#949494"/>
+                                    </svg>
+                                </span>
+                                <span className="sg2-date">{formattedDate}</span>
+                            </>
+                        )} */}
                     </div>
-                    <button className="sg-cardToggle" onClick={() => onToggle(item._id)}>
-                         <div className="sg-caret">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M6 15L12 9L18 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                         </div>
-                    </button>
                 </div>
 
-                <p className="sg-community">{communityLabel}</p>
-                {formattedDate && <p className="sg-date">{formattedDate}</p>}
-                
-                <hr className="sg-separator" />
+                <div className="sg2-bodyTitle">
+                    <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
+                </div>
             </div>
 
             {/* 2. Media (Middle) */}
@@ -834,6 +852,9 @@ function SgSearch({
     url = DEFAULT_URL,
     enabled = true,
     className = "",
+    level = "chapter",
+    baselineQuery = "",
+    label = "",
 }) {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -847,6 +868,16 @@ function SgSearch({
     const [contentMap, setContentMap] = useState(new Map());
     const [loadingContent, setLoadingContent] = useState(new Set());
     const [contentErrors, setContentErrors] = useState(new Map());
+    const baselineQueryRef = useRef(baselineQuery || "");
+    const resolvedLevel = (level || "chapter").toLowerCase();
+    const isVerseLevel = resolvedLevel === "verse";
+    const currentBaselineQuery = baselineQuery || baselineQueryRef.current;
+    const headerLabel = label || (
+        isVerseLevel && currentBaselineQuery
+            ? currentBaselineQuery
+            : (search || "")
+    );
+    const showResetControl = Boolean(isVerseLevel && currentBaselineQuery);
 
     useEffect(() => {
         let cancelled = false;
@@ -917,6 +948,22 @@ function SgSearch({
         return () => { cancelled = true; };
     }, [search, trigger, organizationId, authHeader, url, enabled]);
 
+    const handleResetToBaseline = () => {
+        if (!currentBaselineQuery) return;
+        
+        const helper = globalThis.UpdateStudyNoteSearch;
+        if (typeof helper === "function") {
+            helper(currentBaselineQuery, {
+                level: "chapter",
+                forceRefresh: true,
+            });
+        } else {
+            globalThis.GlobalSearch = currentBaselineQuery;
+            globalThis.GlobalSearchLevel = "chapter";
+            globalThis.GlobalSearchLabel = currentBaselineQuery;
+        }
+    };
+
     const loadMore = () => {
         if (loadingMore || !hasMore) return;
         
@@ -972,7 +1019,18 @@ function SgSearch({
             <div className="sg-header">
                 {data && data.length > 0 && (
                     <div className="sg-headerTop">
-                        <div className="sg-resultCount">{data.length} Results</div>
+                        {showResetControl && (
+                            <button
+                                type="button"
+                                className="sg-resetBtn"
+                                onClick={handleResetToBaseline}
+                                title={`Back to ${currentBaselineQuery}`}
+                                aria-label="Back to chapter search"
+                            >
+                                ×
+                            </button>
+                        )}
+                        <div className="sg-resultCount">{headerLabel || 'Results'} | {data.length} Results</div>
                         <div className="sg-viewToggle">
                             <button
                                 className={`sg-toggle-btn ${viewMode === "list" ? "active" : ""}`}
@@ -1128,61 +1186,125 @@ function SgSearch({
                     gap: 4px;
                 }
                 
+                .sg-resetBtn {
+                    border: none;
+                    background: transparent;
+                    color: #8ca443;
+                    cursor: pointer;
+                    padding: 4px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    line-height: 1;
+                }
+                
+                .sg-resetBtn:hover {
+                    color: #7a923a;
+                }
+                
                 /* Sermon card polish */
                 .sg-card.sg2 {
-                    background: #ffffff;
-                    border-radius: 18px;
-                    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-                    padding: 10px 18px;
+                    background: #fff;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    overflow: hidden;
+                    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.08s ease;
+                    box-sizing: border-box;
                 }
                 
-                .sg-card.sg2 .sg-card-header-section {
-                    text-align: center;
-                    padding: 20px 24px 12px;
-                    position: relative;
+                .sg-card.sg2.sg-card-list {
+                    padding: 12px 14px;
                 }
                 
-                .sg-cardHead {
+                .sg-card.sg2.sg-card-grid {
+                    padding: 16px;
+                }
+                
+                .sg-card.sg2:hover {
+                    border-color: #8ca443;
+                    box-shadow: 0 10px 22px rgba(16, 24, 40, 0.1);
+                }
+                
+                .sg-card.sg2:active {
+                    transform: translateY(1px);
+                }
+                
+                .sg-card.sg2.is-open {
+                    border: 2px solid #8ca443;
+                    box-shadow: 0 10px 30px rgba(140, 164, 67, 0.15);
+                }
+                
+                .sg2-bodyTitle {
                     display: flex;
-                    justify-content: center;
+                    flex-direction: row;
+                    justify-content: space-between;
                     align-items: center;
-                    position: relative;
+                    width: 100%;
                 }
                 
-                .sg-cardToggle {
-                    position: absolute;
-                    right: 0;
-                    top: -6px;
-                }
-                
-                .sg-titleWrap {
-                    flex: 1;
-                }
-                
-                .sg-title,
                 .sg2-title {
-                    margin: 0;
-                    text-align: center;
+                    margin: 0 0 6px 0;
+                    color: #0f172a;
+                    font-weight: 300;
+                    font-size: 16px;
+                    line-height: 1.35;
+                    word-break: break-word;
                 }
                 
-                .sg-community,
-                .sg2-community {
-                    margin: 6px 0 0;
-                    color: #4B5563;
-                    text-align: center;
-                }
-                
-                .sg-date,
                 .sg2-date {
-                    margin: 4px 0 0;
-                    color: #6B7280;
-                    text-align: center;
+                    color: #949494;
+                    font-size: 12px;
                 }
                 
-                .sg-separator {
-                    margin-top: 16px;
-                    border: 0;
-                    border-top: 1px solid rgba(148, 163, 184, 0.35);
+                .sg2-head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    margin-bottom: 8px;
+                }
+                
+                .sg2-headLeft {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                }
+                
+                .sg2-favicon {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 4px;
+                    display: block;
+                }
+                
+                .sg2-favicon.sg2-fallback {
+                    background: #cbd5e1;
+                }
+                
+                .sg2-domain {
+                    color: #949494;
+                    font-weight: 100;
+                    font-size: 13px;
+                    max-width: 55vw;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                
+                .sg2-dot {
+                    width: 1px;
+                    height: 10px;
+                    background: #a3a3a3;
+                    border-radius: 5px;
+                    display: inline-block;
+                }
+                
+                .sg2-calendar {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 .sg-transcript-container {
@@ -1211,6 +1333,26 @@ function SgSearch({
                     background: #8ca443;
                     color: #fff;
                     border: none;
+                }
+
+                /* Video Player Styling (matched to Apologist) */
+                .sg-previewVideo {
+                    position: relative;
+                    width: 100%;
+                    aspect-ratio: 16 / 9;
+                    background: #000;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin-bottom: 12px; /* Add some spacing below video */
+                }
+
+                .sg-previewVideo iframe,
+                .sg-previewVideo video {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    display: block;
+                    object-fit: cover; /* Ensures video fills container */
                 }
             `}</style>
         </div>
