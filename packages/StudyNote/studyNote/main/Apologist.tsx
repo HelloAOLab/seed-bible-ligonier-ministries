@@ -425,7 +425,7 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
 
 // const DEFAULT_URL = "https://temp-proxy-server-nu.vercel.app/proxy/search";
 const DEFAULT_URL =
-  "https://ligonier.ministries.bot/api/v1/search?cache_ttl=300";
+  "https://ligonier.ministries.bot/api/v1/corpus/search?cache_ttl=300";
 
 /**
  * Props:
