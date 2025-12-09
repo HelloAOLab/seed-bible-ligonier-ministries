@@ -25,7 +25,7 @@
 .studyTextContainer {
   font-family: var(--text-verse-font, 'EB Garamond', serif);
   margin-bottom: 40px;
-  margin-top: 5px;
+  margin-top: 28px;
   /* space between books */
 }
 
@@ -36,7 +36,7 @@
   font-weight: var(--text-heading-weight, 600);
   font-style: var(--text-heading-font-style, italic);
   color: var(--text-heading-color, #7a7a7a);
-  margin: 40px 0 40px;
+  margin: 30px 0 40px;
   /* plenty of top & bottom space */
 }
 

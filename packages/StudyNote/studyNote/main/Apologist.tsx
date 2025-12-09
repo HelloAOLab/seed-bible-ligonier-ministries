@@ -458,6 +458,7 @@ function ApologistSearch({
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(20);
+  const [showSpinner, setShowSpinner] = useState(false);
   const [allData, setAllData] = useState([]);
   const lastSearchKeyRef = useRef(null);
   const lastResultKeysRef = useRef(new Set());
@@ -484,6 +485,16 @@ function ApologistSearch({
     setSearchParam(trimmed);
     setSearchRunId(trigger);
   }, [search, trigger]);
+
+  useEffect(() => {
+    let timer;
+    if (loading) {
+        timer = setTimeout(() => setShowSpinner(true), 2000);
+    } else {
+        setShowSpinner(false);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     baselineQueryRef.current = baselineQuery || baselineQueryRef.current;
@@ -698,7 +709,7 @@ function ApologistSearch({
   if (!search?.trim())
     return <div className="sg-muted">Type a search to begin…</div>;
 
-  if (loading) {
+  if (showSpinner) {
     return (
       <div
         className={`sg-loading ${className}`}
@@ -918,6 +929,7 @@ function ApologistSearch({
             )}
           </>
         ) : (
+          !loading && (
           <div className="sg-empty">
             <div className="sg-emptyIcon">🔎</div>
             <div className="sg-emptyTitle">No results</div>
@@ -925,6 +937,7 @@ function ApologistSearch({
               Try a broader term or different keywords.
             </div>
           </div>
+          )
         )}
 
         <style>{getStyleOf("apologist.css")}</style>

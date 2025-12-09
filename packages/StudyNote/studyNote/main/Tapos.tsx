@@ -26,6 +26,41 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     const [searchMatches, setSearchMatches] = useState([]); // Array of sentence indices
     const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
 
+    // Exclusive Media Playback Logic
+    const dispatchPlayEvent = () => {
+        const event = new CustomEvent('sg-media-play', { 
+            detail: { id: item._id } 
+        });
+        window.dispatchEvent(event);
+    };
+
+    useEffect(() => {
+        const handleMediaPlay = (e) => {
+            // If another card is playing (different ID), pause our media
+            if (e.detail?.id && e.detail.id !== item._id) {
+                // Pause HTML5 Media
+                if (mediaRef.current) {
+                    // Check if it's actually playing before trying to pause to avoid errors
+                    if (!mediaRef.current.paused) {
+                        mediaRef.current.pause();
+                    }
+                }
+                
+                // Pause YouTube
+                if (youtubePlayerRef.current?.pauseVideo) {
+                    // Get state: 1 = playing, 3 = buffering
+                    const state = youtubePlayerRef.current.getPlayerState();
+                    if (state === 1 || state === 3) {
+                        youtubePlayerRef.current.pauseVideo();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('sg-media-play', handleMediaPlay);
+        return () => window.removeEventListener('sg-media-play', handleMediaPlay);
+    }, [item._id]);
+
     // Media detection
     const hasVideo = fullContent?.VideoUrl;
     const hasAudio = fullContent?._StorageId && fullContent?.mimeType?.startsWith('audio/');
@@ -290,6 +325,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                         
                                         // Set up time tracking when video starts playing
                                         if (event.data === 1) { // Playing
+                                            dispatchPlayEvent(); // Notify other cards to pause
+
                                             if (DEBUG_VIDEO_TRACKING) {
                                                 console.log('[YouTube] Video playing - starting time tracking');
                                             }
@@ -555,10 +592,12 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
             return (
                 <div className="sg-previewVideo">
                     <video
+                        ref={mediaRef}
                         src={fullContent.VideoUrl}
                         controls
                         className="sg-media-player"
                         style={{ width: '100%', height: '100%' }}
+                        onPlay={dispatchPlayEvent}
                     >
                         Your browser does not support the video tag.
                     </video>
@@ -578,6 +617,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 controls
                 className="sg-media-player"
                 data-audio-player="true"
+                onPlay={dispatchPlayEvent}
             >
                 Your browser does not support the audio tag.
             </audio>
@@ -611,11 +651,50 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
         
         return (
             <div className="sg-transcript-wrapper">
-                 <div 
+                <div 
                     className="sg-transcript-header-row" 
                     onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
                 >
-                    <span className="sg-transcript-label">Transcript</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                        <span className="sg-transcript-label">Transcript</span>
+                        
+                        <div style={{ marginLeft: 'auto', marginRight: '10px', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                            {/* Search Input */}
+                            <div 
+                                className={`sg-search-pill-wrap ${transcriptSearchQuery ? 'has-value' : ''}`}
+                                style={{ margin: 0 }}
+                            >
+                            <span className="material-symbols-outlined sg-search-icon">search</span>
+                            <input
+                                type="text"
+                                placeholder="..."
+                                value={transcriptSearchQuery}
+                                onChange={(e) => setTranscriptSearchQuery(e.target.value)}
+                                className="sg-search-pill-input"
+                            />
+                        </div>
+
+                            {/* Search Controls (Only show if multiple matches) */}
+                            {searchMatches.length > 1 && (
+                                <div className="sg-search-controls">
+                                    <span className="sg-search-counter">
+                                        {`${currentMatchIndex + 1}/${searchMatches.length}`}
+                                    </span>
+                                    <button className="sg-search-btn" onClick={handlePrevMatch} title="Previous Match">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                    </button>
+                                    <button className="sg-search-btn" onClick={handleNextMatch} title="Next Match">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 5V19M12 19L5 12M12 19L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <span className={`sg-transcript-toggle ${isTranscriptExpanded ? 'expanded' : ''}`}>
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -748,37 +827,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
 
             {/* 3. Search & Transcript (Bottom) */}
             <div className="sg-search-section">
-                {showTranscriptContainer && visibleSentences.length > 0 && (
-                    <div className="sg-search-nav">
-                        <div className="sg-search-pill-wrap">
-                            <span className="material-symbols-outlined sg-search-icon">search</span>
-                            <input
-                                type="text"
-                                placeholder="Keyword Search"
-                                value={transcriptSearchQuery}
-                                onChange={(e) => setTranscriptSearchQuery(e.target.value)}
-                                className="sg-search-pill-input"
-                            />
-                        </div>
-                        <div className="sg-search-controls">
-                            <span className="sg-search-counter">
-                                {searchMatches.length > 0 ? `${currentMatchIndex + 1}/${searchMatches.length}` : '0/0'}
-                            </span>
-                            <button className="sg-search-btn" onClick={handlePrevMatch} disabled={searchMatches.length === 0} title="Previous Match">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </button>
-                            <button className="sg-search-btn" onClick={handleNextMatch} disabled={searchMatches.length === 0} title="Next Match">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 5V19M12 19L5 12M12 19L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                )}
-                
-                {/* Transcript below search */}
+                {/* Transcript contains search UI now */}
                 {renderTranscript()}
             </div>
         </article>
@@ -868,6 +917,7 @@ function SgSearch({
     const [contentMap, setContentMap] = useState(new Map());
     const [loadingContent, setLoadingContent] = useState(new Set());
     const [contentErrors, setContentErrors] = useState(new Map());
+    const [showSpinner, setShowSpinner] = useState(false);
     const baselineQueryRef = useRef(baselineQuery || "");
     const resolvedLevel = (level || "chapter").toLowerCase();
     const isVerseLevel = resolvedLevel === "verse";
@@ -948,6 +998,16 @@ function SgSearch({
         return () => { cancelled = true; };
     }, [search, trigger, organizationId, authHeader, url, enabled]);
 
+    useEffect(() => {
+        let timer;
+        if (loading) {
+            timer = setTimeout(() => setShowSpinner(true), 2000);
+        } else {
+            setShowSpinner(false);
+        }
+        return () => clearTimeout(timer);
+    }, [loading]);
+
     const handleResetToBaseline = () => {
         if (!currentBaselineQuery) return;
         
@@ -994,7 +1054,7 @@ function SgSearch({
         return <div className="sg-muted">Type a search to begin…</div>;
     }
 
-    if (loading) {
+    if (showSpinner) {
         return (
             <div className={`sg-loading ${className}`} aria-busy="true" aria-live="polite">
                 <div className="sg-spinner" role="status" aria-label="Loading" />
@@ -1117,11 +1177,13 @@ function SgSearch({
                         )}
                     </>
                 ) : (
+                    !loading && (
                     <div className="sg-empty">
                         <div className="sg-emptyIcon">🔎</div>
                         <div className="sg-emptyTitle">No results</div>
                         <div className="sg-emptyHint">Try a broader term or different keywords.</div>
                     </div>
+                )
                 )}
             </div>
 
@@ -1353,6 +1415,67 @@ function SgSearch({
                     border: none;
                     display: block;
                     object-fit: cover; /* Ensures video fills container */
+                }
+
+                /* --- Search Pill Styling (Expanding) --- */
+                .sg-search-pill-wrap {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    background: #8ca443; /* Green background */
+                    border-radius: 20px;
+                    height: 32px;
+                    width: 32px; /* Collapsed width (circle) */
+                    overflow: hidden;
+                    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    cursor: pointer;
+                }
+
+                /* Expand when hovered, has focus, or has value */
+                .sg-search-pill-wrap:hover,
+                .sg-search-pill-wrap:focus-within,
+                .sg-search-pill-wrap.has-value {
+                    width: 150px;
+                    box-shadow: 0 4px 12px rgba(140, 164, 67, 0.3);
+                }
+
+                .sg-search-icon {
+                    position: absolute;
+                    left: 6px; /* Center icon in the 32px circle */
+                    color: #fff;
+                    font-size: 20px !important;
+                    pointer-events: none; /* Let clicks pass through */
+                    width: 20px;
+                    height: 20px;
+                    display: flex; /* Flex to center handle properly if needed */
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .sg-search-pill-input {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    background: transparent;
+                    color: #fff;
+                    font-size: 14px;
+                    padding: 0 12px 0 34px; /* Space for icon */
+                    outline: none;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    cursor: text;
+                }
+                
+                .sg-search-pill-input::placeholder {
+                    color: rgba(255, 255, 255, 0.7);
+                }
+
+                /* Revealing input when expanded */
+                .sg-search-pill-wrap:hover .sg-search-pill-input,
+                .sg-search-pill-wrap:focus-within .sg-search-pill-input,
+                .sg-search-pill-wrap.has-value .sg-search-pill-input {
+                    opacity: 1;
                 }
             `}</style>
         </div>

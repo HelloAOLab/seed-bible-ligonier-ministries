@@ -693,6 +693,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     );
 
     const [pageLoading, setPageLoading] = useState(true);
+    const [showSpinner, setShowSpinner] = useState(false);
 
     const [sectionMap, setSectionMap] = useState({});
     const [citationData, setCitationData] = useState([]);
@@ -1006,6 +1007,16 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
         }
 
     }, [chapter, studyNote, sectionMap]);
+
+    useEffect(() => {
+        let timer;
+        if (pageLoading) {
+            timer = setTimeout(() => setShowSpinner(true), 2000);
+        } else {
+            setShowSpinner(false);
+        }
+        return () => clearTimeout(timer);
+    }, [pageLoading]);
 
     // scroll **immediately** when highlight flips on
     useLayoutEffect(() => {
@@ -1587,7 +1598,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                 }
             }}
         >
-            {pageLoading && (
+            {showSpinner && (
                 <div
                     className="sn-centered-loading"
                     aria-busy="true"
@@ -1602,7 +1613,10 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                         zIndex: 2
                     }}
                 >
-                    <div className="sn-spinner" />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                        <div className="sn-spinner" />
+                        <div style={{ color: '#000', fontSize: '16px', fontFamily: 'sans-serif' }}>Loading study notes...</div>
+                    </div>
                 </div>
             )}
             {lastDismissReason === "timeout" && (
@@ -1629,13 +1643,6 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                 const [c1, setC1] = useState(false)
                 return (
                     <div key={bookIdx} className="studyTextContainer">
-                        <h2
-                            onDoubleClick={(e) => { console.log(e); setC1(!c1) }}
-                            className={`mainHeader`}
-                        >
-
-                        </h2>
-
                         {book && book.sections && book.sections.map((verse, vIdx) => {
                             const isCurrent =
                                 highlightedPos?.bookIdx === bookIdx &&
@@ -1772,7 +1779,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
             }) : (
                 <div className="judeTextPage">
                     <div className="verseText" style={{ padding: '20px', textAlign: 'center' }}>
-                        {pageLoading ? 'Loading study notes...' : `No study notes available for this book.`}
+                        {!pageLoading && `No study notes available for this book.`}
                     </div>
                 </div>
             )}
