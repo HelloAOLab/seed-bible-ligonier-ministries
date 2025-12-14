@@ -2,9 +2,9 @@
 const { useEffect, useState, useMemo, useRef } = os.appHooks;
 const getStyleOf = await thisBot.GetStyle();
 
-function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadingContent, contentError }) {
+function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadingContent, contentError, isNowPlaying, setNowPlayingId }) {
     // Debug flag for video tracking
-    const DEBUG_VIDEO_TRACKING = true; // Set to false to disable logs
+    const DEBUG_VIDEO_TRACKING = false; // Set to true to enable logs
     
     // preview animation height + iframe remount on tab switching
     const [previewH, setPreviewH] = useState(0);
@@ -21,6 +21,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     const [transcriptSearchQuery, setTranscriptSearchQuery] = useState("");
     const [showTranscriptContainer, setShowTranscriptContainer] = useState(false);
     const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(true); // Default to expanded
+    const updateTranscriptRef = useRef(null); // Ref to store latest updateTranscriptVisibility
+    const isNowPlayingRef = useRef(isNowPlaying); // Ref to track current isNowPlaying state
     
     // Search Navigation State
     const [searchMatches, setSearchMatches] = useState([]); // Array of sentence indices
@@ -32,6 +34,22 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
             detail: { id: item._id } 
         });
         window.dispatchEvent(event);
+        // Notify parent that this card is now playing
+        if (setNowPlayingId) {
+            setNowPlayingId(item._id);
+        }
+    };
+
+    // Note: We do NOT clear nowPlayingId on pause - only on:
+    // 1. Clicking the close button
+    // 2. Media ending
+    // 3. Playing a different card (which sets a new ID)
+
+    const handleMediaEnded = () => {
+        // Clear now playing when this card's media ends
+        if (setNowPlayingId && isNowPlaying) {
+            setNowPlayingId(null);
+        }
     };
 
     useEffect(() => {
@@ -221,17 +239,18 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     
     // Helper function to update transcript visibility
     const updateTranscriptVisibility = (time) => {
-        if (DEBUG_VIDEO_TRACKING) {
-            console.log('[Transcript] updateTranscriptVisibility called with time:', time);
-        }
+        // Only proceed if this card is in Now Playing
+        if (!isNowPlayingRef.current) return;
+        
         const visible = sentences.filter(s => s.start !== undefined && s.start <= time);
+        
         const wasAtBottom = isAtBottom();
-        const hadNewSentences = visible.length > visibleSentences.length;
         
         if (visible.length > 0 && !showTranscriptContainer) {
             setShowTranscriptContainer(true);
         }
         
+        // Always update visible sentences - React's reconciliation will optimize if unchanged
         setVisibleSentences(visible);
         
         let activeIdx = -1;
@@ -243,14 +262,12 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 break;
             }
         }
+        
+        // Always update active index
         setActiveSentenceIndex(activeIdx);
         
-        if (DEBUG_VIDEO_TRACKING) {
-            console.log('[Transcript] Active sentence index:', activeIdx, 'Visible sentences:', visible.length);
-        }
-        
-        // Auto-scroll if user is at bottom and new sentences appear
-        if (hadNewSentences && wasAtBottom && activeIdx >= 0 && transcriptScrollRef.current) {
+        // Auto-scroll if user is at bottom
+        if (wasAtBottom && activeIdx >= 0 && transcriptScrollRef.current) {
             setTimeout(() => {
                 const container = transcriptScrollRef.current;
                 if (!container) return;
@@ -265,14 +282,13 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                         behavior: 'smooth'
                     });
                 }
-                
-                setTimeout(() => {
-                    const isAtBottomNow = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-                    setShowScrollToBottom(!isAtBottomNow);
-                }, 100);
             }, 100);
         }
     };
+
+    // Keep refs updated with latest values to avoid stale closures
+    updateTranscriptRef.current = updateTranscriptVisibility;
+    isNowPlayingRef.current = isNowPlaying;
 
     // Initialize YouTube iframe API
     useEffect(() => {
@@ -332,78 +348,76 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                             }
                                             
                                             // Cancel any existing tracking
-                                            if (youtubePlayerRef.current?._trackingFrameId) {
-                                                cancelAnimationFrame(youtubePlayerRef.current._trackingFrameId);
+                                            if (youtubePlayerRef.current?._trackingIntervalId) {
+                                                clearInterval(youtubePlayerRef.current._trackingIntervalId);
                                             }
                                             
-                                            // Use requestAnimationFrame for smooth updates
+                                            // Use setInterval for throttled updates (every 500ms to reduce energy)
                                             const trackTime = () => {
                                                 const player = youtubePlayerRef.current;
-                                                if (!player) return;
+                                                if (!player) {
+                                                    // No player - stop interval
+                                                    if (youtubePlayerRef.current?._trackingIntervalId) {
+                                                        clearInterval(youtubePlayerRef.current._trackingIntervalId);
+                                                        youtubePlayerRef.current._trackingIntervalId = null;
+                                                    }
+                                                    return;
+                                                }
+                                                
+                                                // Stop tracking if this card is no longer in Now Playing
+                                                if (!isNowPlayingRef.current) {
+                                                    if (player._trackingIntervalId) {
+                                                        clearInterval(player._trackingIntervalId);
+                                                        player._trackingIntervalId = null;
+                                                    }
+                                                    return;
+                                                }
                                                 
                                                 try {
-                                                    // Call methods directly on the player to avoid "Illegal invocation"
                                                     const playerState = player.getPlayerState();
+                                                    const currentTime = player.getCurrentTime();
                                                     
-                                                    if (DEBUG_VIDEO_TRACKING) {
-                                                        console.log('[YouTube] trackTime loop - state:', playerState);
+                                                    // ONLY update transcript if PLAYING (state === 1)
+                                                    // For ANY other state, stop the interval completely
+                                                    if (playerState !== 1) {
+                                                        if (player._trackingIntervalId) {
+                                                            clearInterval(player._trackingIntervalId);
+                                                            player._trackingIntervalId = null;
+                                                        }
+                                                        return;
                                                     }
                                                     
-                                                    // Only continue tracking if playing (state 1)
-                                                    if (playerState === 1) {
-                                                        const currentTime = player.getCurrentTime();
-                                                        
-                                                        if (
-                                                            currentTime !== undefined &&
-                                                            typeof currentTime === 'number' &&
-                                                            !isNaN(currentTime) &&
-                                                            currentTime >= 0
-                                                        ) {
-                                                            updateTranscriptVisibility(currentTime);
-                                                        }
-                                                        
-                                                        // ALWAYS continue the loop while playing - schedule next frame
-                                                        player._trackingFrameId = window.requestAnimationFrame(trackTime);
-                                                    } else {
-                                                        // Video paused, ended, or unstarted - stop tracking
-                                                        player._trackingFrameId = null;
-                                                        if (DEBUG_VIDEO_TRACKING) {
-                                                            console.log('[YouTube] Stopping time tracking, state:', playerState);
-                                                        }
+                                                    // Video is playing - update transcript
+                                                    if (
+                                                        currentTime !== undefined &&
+                                                        typeof currentTime === 'number' &&
+                                                        !isNaN(currentTime) &&
+                                                        currentTime >= 0 &&
+                                                        updateTranscriptRef.current
+                                                    ) {
+                                                        updateTranscriptRef.current(currentTime);
                                                     }
                                                 } catch (err) {
-                                                    if (DEBUG_VIDEO_TRACKING) {
-                                                        console.error('[YouTube] Error in time tracking:', err);
-                                                    }
-                                                    if (player) {
-                                                        player._trackingFrameId = null;
+                                                    // Error - stop interval
+                                                    if (player._trackingIntervalId) {
+                                                        clearInterval(player._trackingIntervalId);
+                                                        player._trackingIntervalId = null;
                                                     }
                                                 }
                                             };
                                             
-                                            // Start tracking immediately
-                                            if (DEBUG_VIDEO_TRACKING) {
-                                                console.log('[YouTube] Starting requestAnimationFrame loop');
-                                            }
+                                            // Start tracking with setInterval (500ms)
                                             try {
-                                                youtubePlayerRef.current._trackingFrameId =
-                                                    window.requestAnimationFrame(trackTime);
+                                                youtubePlayerRef.current._trackingIntervalId =
+                                                    setInterval(trackTime, 500);
                                             } catch (err) {
-                                                if (DEBUG_VIDEO_TRACKING) {
-                                                    console.error('[YouTube] Error starting RAF loop:', err);
-                                                }
-                                                if (youtubePlayerRef.current) {
-                                                    youtubePlayerRef.current._trackingFrameId = null;
-                                                }
+                                                // Silently ignore errors
                                             }
                                         } else if (event.data === 2 || event.data === 0) { // Paused or Ended
                                             // Cancel tracking when paused or ended
-                                            if (youtubePlayerRef.current?._trackingFrameId) {
-                                                cancelAnimationFrame(youtubePlayerRef.current._trackingFrameId);
-                                                youtubePlayerRef.current._trackingFrameId = null;
-                                                if (DEBUG_VIDEO_TRACKING) {
-                                                    console.log('[YouTube] Video paused/ended - stopping time tracking');
-                                                }
+                                            if (youtubePlayerRef.current?._trackingIntervalId) {
+                                                clearInterval(youtubePlayerRef.current._trackingIntervalId);
+                                                youtubePlayerRef.current._trackingIntervalId = null;
                                             }
                                             
                                             // Update transcript one last time with current position when paused
@@ -411,7 +425,9 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                                 try {
                                                     const currentTime = youtubePlayerRef.current.getCurrentTime();
                                                     if (currentTime !== undefined && typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
-                                                        updateTranscriptVisibility(currentTime);
+                                                        if (updateTranscriptRef.current) {
+                                                            updateTranscriptRef.current(currentTime);
+                                                        }
                                                     }
                                                 } catch (err) {
                                                     // Ignore errors on final update
@@ -430,13 +446,10 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
         return () => {
             clearInterval(checkYT);
             if (youtubePlayerRef.current) {
-                if (DEBUG_VIDEO_TRACKING) {
-                    console.log('[YouTube] Destroying player');
-                }
-                // Cancel any active animation frame tracking
-                if (youtubePlayerRef.current._trackingFrameId) {
-                    cancelAnimationFrame(youtubePlayerRef.current._trackingFrameId);
-                    youtubePlayerRef.current._trackingFrameId = null;
+                // Cancel any active interval tracking
+                if (youtubePlayerRef.current._trackingIntervalId) {
+                    clearInterval(youtubePlayerRef.current._trackingIntervalId);
+                    youtubePlayerRef.current._trackingIntervalId = null;
                 }
                 youtubePlayerRef.current.destroy();
                 youtubePlayerRef.current = null;
@@ -446,13 +459,11 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
             setShowTranscriptContainer(false);
             setActiveSentenceIndex(-1);
         };
-    }, [isYouTube, isOpen, fullContent?.VideoUrl, item._id]);
+    }, [isYouTube, isOpen, fullContent?.VideoUrl, item._id, isNowPlaying]);
 
 
     // Time tracking for transcript synchronization - Audio AND Video
     useEffect(() => {
-        console.log('[Time Tracking] useEffect EXECUTING - before any checks');
-        
         if (DEBUG_VIDEO_TRACKING) {
             console.log('[Time Tracking] useEffect triggered:', {
                 sentencesLength: sentences.length,
@@ -481,15 +492,22 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 }
                 
                 const audio = element;
+                
                 const handleTimeUpdate = () => {
                     if (audio && audio.tagName === 'AUDIO' && audio.getAttribute('data-audio-player') === 'true' && hasAudio) {
                         const time = audio.currentTime;
-                        updateTranscriptVisibility(time);
+                        // Use ref to get latest function
+                        if (updateTranscriptRef.current) {
+                            updateTranscriptRef.current(time);
+                        }
                     }
                 };
                 const handleSeeked = () => {
                     if (audio && audio.tagName === 'AUDIO' && audio.getAttribute('data-audio-player') === 'true' && hasAudio) {
-                        updateTranscriptVisibility(audio.currentTime);
+                        // Use ref to get latest function
+                        if (updateTranscriptRef.current) {
+                            updateTranscriptRef.current(audio.currentTime);
+                        }
                     }
                 };
                 
@@ -513,7 +531,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 if (cleanup) cleanup();
             };
         }
-    }, [hasAudio, sentences.length, isOpen]);
+    }, [hasAudio, sentences.length, isOpen, isNowPlaying]);
 
     // Reset transcript visibility when card closes or media changes
     useEffect(() => {
@@ -598,6 +616,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                         className="sg-media-player"
                         style={{ width: '100%', height: '100%' }}
                         onPlay={dispatchPlayEvent}
+                        onEnded={handleMediaEnded}
                     >
                         Your browser does not support the video tag.
                     </video>
@@ -618,6 +637,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 className="sg-media-player"
                 data-audio-player="true"
                 onPlay={dispatchPlayEvent}
+                onEnded={handleMediaEnded}
             >
                 Your browser does not support the audio tag.
             </audio>
@@ -775,7 +795,10 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
 
     // OPEN CARD LAYOUT
     return (
-        <article className={`sg-card sg2 is-open ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"}`}>
+        <article 
+            className={`sg-card sg2 is-open ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"} ${isNowPlaying ? 'sg-now-playing-card' : ''}`}
+            style={isNowPlaying ? { order: -1 } : {}}
+        >
             
             {/* 1. Title & Info (Top) */}
             <div className="sg-card-header-section">
@@ -802,28 +825,42 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 </div>
             </div>
 
-            {/* 2. Media (Middle) */}
-            <div className={`sg-media-container ${showAudio ? 'sg-media-audio' : ''}`}>
-                 {loadingContent && (
-                    <div className="sg-media-loading">
-                        <div className="sg-spinner-small"></div>
-                        <span>Loading media...</span>
-                    </div>
-                )}
-                
-                {contentError && (
-                    <div className="sg-media-error">
-                        <span>⚠️ Failed to load content: {contentError}</span>
-                    </div>
-                )}
+            {/* 2. Media (Middle) - Hide if this card is in the Now Playing section */}
+            {!isNowPlaying && (
+                <div className={`sg-media-container ${showAudio ? 'sg-media-audio' : ''}`}>
+                     {loadingContent && (
+                        <div className="sg-media-loading">
+                            <div className="sg-spinner-small"></div>
+                            <span>Loading media...</span>
+                        </div>
+                    )}
+                    
+                    {contentError && (
+                        <div className="sg-media-error">
+                            <span>⚠️ Failed to load content: {contentError}</span>
+                        </div>
+                    )}
 
-                {!loadingContent && !contentError && (
-                    <>
-                        {showVideo && renderVideo()}
-                        {showAudio && renderAudio()}
-                    </>
-                )}
-            </div>
+                    {!loadingContent && !contentError && (
+                        <>
+                            {showVideo && renderVideo()}
+                            {showAudio && renderAudio()}
+                        </>
+                    )}
+                </div>
+            )}
+            
+            {/* Show media (full width) when in Now Playing section */}
+            {isNowPlaying && (
+                <div className="sg-media-container sg-now-playing-full">
+                    {!loadingContent && !contentError && (
+                        <>
+                            {showVideo && renderVideo()}
+                            {showAudio && renderAudio()}
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* 3. Search & Transcript (Bottom) */}
             <div className="sg-search-section">
@@ -918,6 +955,7 @@ function SgSearch({
     const [loadingContent, setLoadingContent] = useState(new Set());
     const [contentErrors, setContentErrors] = useState(new Map());
     const [showSpinner, setShowSpinner] = useState(false);
+    const [nowPlayingId, setNowPlayingId] = useState(null);
     const baselineQueryRef = useRef(baselineQuery || "");
     const resolvedLevel = (level || "chapter").toLowerCase();
     const isVerseLevel = resolvedLevel === "verse";
@@ -1074,6 +1112,10 @@ function SgSearch({
         );
     }
 
+    // Get the currently playing item for the Now Playing section
+    const nowPlayingItem = nowPlayingId ? data.find(item => item._id === nowPlayingId) : null;
+    const nowPlayingContent = nowPlayingId ? contentMap.get(nowPlayingId) : null;
+
     return (
         <div className={`sg-searchWrap ${className}`}>
             <div className="sg-header">
@@ -1155,6 +1197,8 @@ function SgSearch({
                                 fullContent={contentMap.get(item._id)}
                                 loadingContent={loadingContent.has(item._id)}
                                 contentError={contentErrors.get(item._id)}
+                                isNowPlaying={nowPlayingId === item._id}
+                                setNowPlayingId={setNowPlayingId}
                             />
                         ))}
                         {hasMore && (
@@ -1198,7 +1242,103 @@ function SgSearch({
                     grid-column: 1 / -1; /* Span all columns in grid mode */
                     text-align: center;
                 }
+
+                /* Now Playing Card - Full width and highlighted */
+                .sg-now-playing-card {
+                    grid-column: 1 / -1 !important; /* Span all columns in grid mode */
+                    width: 100% !important;
+                    border: 2px solid #8ca443 !important;
+                    box-shadow: 0 4px 16px rgba(140, 164, 67, 0.2) !important;
+                    background: linear-gradient(135deg, #f8faf3 0%, #fff 100%) !important;
+                }
+
+                .sg-now-playing-card::before {
+                    content: 'NOW PLAYING';
+                    display: block;
+                    font-size: 11px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #8ca443;
+                    background: rgba(140, 164, 67, 0.15);
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                    margin-bottom: 12px;
+                    width: fit-content;
+                }
                 
+                /* Now Playing Section (unused now but kept for reference) */
+                .sg-now-playing {
+                    width: 100%;
+                    background: linear-gradient(135deg, #f8faf3 0%, #fff 100%);
+                    border: 2px solid #8ca443;
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 16px rgba(140, 164, 67, 0.15);
+                }
+
+                .sg-now-playing-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 12px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+
+                .sg-now-playing-label {
+                    font-size: 12px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #8ca443;
+                    background: rgba(140, 164, 67, 0.15);
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                }
+
+                .sg-now-playing-title {
+                    flex: 1;
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #0f172a;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .sg-now-playing-close {
+                    background: transparent;
+                    border: none;
+                    font-size: 24px;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    padding: 4px 8px;
+                    line-height: 1;
+                    border-radius: 4px;
+                    transition: background 0.2s, color 0.2s;
+                }
+
+                .sg-now-playing-close:hover {
+                    background: rgba(0,0,0,0.05);
+                    color: #64748b;
+                }
+
+                .sg-now-playing-media {
+                    width: 100%;
+                }
+
+                .sg-now-playing-media .sg-card.sg2 {
+                    border: none;
+                    box-shadow: none;
+                    padding: 0;
+                }
+
+                .sg-now-playing-media .sg-card-header-section {
+                    display: none;
+                }
+
                 .sg-loadMoreBtn {
                     padding: 12px 24px;
                     background: transparent;
