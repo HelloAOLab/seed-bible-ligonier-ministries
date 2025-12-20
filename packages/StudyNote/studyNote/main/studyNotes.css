@@ -527,3 +527,26 @@
   color: #fff;
   border-color: #8ca443;
 }
+
+/* Study Note Lists - detected numbered lists */
+.sn-list {
+  margin: 16px 0;
+  padding-left: 28px;
+  list-style-position: outside;
+}
+
+.sn-list-item {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  font-family: var(--text-verse-font, 'EB Garamond', serif);
+  font-size: 20px;
+  font-weight: var(--text-verse-weight, 400);
+}
+
+.sn-list-item .studyCitation {
+  font-size: inherit;
+}
+
+.sn-list-item .verseText {
+  font-size: inherit;
+}
