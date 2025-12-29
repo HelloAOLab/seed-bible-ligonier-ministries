@@ -22,12 +22,36 @@ import { MiniTextEditor } from "app.components.smallEditor";
 
 import { ConfigurableFunctionCommands } from "app.components.commands";
 
+// Book ID to English name mapping for consistent search queries
+const BOOK_ID_TO_ENGLISH = {
+  GEN: "Genesis", EXO: "Exodus", LEV: "Leviticus", NUM: "Numbers", DEU: "Deuteronomy",
+  JOS: "Joshua", JDG: "Judges", RUT: "Ruth", "1SA": "1 Samuel", "2SA": "2 Samuel",
+  "1KI": "1 Kings", "2KI": "2 Kings", "1CH": "1 Chronicles", "2CH": "2 Chronicles",
+  EZR: "Ezra", NEH: "Nehemiah", EST: "Esther", JOB: "Job", PSA: "Psalms",
+  PRO: "Proverbs", ECC: "Ecclesiastes", SNG: "Song of Solomon", ISA: "Isaiah",
+  JER: "Jeremiah", LAM: "Lamentations", EZK: "Ezekiel", DAN: "Daniel",
+  HOS: "Hosea", JOL: "Joel", AMO: "Amos", OBA: "Obadiah", JON: "Jonah",
+  MIC: "Micah", NAM: "Nahum", HAB: "Habakkuk", ZEP: "Zephaniah", HAG: "Haggai",
+  ZEC: "Zechariah", MAL: "Malachi",
+  MAT: "Matthew", MRK: "Mark", LUK: "Luke", JHN: "John", ACT: "Acts",
+  ROM: "Romans", "1CO": "1 Corinthians", "2CO": "2 Corinthians", GAL: "Galatians",
+  EPH: "Ephesians", PHP: "Philippians", COL: "Colossians", "1TH": "1 Thessalonians",
+  "2TH": "2 Thessalonians", "1TI": "1 Timothy", "2TI": "2 Timothy", TIT: "Titus",
+  PHM: "Philemon", HEB: "Hebrews", JAS: "James", "1PE": "1 Peter", "2PE": "2 Peter",
+  "1JN": "1 John", "2JN": "2 John", "3JN": "3 John", JUD: "Jude", REV: "Revelation"
+};
+
 function prepareAISearchParamOnChapter(chapterData) {
-  const combinedText = chapterData.book + " " + chapterData.chapter;
+  // Use English book name for consistent Ligonier API searching
+  const englishBookName = BOOK_ID_TO_ENGLISH[chapterData.bookId] || chapterData.book;
+  const combinedText = englishBookName + " " + chapterData.chapter;
+  
   globalThis.GlobalSearch = combinedText.trim();
   globalThis.GlobalSearchLevel = "chapter";
   globalThis.StudyNoteParentSearch = combinedText.trim();
   globalThis.GlobalSearchLabel = combinedText.trim();
+  
+  console.log("[Chapter Search] Using English book name:", englishBookName, "for bookId:", chapterData.bookId);
 }
 
 // MoreResources component
@@ -1659,19 +1683,18 @@ function Section({
     return result;
   }, [verses, wordHighlights, book, chapter]);
 
-  const sendSearchQueryToStudyNote = (text, verseNumbers) => {
-    const query = (text ?? "").trim();
-    if (!query) return;
+  const sendSearchQueryToStudyNote = async (text, verseNumbers) => {
+    const rawText = (text ?? "").trim();
+    if (!rawText) return;
 
     const resolveSearchType = globalThis.GetStudyNoteSearchType;
     const searchHelper = globalThis.UpdateStudyNoteSearch;
     const currentSearchType =
       typeof resolveSearchType === "function" ? resolveSearchType() : null;
 
-    globalThis.GlobalSearchLevel = verseNumbers ? "verse" : "chapter";
-    globalThis.GlobalSearch = query;
-
+    // Build verse reference label using English book name
     let label = `${book} ${chapter}`;
+    let verseReference = `${book} ${chapter}`;
     if (verseNumbers != null) {
       const verseArray = Array.isArray(verseNumbers)
         ? verseNumbers
@@ -1680,8 +1703,92 @@ function Section({
         const first = verseArray[0];
         const last = verseArray[verseArray.length - 1];
         label += ` - ${first}${first !== last ? `-${last}` : ""}`;
+        verseReference += `:${first}${first !== last ? `-${last}` : ""}`;
       }
     }
+
+    // MULTI-LANGUAGE HANDLING: If reading in non-English, fetch English verse text
+    // Ligonier content is primarily in English, so we need English queries for better matching
+    let searchText = rawText;
+    
+    // Detect non-English by checking if text contains non-Latin characters
+    // This is more reliable than translation code which may be stale
+    const hasNonLatinChars = /[^\u0000-\u007F\u00A0-\u00FF]/.test(rawText);
+    
+    // Known English translation codes (complete list from app)
+    const ENGLISH_TRANSLATIONS = [
+      "BSB", "WEB", "ASVBT", "AEB", "ASV", "BBP", "BBE", "UBES", "BST", "KJVCP",
+      "DBY", "DRA", "EMTV", "TNTC", "FBV", "GLW", "GNV", "JPSTN", "KJVA", "KJAV",
+      "ILT", "LSV", "LXXSB","LXXSA", "MSB", "NETB", "NEB", "GNB", "TOJB", "TOE", 
+      "OURB", "PEV", "RVA", "T4T", "TCENT", "TNT", "ULB", "W88", "NWB", "WEBC", 
+      "WEBBE", "WEBU", "WMB", "WMBBE", "WBMS", "WBMSE", "YLT"
+    ];
+    const currentTranslationCode = data?.translation || "";
+    const isEnglishTranslation = ENGLISH_TRANSLATIONS.includes(currentTranslationCode);
+    
+    // Treat as non-English if: has non-Latin chars OR translation is not in English list
+    const needsEnglishFetch = hasNonLatinChars || !isEnglishTranslation;
+    
+    console.log("[Multi-lang DEBUG] Translation:", currentTranslationCode, "isEnglish:", isEnglishTranslation, "needsEnglishFetch:", needsEnglishFetch);
+    
+    if (needsEnglishFetch && verseNumbers != null) {
+      console.log("[Multi-lang] Non-English detected, fetching English verse...");
+      try {
+        // Fetch English verse text using BibleDataManager with BSB translation
+        const englishBible = new BibleDataManager({
+          translation: "BSB",
+          bookId: data?.bookId || globalThis.BookId,
+          chapter: chapter,
+        });
+        console.log("[Multi-lang] Creating BibleDataManager with bookId:", data?.bookId || globalThis.BookId, "chapter:", chapter);
+        await englishBible.fetch();
+        
+        const englishData = englishBible.getState().data;
+        console.log("[Multi-lang] englishData:", englishData ? "loaded" : "null", "content:", englishData?.content ? "present" : "missing");
+        
+        if (englishData?.content) {
+          const verseArray = Array.isArray(verseNumbers) ? verseNumbers : [verseNumbers];
+          const englishVerses = [];
+          
+          // Extract English verse text for the selected verse(s)
+          englishData.content.forEach(section => {
+            section.verses?.forEach(v => {
+              if (verseArray.includes(v.verseNumber) && v.text) {
+                englishVerses.push(v.text);
+              }
+            });
+          });
+          
+          console.log("[Multi-lang] Found", englishVerses.length, "matching verses, englishBook:", englishData.book);
+          
+          if (englishVerses.length > 0) {
+            searchText = englishVerses.join(" ");
+            
+            // Also update verseReference with English book name
+            if (englishData.book) {
+              const first = verseArray[0];
+              const last = verseArray[verseArray.length - 1];
+              verseReference = `${englishData.book} ${chapter}:${first}${first !== last ? `-${last}` : ""}`;
+              console.log("[Multi-lang] Updated verseReference to:", verseReference);
+            }
+            
+            console.log("[Multi-lang] Using English text for search:", searchText.substring(0, 100) + "...");
+          }
+        }
+      } catch (err) {
+        console.warn("[Multi-lang] Failed to fetch English verse, using original text:", err);
+        // Fall back to original text if English fetch fails
+      }
+    }
+
+    // ENHANCEMENT: Include verse reference in the query for better semantic matching
+    // Format: "Book Chapter:Verse VerseText" (e.g., "Genesis 1:3 And God said...")
+    const enrichedQuery = verseNumbers 
+      ? `${verseReference} ${searchText}` 
+      : searchText; // For chapter-level, just use the text
+
+    globalThis.GlobalSearchLevel = verseNumbers ? "verse" : "chapter";
+    globalThis.GlobalSearch = enrichedQuery;
 
     if (typeof searchHelper === "function") {
       globalThis.GlobalSearchLabel = label;
@@ -1694,6 +1801,7 @@ function Section({
           book,
           chapter,
           verses: verseNumbers,
+          translation: data?.translation,
         },
       };
 
@@ -1701,7 +1809,7 @@ function Section({
         options.forceSearchType = currentSearchType;
       }
 
-      searchHelper(query, options);
+      searchHelper(enrichedQuery, options);
     } else {
       if (verseNumbers) {
         globalThis.GlobalSearchLevel = "verse";

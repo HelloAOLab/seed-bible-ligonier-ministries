@@ -27,6 +27,55 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     // Search Navigation State
     const [searchMatches, setSearchMatches] = useState([]); // Array of sentence indices
     const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+    
+    // Video error state for dead link handling
+    const [videoError, setVideoError] = useState(false);
+    const [audioError, setAudioError] = useState(false);
+    
+    // Helper to extract source domain from content
+    const getSourceDomain = () => {
+        // For YouTube, always show "YouTube"
+        if (fullContent?.VideoUrl?.includes('youtube.com') || fullContent?.VideoUrl?.includes('youtu.be')) {
+            return 'YouTube';
+        }
+        // Extract domain from SourceUrl
+        const sourceUrl = fullContent?.SourceUrl || item?.SourceUrl;
+        if (sourceUrl) {
+            try {
+                const url = new URL(sourceUrl);
+                return url.hostname.replace(/^www\./, '');
+            } catch (e) { }
+        }
+        return 'Ligonier Ministries';
+    };
+
+    // Helper to extract a highlight snippet from API response
+    // Prefers transcript highlights for "why this matched"
+    const getHighlightSnippet = () => {
+        const highlights = item?.highlights;
+        if (!highlights || !Array.isArray(highlights) || highlights.length === 0) {
+            return null;
+        }
+        
+        // Prefer RawTranscript highlights, fall back to any other
+        const transcriptHighlight = highlights.find(h => h.path === 'RawTranscript') || highlights[0];
+        if (!transcriptHighlight?.texts) return null;
+        
+        // Build snippet from texts array, capping at ~150 chars
+        let snippet = '';
+        for (const part of transcriptHighlight.texts) {
+            if (snippet.length > 150) break;
+            snippet += part.value || '';
+        }
+        
+        // Clean up and truncate
+        snippet = snippet.trim().replace(/\s+/g, ' ');
+        if (snippet.length > 150) {
+            snippet = snippet.substring(0, 147) + '...';
+        }
+        
+        return snippet;
+    };
 
     // Exclusive Media Playback Logic
     const dispatchPlayEvent = () => {
@@ -591,6 +640,16 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     const renderVideo = () => {
         if (!showVideo) return null;
         
+        // Show error state if video failed to load
+        if (videoError) {
+            return (
+                <div className="sg-media-unavailable">
+                    <span className="material-symbols-outlined">videocam_off</span>
+                    <span>Video unavailable</span>
+                </div>
+            );
+        }
+        
         const embedUrl = getVideoEmbedUrl(fullContent.VideoUrl);
         
         if (embedUrl) {
@@ -603,6 +662,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                         title={fullContent.Name || 'Video'}
                         allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
+                        onError={() => setVideoError(true)}
                     />
                 </div>
             );
@@ -617,6 +677,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                         style={{ width: '100%', height: '100%' }}
                         onPlay={dispatchPlayEvent}
                         onEnded={handleMediaEnded}
+                        onError={() => setVideoError(true)}
                     >
                         Your browser does not support the video tag.
                     </video>
@@ -629,6 +690,16 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     const renderAudio = () => {
         if (!showAudio) return null;
         
+        // Show error state if audio failed to load
+        if (audioError) {
+            return (
+                <div className="sg-media-unavailable">
+                    <span className="material-symbols-outlined">volume_off</span>
+                    <span>Audio unavailable</span>
+                </div>
+            );
+        }
+        
         return (
             <audio
                 ref={mediaRef}
@@ -638,6 +709,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 data-audio-player="true"
                 onPlay={dispatchPlayEvent}
                 onEnded={handleMediaEnded}
+                onError={() => setAudioError(true)}
             >
                 Your browser does not support the audio tag.
             </audio>
@@ -772,7 +844,7 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 <header className="sg2-head">
                     <div className="sg2-headLeft">
                         <span className="sg2-favicon sg2-fallback" />
-                        <span className="sg2-domain">Ligonier Ministries</span>
+                        <span className="sg2-domain">{getSourceDomain()}</span>
                         {formattedDate && (
                             <>
                                 <span className="sg2-dot" />
@@ -789,6 +861,10 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 <div className="sg2-bodyTitle">
                     <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
                 </div>
+                {/* Show "why this matched" snippet */}
+                {getHighlightSnippet() && (
+                    <p className="sg2-highlight-snippet">{getHighlightSnippet()}</p>
+                )}
             </article>
         );
     }
@@ -805,8 +881,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                 <div className="sg2-head">
                     <div className="sg2-headLeft">
                         <span className="sg2-favicon sg2-fallback" />
-                        <span className="sg2-domain">Ligonier Ministries</span>
-                        {/* {formattedDate && (
+                        <span className="sg2-domain">{getSourceDomain()}</span>
+                        {formattedDate && (
                             <>
                                 <span className="sg2-dot" />
                                 <span className="sg2-calendar" aria-hidden="true">
@@ -816,13 +892,18 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                                 </span>
                                 <span className="sg2-date">{formattedDate}</span>
                             </>
-                        )} */}
+                        )}
                     </div>
                 </div>
 
                 <div className="sg2-bodyTitle">
                     <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
                 </div>
+                
+                {/* Show "why this matched" snippet */}
+                {getHighlightSnippet() && (
+                    <p className="sg2-highlight-snippet">{getHighlightSnippet()}</p>
+                )}
             </div>
 
             {/* 2. Media (Middle) - Hide if this card is in the Now Playing section */}
@@ -1003,11 +1084,44 @@ function SgSearch({
                 }
 
                 const allResults = Array.isArray(res?.data?.data) ? res.data.data : [];
-                setAllData(allResults);
-                setData(allResults.slice(0, 10)); // Show first 10
-                setHasMore(allResults.length > 10); // Show "Load More" if there are more than 10 results
+                
+                // Debug: Log API response structure to investigate score/highlights fields
+                if (allResults.length > 0) {
+                    console.log('[Tapos API Response]', {
+                        totalResults: allResults.length,
+                        firstResult: allResults[0],
+                        hasScore: 'score' in (allResults[0] || {}),
+                        hasHighlights: 'highlights' in (allResults[0] || {}),
+                        sampleFields: Object.keys(allResults[0] || {}),
+                    });
+                }
+                
+                // Score-based relevance filtering
+                // Chapter: show results with score ≥ 20
+                // Verse: show results with score ≥ 10
+                const searchLevel = globalThis.GlobalSearchLevel || level || "chapter";
+                const scoreThreshold = searchLevel === "verse" ? 10 : 20;
+                
+                const filteredResults = allResults.filter(item => {
+                    const score = item.score ?? 0;
+                    return score >= scoreThreshold;
+                });
+                
+                console.log('[Tapos Filtering]', {
+                    searchLevel,
+                    scoreThreshold,
+                    beforeFilter: allResults.length,
+                    afterFilter: filteredResults.length,
+                });
+                
+                // Limit to top 5 results for better relevance
+                const limitedResults = filteredResults.slice(0, 5);
+                
+                setAllData(limitedResults);
+                setData(limitedResults.slice(0, 10)); // Show first 10 (or all 5)
+                setHasMore(limitedResults.length > 10); // Show "Load More" if there are more than 10 results
                 // Open all cards initially
-                setOpenIds(new Set(allResults.map((item) => item._id)));
+                setOpenIds(new Set(limitedResults.map((item) => item._id)));
                 
                 // Reset content maps for new search
                 setContentMap(new Map());
@@ -1339,6 +1453,40 @@ function SgSearch({
                     display: none;
                 }
 
+                .sg-media-unavailable {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 32px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    color: #64748b;
+                    font-size: 14px;
+                }
+                
+                .sg-media-unavailable .material-symbols-outlined {
+                    font-size: 24px;
+                    color: #94a3b8;
+                }
+
+                .sg2-highlight-snippet {
+                    margin: 4px 12px 8px;
+                    padding: 8px 10px;
+                    background: rgba(140, 164, 67, 0.08);
+                    border-left: 3px solid #8ca443;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    color: #6b7280;
+                    font-style: italic;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                }
+
                 .sg-loadMoreBtn {
                     padding: 12px 24px;
                     background: transparent;
@@ -1424,7 +1572,7 @@ function SgSearch({
                 }
                 
                 .sg-card.sg2:hover {
-                    border-color: #8ca443;
+                    border-color: #94a3b8;
                     box-shadow: 0 10px 22px rgba(16, 24, 40, 0.1);
                 }
                 
@@ -1433,6 +1581,13 @@ function SgSearch({
                 }
                 
                 .sg-card.sg2.is-open {
+                    border: 2px solid #94a3b8;
+                    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.15);
+                }
+                
+                /* Only now-playing card gets green border */
+                .sg-card.sg2.sg-now-playing-card,
+                .sg-card.sg2.sg-now-playing-card:hover {
                     border: 2px solid #8ca443;
                     box-shadow: 0 10px 30px rgba(140, 164, 67, 0.15);
                 }
