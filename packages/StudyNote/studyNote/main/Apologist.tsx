@@ -180,10 +180,11 @@ function toEmbeddableUrl(item) {
   return url;
 }
 
-function SgCard({ item, isOpen, viewMode = "list" }) {
+function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId, onClose, isPinned }) {
   const [previewH, setPreviewH] = useState(0);
   const previewRef = useMemo(() => ({ el: null }), []);
   const [frameKey, setFrameKey] = useState(0);
+  const [videoError, setVideoError] = useState(false);
 
   const date =
     formatDateISO(item.published_on) || formatDateISO(item.created_at) || null;
@@ -200,6 +201,13 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
   const isYoutube = item.type === "youtube";
   const isEpisode = item.type === "episode";
   const isTableTalk = domain?.includes("tabletalkmagazine.com") || false;
+
+  // Helper to extract YouTube ID
+  const getYouTubeId = (url) => {
+      if (!url) return null;
+      const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+      return match ? match[1] : null;
+  };
 
   const openInNewTab = (e) => {
     e.preventDefault();
@@ -224,30 +232,70 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
   }, [embUrl, isYoutube]);
   const canPreview = !isYoutube && (!!item.image_url || isUrl);
 
-  const renderYoutubePlayer = () => (
-    <div className="sg-previewVideo">
-      {videoSrc ? (
-        <iframe
-          key={frameKey}
-          src={videoSrc}
-          title={item.title || "YouTube video"}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      ) : item.image_url ? (
-        <img
-          className="sg-previewVideoThumb"
-          src={item.image_url}
-          alt={item.title || "Video thumbnail"}
-        />
-      ) : (
-        <div
-          className="sg-previewVideoThumb sg-previewVideoThumb--fallback"
-          aria-hidden="true"
-        />
-      )}
-    </div>
-  );
+  const renderYoutubePlayer = () => {
+    // Show error state if video failed to load
+    if (videoError) {
+      return (
+        <div className="sg-previewVideo">
+          <div className="sg-media-unavailable">
+            <span className="material-symbols-outlined">videocam_off</span>
+            <span>Video unavailable</span>
+          </div>
+        </div>
+      );
+    }
+    
+    // Explicitly play this video if it is the "now playing" item
+    if (isNowPlaying && videoSrc) {
+      return (
+        <div className="sg-previewVideo">
+           <iframe
+            key={frameKey}
+            src={videoSrc}
+            title={item.title || "YouTube video"}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            onError={() => setVideoError(true)}
+          />
+        </div>
+      );
+    }
+
+    // Otherwise show thumbnail with play overlay
+    return (
+      <div className="sg-previewVideo">
+        <button 
+           className="sg-previewVideoButton" 
+           onClick={() => {
+              setVideoError(false);
+              setNowPlayingId?.(item.id);
+           }}
+           aria-label={`Play ${item.title || "video"}`}
+        >
+          {(() => {
+              let thumbUrl = item.image_url;
+              // If item is youtube, try to get better thumb or fallback if missing
+              if (isYoutube) {
+                  const ytId = getYouTubeId(item.url || item.referral_url);
+                  if (ytId) thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+              }
+
+              if (thumbUrl) {
+                  return <img className="sg-previewVideoThumb" src={thumbUrl} alt="" />;
+              }
+              return <div className="sg-previewVideoThumb sg-previewVideoThumb--fallback" aria-hidden="true" />;
+          })()}
+          
+          <span className="sg-videoPlayIcon">
+             <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="30" cy="30" r="30" fill="rgba(0,0,0,0.6)"/>
+                <path d="M40 30L25 39V21L40 30Z" fill="white"/>
+             </svg>
+          </span>
+        </button>
+      </div>
+    );
+  };
 
   // short description (whatever exists in payload)
   const desc =
@@ -274,7 +322,8 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
     <article
       className={`sg-card ${isBook ? "sg-card-book-inline" : ""} ${
         viewMode === "grid" ? "sg-card-grid" : "sg-card-list"
-      } ${isOpen ? "is-open" : ""}`}
+      } ${isOpen ? "is-open" : ""} ${isNowPlaying && isPinned ? "sg-now-playing-card" : ""}`}
+      style={isNowPlaying && isPinned ? { order: -1 } : {}}
     >
       {!isBook && (
         <header className="sg2-head">
@@ -313,7 +362,7 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
             )}
           </div>
           <div className="sg2-headRight">
-            {url && !isYoutube && (
+            {url && !isYoutube && !isPinned && (
               <a
                 className="sg2-open"
                 href={url}
@@ -337,6 +386,11 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
                   />
                 </svg>
               </a>
+            )}
+            {isPinned && onClose && (
+                 <button className="sg-now-playing-close" onClick={onClose} aria-label="Close Now Playing" title="Close Now Playing">
+                     ×
+                 </button>
             )}
           </div>
         </header>
@@ -367,13 +421,16 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
         </div>
       )}
 
+      {!isBook && desc ? <p className="sg2-desc">{desc}</p> : null}
+      
+      {/* Spacer for bottom alignment */}
+      <div style={{ flex: 1 }}></div>
+
       {isYoutube && (
         <div className="sg-youtubeEmbed">
           {renderYoutubePlayer()}
         </div>
       )}
-
-      {!isBook && desc ? <p className="sg2-desc">{desc}</p> : null}
 
       {!isYoutube && (
         <div
@@ -423,7 +480,7 @@ function SgCard({ item, isOpen, viewMode = "list" }) {
   );
 }
 
-// const DEFAULT_URL = "https://temp-proxy-server-nu.vercel.app/proxy/search";
+const DEFAULT_ORG = "67355031aea5f406546577d0";
 const DEFAULT_URL =
   "https://ligonier.ministries.bot/api/v1/corpus/search?cache_ttl=300";
 
@@ -436,14 +493,15 @@ const DEFAULT_URL =
  * - authHeader?: string
  * - cacheTtl?: number
  */
-function ApologistSearch({
+function Apologist({
   search,
   trigger = 0,
+  organizationId = DEFAULT_ORG,
+  authHeader = null,
+  cacheTtl = null,
   url = DEFAULT_URL,
   enabled = true,
   className = "",
-  authHeader = null,
-  cacheTtl = null,
   level = "chapter",
   baselineQuery = "",
   label = "",
@@ -460,6 +518,7 @@ function ApologistSearch({
   const [displayedCount, setDisplayedCount] = useState(20);
   const [showSpinner, setShowSpinner] = useState(false);
   const [allData, setAllData] = useState([]);
+  const [nowPlayingId, setNowPlayingId] = useState(null);
   const lastSearchKeyRef = useRef(null);
   const lastResultKeysRef = useRef(new Set());
   const baselineQueryRef = useRef(baselineQuery || "");
@@ -660,7 +719,7 @@ function ApologistSearch({
     return () => {
       cancelled = true;
     };
-  }, [searchParam, searchRunId, enabled, authHeader, cacheTtl, url, level, baselineQuery]);
+  }, [searchParam, searchRunId, organizationId, enabled, authHeader, cacheTtl, url, level, baselineQuery]);
 
   const handleResetToBaseline = () => {
     if (!currentBaselineQuery) return;
@@ -817,80 +876,52 @@ function ApologistSearch({
             <div className="sg-resultCount">{headerLabel} | {data.length} Results</div>
             <div className="sg-viewToggle">
               <button
-                className={`sg-toggle-btn ${
-                  viewMode === "list" ? "active" : ""
-                }`}
+                className={`sg-toggle-btn ${viewMode === "list" ? "active" : ""}`}
                 onClick={() => setViewMode("list")}
                 title="List View"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <g clipPath="url(#clip0_439_369)">
-                    <path
-                      d="M14 5L2 5C1.73487 4.99971 1.48069 4.89426 1.29321 4.70679C1.10574 4.51931 1.00029 4.26513 1 4L1 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2V4C14.9997 4.26513 14.8943 4.51931 14.7068 4.70679C14.5193 4.89426 14.2651 4.99971 14 5ZM2 2L2 4L14 4V2L2 2Z"
-                      fill="currentColor"
-                    />
-                    <path
-                      d="M14 15L2 15C1.73487 14.9997 1.48069 14.8943 1.29321 14.7068C1.10574 14.5193 1.00029 14.2651 1 14L1 12C1.00028 11.7349 1.10572 11.4807 1.2932 11.2932C1.48068 11.1057 1.73487 11.0003 2 11L14 11C14.2651 11.0003 14.5193 11.1057 14.7068 11.2932C14.8943 11.4807 14.9997 11.7349 15 12V14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15ZM2 12L2 14L14 14V12L2 12Z"
-                      fill="currentColor"
-                    />
-                    <path
-                      d="M14 10L2 10C1.73487 9.99971 1.48069 9.89426 1.29321 9.70679C1.10574 9.51931 1.00029 9.26513 1 9L1 7C1.00028 6.73487 1.10572 6.48068 1.2932 6.2932C1.48068 6.10572 1.73487 6.00028 2 6L14 6C14.2651 6.00028 14.5193 6.10572 14.7068 6.2932C14.8943 6.48068 14.9997 6.73487 15 7V9C14.9997 9.26513 14.8943 9.51931 14.7068 9.70679C14.5193 9.89426 14.2651 9.99971 14 10ZM2 7L2 9L14 9V7L2 7Z"
-                      fill="currentColor"
-                    />
-                  </g>
-                  <defs>
-                    <clipPath id="clip0_439_369">
-                      <rect width="16" height="16" fill="white" />
-                    </clipPath>
-                  </defs>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 5L2 5C1.73487 4.99971 1.48069 4.89426 1.29321 4.70679C1.10574 4.51931 1.00029 4.26513 1 4L1 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2V4C14.9997 4.26513 14.8943 4.51931 14.7068 4.70679C14.5193 4.89426 14.2651 4.99971 14 5ZM2 2L2 4L14 4V2L2 2Z" fill="currentColor"/>
+                  <path d="M14 15L2 15C1.73487 14.9997 1.48069 14.8943 1.29321 14.7068C1.10574 14.5193 1.00029 14.2651 1 14L1 12C1.00028 11.7349 1.10572 11.4807 1.2932 11.2932C1.48068 11.1057 1.73487 11.0003 2 11L14 11C14.2651 11.0003 14.5193 11.1057 14.7068 11.2932C14.8943 11.4807 14.9997 11.7349 15 12V14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15ZM2 12L2 14L14 14V12L2 12Z" fill="currentColor"/>
+                  <path d="M14 10L2 10C1.73487 9.99971 1.48069 9.89426 1.29321 9.70679C1.10574 9.51931 1.00029 9.26513 1 9L1 7C1.00028 6.73487 1.10572 6.48068 1.2932 6.2932C1.48068 6.10572 1.73487 6.00028 2 6L14 6C14.2651 6.00028 14.5193 6.10572 14.7068 6.2932C14.8943 6.48068 14.9997 6.73487 15 7V9C14.9997 9.26513 14.8943 9.51931 14.7068 9.70679C14.5193 9.89426 14.2651 9.99971 14 10ZM2 7L2 9L14 9V7L2 7Z" fill="currentColor"/>
                 </svg>
               </button>
               <button
-                className={`sg-toggle-btn ${
-                  viewMode === "grid" ? "active" : ""
-                }`}
+                className={`sg-toggle-btn ${viewMode === "grid" ? "active" : ""}`}
                 onClick={() => setViewMode("grid")}
                 title="Grid View"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <g clipPath="url(#clip0_439_733)">
-                    <path
-                      d="M15 2L15 14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15L10 15C9.73487 14.9997 9.48068 14.8943 9.2932 14.7068C9.10572 14.5193 9.00028 14.2651 9 14L9 2C9.00028 1.73487 9.10572 1.48068 9.2932 1.2932C9.48068 1.10572 9.73487 1.00028 10 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2ZM10 14L14 14L14 2L10 2L10 14Z"
-                      fill="currentColor"
-                    />
-                    <path
-                      d="M7 2L7 14C6.99972 14.2651 6.89428 14.5193 6.7068 14.7068C6.51932 14.8943 6.26513 14.9997 6 15L2 15C1.73487 14.9997 1.48068 14.8943 1.2932 14.7068C1.10572 14.5193 1.00028 14.2651 1 14L0.999999 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L6 1C6.26513 1.00028 6.51932 1.10572 6.7068 1.2932C6.89428 1.48068 6.99972 1.73487 7 2ZM2 14L6 14L6 2L2 2L2 14Z"
-                      fill="currentColor"
-                    />
-                  </g>
-                  <defs>
-                    <clipPath id="clip0_439_733">
-                      <rect
-                        width="16"
-                        height="16"
-                        fill="white"
-                        transform="translate(0 16) rotate(-90)"
-                      />
-                    </clipPath>
-                  </defs>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 2L15 14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15L10 15C9.73487 14.9997 9.48068 14.8943 9.2932 14.7068C9.10572 14.5193 9.00028 14.2651 9 14L9 2C9.00028 1.73487 9.10572 1.48068 9.2932 1.2932C9.48068 1.10572 9.73487 1.00028 10 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2ZM10 14L14 14L14 2L10 2L10 14Z" fill="currentColor"/>
+                  <path d="M7 2L7 14C6.99972 14.2651 6.89428 14.5193 6.7068 14.7068C6.51932 14.8943 6.26513 14.9997 6 15L2 15C1.73487 14.9997 1.48068 14.8943 1.2932 14.7068C1.10572 14.5193 1.00028 14.2651 1 14L0.999999 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L6 1C6.26513 1.00028 6.51932 1.10572 6.7068 1.2932C6.89428 1.48068 6.99972 1.73487 7 2ZM2 14L6 14L6 2L2 2L2 14Z" fill="currentColor"/>
                 </svg>
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Pinned Now Playing Section */}
+      {nowPlayingId && allData && (
+        <div style={{ marginBottom: "20px" }}>
+           {(() => {
+             const npItem = allData.find(d => d.id === nowPlayingId);
+             if (!npItem) return null;
+             return (
+               <SgCard
+                 key={`pinned-${npItem.id}`}
+                 item={npItem}
+                 isOpen={true}
+                 viewMode="list"
+                 isNowPlaying={true}
+                 setNowPlayingId={setNowPlayingId}
+                 onClose={() => setNowPlayingId(null)}
+                 isPinned={true}
+               />
+             );
+           })()}
+        </div>
+      )}
 
       <div
         className={`sg-results ${
@@ -899,16 +930,19 @@ function ApologistSearch({
       >
         {data && data.length > 0 ? (
           <>
-            {data.map((item) =>
-              item?.id ? (
-                <SgCard
-                  key={String(item.id)}
-                  item={item}
-                  isOpen={openIds.has(item.id)}
-                  viewMode={viewMode}
-                />
-              ) : null
-            )}
+            {data.map((item) => {
+              if (item.id === nowPlayingId) return null; // Filter pinned item
+              return item?.id ? (
+                 <SgCard
+                   key={String(item.id)}
+                   item={item}
+                   isOpen={openIds.has(item.id)}
+                   viewMode={viewMode}
+                   isNowPlaying={nowPlayingId === item.id}
+                   setNowPlayingId={setNowPlayingId}
+                 />
+               ) : null;
+            })}
             {hasMore && (
               <div className="sg-loadMore">
                 <button
@@ -1005,6 +1039,50 @@ function ApologistSearch({
                     cursor: not-allowed;
                 }
                 
+                .sg-card {
+                    background: #fff;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0; /* Default gray border */
+                    padding: 16px;
+                    margin-bottom: 0px;
+                    overflow: hidden;
+                    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.08s ease;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    box-sizing: border-box;
+                }
+
+                .sg-card.sg-card-list {
+                    padding: 12px 14px;
+                }
+                
+                .sg-card.sg-card-grid {
+                    padding: 16px;
+                }
+
+                .sg-card:hover {
+                    border-color: #94a3b8;
+                    box-shadow: 0 10px 22px rgba(16, 24, 40, 0.1);
+                }
+
+                .sg-card:active {
+                    transform: translateY(1px);
+                }
+
+                .sg-card.is-open {
+                    border: 2px solid #94a3b8;
+                    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.15);
+                }
+
+                /* Only "Now Playing" card gets green border */
+                .sg-card.sg-now-playing-card,
+                .sg-card.sg-now-playing-card:hover,
+                .sg-card.sg-now-playing-card.is-open {
+                    border: 2px solid #8ca443;
+                    box-shadow: 0 10px 30px rgba(140, 164, 67, 0.15);
+                }
+                
                 .sg-header {
                     display: flex;
                     justify-content: flex-end;
@@ -1047,6 +1125,23 @@ function ApologistSearch({
                     color: #7a923a;
                 }
 
+                .sg-now-playing-close {
+                    background: transparent;
+                    border: none;
+                    font-size: 24px;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    padding: 4px 8px;
+                    line-height: 1;
+                    border-radius: 4px;
+                    transition: background 0.2s, color 0.2s;
+                }
+
+                .sg-now-playing-close:hover {
+                    background: rgba(0,0,0,0.05);
+                    color: #64748b;
+                }
+
                 .sg-youtubeEmbed {
                     margin-top: 12px;
                 }
@@ -1069,6 +1164,23 @@ function ApologistSearch({
                     height: 100%;
                     border: none;
                     display: block;
+                }
+
+                .sg-media-unavailable {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    height: 100%;
+                    background: #1e293b;
+                    color: #94a3b8;
+                    font-size: 14px;
+                }
+                
+                .sg-media-unavailable .material-symbols-outlined {
+                    font-size: 24px;
+                    color: #94a3b8;
                 }
 
                 .sg-previewVideoButton {
@@ -1124,6 +1236,7 @@ function ApologistSearch({
   );
 }
 
-globalThis.ApologistSearch = ApologistSearch;
+globalThis.Apologist = Apologist;
+globalThis.ApologistSearch = Apologist;
 
-return ApologistSearch;
+return Apologist;

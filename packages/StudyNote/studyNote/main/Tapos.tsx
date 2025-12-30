@@ -2,7 +2,7 @@
 const { useEffect, useState, useMemo, useRef } = os.appHooks;
 const getStyleOf = await thisBot.GetStyle();
 
-function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadingContent, contentError, isNowPlaying, setNowPlayingId }) {
+function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadingContent, contentError, isNowPlaying, setNowPlayingId, onClose, isPinned }) {
     // Debug flag for video tracking
     const DEBUG_VIDEO_TRACKING = false; // Set to true to enable logs
     
@@ -31,6 +31,13 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     // Video error state for dead link handling
     const [videoError, setVideoError] = useState(false);
     const [audioError, setAudioError] = useState(false);
+
+    // Extract YouTube ID helper
+    const getYouTubeId = (url) => {
+        if (!url) return null;
+        const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+        return match ? match[1] : null;
+    };
     
     // Helper to extract source domain from content
     const getSourceDomain = () => {
@@ -872,8 +879,8 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
     // OPEN CARD LAYOUT
     return (
         <article 
-            className={`sg-card sg2 is-open ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"} ${isNowPlaying ? 'sg-now-playing-card' : ''}`}
-            style={isNowPlaying ? { order: -1 } : {}}
+            className={`sg-card sg2 is-open ${viewMode === "grid" ? "sg-card-grid" : "sg-card-list"} ${isNowPlaying && isPinned ? 'sg-now-playing-card' : ''}`}
+            style={isNowPlaying && isPinned ? { order: -1 } : {}}
         >
             
             {/* 1. Title & Info (Top) */}
@@ -894,45 +901,28 @@ function SgCard({ item, isOpen, onToggle, viewMode = "list", fullContent, loadin
                             </>
                         )}
                     </div>
+                    <div className="sg2-headRight">
+                        {isPinned && onClose && (
+                            <button className="sg-now-playing-close" onClick={onClose} aria-label="Close Now Playing" title="Close Now Playing">
+                                ×
+                            </button>
+                        )}
+                    </div>
                 </div>
-
-                <div className="sg2-bodyTitle">
-                    <h3 className="sg2-title" title={item.Name}>{item.Name}</h3>
-                </div>
-                
-                {/* Show "why this matched" snippet */}
-                {getHighlightSnippet() && (
-                    <p className="sg2-highlight-snippet">{getHighlightSnippet()}</p>
-                )}
             </div>
 
-            {/* 2. Media (Middle) - Hide if this card is in the Now Playing section */}
-            {!isNowPlaying && (
-                <div className={`sg-media-container ${showAudio ? 'sg-media-audio' : ''}`}>
-                     {loadingContent && (
-                        <div className="sg-media-loading">
-                            <div className="sg-spinner-small"></div>
-                            <span>Loading media...</span>
-                        </div>
-                    )}
-                    
-                    {contentError && (
-                        <div className="sg-media-error">
-                            <span>⚠️ Failed to load content: {contentError}</span>
-                        </div>
-                    )}
-
-                    {!loadingContent && !contentError && (
-                        <>
-                            {showVideo && renderVideo()}
-                            {showAudio && renderAudio()}
-                        </>
-                    )}
-                </div>
+            {/* Title Section (Missing in Open View) */}
+            <div className="sg2-bodyTitle">
+                <h3 className="sg2-title" title={item.title || item.Name}>{item.title || item.Name}</h3>
+            </div>
+            
+            {/* Show "why this matched" snippet */}
+            {getHighlightSnippet() && (
+                <p className="sg2-highlight-snippet">{getHighlightSnippet()}</p>
             )}
             
-            {/* Show media (full width) when in Now Playing section */}
-            {isNowPlaying && (
+            {/* Show media (full width) */}
+            {(showVideo || showAudio) && (
                 <div className="sg-media-container sg-now-playing-full">
                     {!loadingContent && !contentError && (
                         <>
@@ -1011,11 +1001,12 @@ async function batchFetchContent(ids, batchSize, authHeader, setContentMap, setL
     }
 }
 
-function SgSearch({
+function Tapos({
     search,
     trigger = 0,
     organizationId = DEFAULT_ORG,
     authHeader = null,
+    cacheTtl = null,
     url = DEFAULT_URL,
     enabled = true,
     className = "",
@@ -1047,6 +1038,10 @@ function SgSearch({
             : (search || "")
     );
     const showResetControl = Boolean(isVerseLevel && currentBaselineQuery);
+    
+    useEffect(() => {
+        baselineQueryRef.current = baselineQuery || baselineQueryRef.current;
+    }, [baselineQuery]);
 
     useEffect(() => {
         let cancelled = false;
@@ -1129,7 +1124,7 @@ function SgSearch({
                 setContentErrors(new Map());
                 
                 // Batch fetch content for first 10 displayed items
-                const firstBatchIds = allResults.slice(0, 10)
+                const firstBatchIds = limitedResults.slice(0, 10)
                     .map(item => item._id)
                     .filter(Boolean);
                 
@@ -1148,7 +1143,7 @@ function SgSearch({
 
         run();
         return () => { cancelled = true; };
-    }, [search, trigger, organizationId, authHeader, url, enabled]);
+    }, [search, trigger, organizationId, authHeader, cacheTtl, url, enabled, level, baselineQuery]);
 
     useEffect(() => {
         let timer;
@@ -1247,23 +1242,16 @@ function SgSearch({
                             </button>
                         )}
                         <div className="sg-resultCount">{headerLabel || 'Results'} | {data.length} Results</div>
-                        <div className="sg-viewToggle">
+                    <div className="sg-viewToggle">
                             <button
                                 className={`sg-toggle-btn ${viewMode === "list" ? "active" : ""}`}
                                 onClick={() => setViewMode("list")}
                                 title="List View"
                             >
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <g clipPath="url(#clip0_439_369)">
-                                        <path d="M14 5L2 5C1.73487 4.99971 1.48069 4.89426 1.29321 4.70679C1.10574 4.51931 1.00029 4.26513 1 4L1 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2V4C14.9997 4.26513 14.8943 4.51931 14.7068 4.70679C14.5193 4.89426 14.2651 4.99971 14 5ZM2 2L2 4L14 4V2L2 2Z" fill="currentColor"/>
-                                        <path d="M14 15L2 15C1.73487 14.9997 1.48069 14.8943 1.29321 14.7068C1.10574 14.5193 1.00029 14.2651 1 14L1 12C1.00028 11.7349 1.10572 11.4807 1.2932 11.2932C1.48068 11.1057 1.73487 11.0003 2 11L14 11C14.2651 11.0003 14.5193 11.1057 14.7068 11.2932C14.8943 11.4807 14.9997 11.7349 15 12V14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15ZM2 12L2 14L14 14V12L2 12Z" fill="currentColor"/>
-                                        <path d="M14 10L2 10C1.73487 9.99971 1.48069 9.89426 1.29321 9.70679C1.10574 9.51931 1.00029 9.26513 1 9L1 7C1.00028 6.73487 1.10572 6.48068 1.2932 6.2932C1.48068 6.10572 1.73487 6.00028 2 6L14 6C14.2651 6.00028 14.5193 6.10572 14.7068 6.2932C14.8943 6.48068 14.9997 6.73487 15 7V9C14.9997 9.26513 14.8943 9.51931 14.7068 9.70679C14.5193 9.89426 14.2651 9.99971 14 10ZM2 7L2 9L14 9V7L2 7Z" fill="currentColor"/>
-                                    </g>
-                                    <defs>
-                                        <clipPath id="clip0_439_369">
-                                            <rect width="16" height="16" fill="white"/>
-                                        </clipPath>
-                                    </defs>
+                                    <path d="M14 5L2 5C1.73487 4.99971 1.48069 4.89426 1.29321 4.70679C1.10574 4.51931 1.00029 4.26513 1 4L1 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2V4C14.9997 4.26513 14.8943 4.51931 14.7068 4.70679C14.5193 4.89426 14.2651 4.99971 14 5ZM2 2L2 4L14 4V2L2 2Z" fill="currentColor"/>
+                                    <path d="M14 15L2 15C1.73487 14.9997 1.48069 14.8943 1.29321 14.7068C1.10574 14.5193 1.00029 14.2651 1 14L1 12C1.00028 11.7349 1.10572 11.4807 1.2932 11.2932C1.48068 11.1057 1.73487 11.0003 2 11L14 11C14.2651 11.0003 14.5193 11.1057 14.7068 11.2932C14.8943 11.4807 14.9997 11.7349 15 12V14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15ZM2 12L2 14L14 14V12L2 12Z" fill="currentColor"/>
+                                    <path d="M14 10L2 10C1.73487 9.99971 1.48069 9.89426 1.29321 9.70679C1.10574 9.51931 1.00029 9.26513 1 9L1 7C1.00028 6.73487 1.10572 6.48068 1.2932 6.2932C1.48068 6.10572 1.73487 6.00028 2 6L14 6C14.2651 6.00028 14.5193 6.10572 14.7068 6.2932C14.8943 6.48068 14.9997 6.73487 15 7V9C14.9997 9.26513 14.8943 9.51931 14.7068 9.70679C14.5193 9.89426 14.2651 9.99971 14 10ZM2 7L2 9L14 9V7L2 7Z" fill="currentColor"/>
                                 </svg>
                             </button>
                             <button
@@ -1272,15 +1260,8 @@ function SgSearch({
                                 title="Grid View"
                             >
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <g clipPath="url(#clip0_439_733)">
-                                        <path d="M15 2L15 14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15L10 15C9.73487 14.9997 9.48068 14.8943 9.2932 14.7068C9.10572 14.5193 9.00028 14.2651 9 14L9 2C9.00028 1.73487 9.10572 1.48068 9.2932 1.2932C9.48068 1.10572 9.73487 1.00028 10 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2ZM10 14L14 14L14 2L10 2L10 14Z" fill="currentColor"/>
-                                        <path d="M7 2L7 14C6.99972 14.2651 6.89428 14.5193 6.7068 14.7068C6.51932 14.8943 6.26513 14.9997 6 15L2 15C1.73487 14.9997 1.48068 14.8943 1.2932 14.7068C1.10572 14.5193 1.00028 14.2651 1 14L0.999999 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L6 1C6.26513 1.00028 6.51932 1.10572 6.7068 1.2932C6.89428 1.48068 6.99972 1.73487 7 2ZM2 14L6 14L6 2L2 2L2 14Z" fill="currentColor"/>
-                                    </g>
-                                    <defs>
-                                        <clipPath id="clip0_439_733">
-                                            <rect width="16" height="16" fill="white" transform="translate(0 16) rotate(-90)"/>
-                                        </clipPath>
-                                    </defs>
+                                    <path d="M15 2L15 14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15L10 15C9.73487 14.9997 9.48068 14.8943 9.2932 14.7068C9.10572 14.5193 9.00028 14.2651 9 14L9 2C9.00028 1.73487 9.10572 1.48068 9.2932 1.2932C9.48068 1.10572 9.73487 1.00028 10 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2ZM10 14L14 14L14 2L10 2L10 14Z" fill="currentColor"/>
+                                    <path d="M7 2L7 14C6.99972 14.2651 6.89428 14.5193 6.7068 14.7068C6.51932 14.8943 6.26513 14.9997 6 15L2 15C1.73487 14.9997 1.48068 14.8943 1.2932 14.7068C1.10572 14.5193 1.00028 14.2651 1 14L0.999999 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L6 1C6.26513 1.00028 6.51932 1.10572 6.7068 1.2932C6.89428 1.48068 6.99972 1.73487 7 2ZM2 14L6 14L6 2L2 2L2 14Z" fill="currentColor"/>
                                 </svg>
                             </button>
                         </div>
@@ -1288,33 +1269,58 @@ function SgSearch({
                 )}
             </div>
 
+            {/* Now Playing Section pinned at top */}
+            {nowPlayingItem && (
+                <div className="sg-now-playing-section" style={{ marginBottom: '20px' }}>
+                     <SgCard 
+                         key={`now-playing-${nowPlayingItem._id}`}
+                         item={nowPlayingItem}
+                         isOpen={true}
+                         onToggle={() => {}} 
+                         viewMode="list"
+                         fullContent={nowPlayingContent}
+                         loadingContent={loadingContent.has(nowPlayingId)}
+                         contentError={contentErrors.get(nowPlayingId)}
+                         isNowPlaying={true}
+                         setNowPlayingId={setNowPlayingId}
+                         onClose={() => setNowPlayingId(null)}
+                         isPinned={true}
+                     />
+                </div>
+            )}
+
             <div className={`sg-results ${viewMode === "grid" ? "sg-grid" : "sg-list"} ${className}`} key={`results-${Boolean(data?.length)}-${search}`}>
                 {data && data.length > 0 ? (
                     <>
-                        {data.map((item, i) => (
-                            <SgCard
-                                key={item?._id ? String(item._id) : `row-${i}`}
-                                item={item}
-                                isOpen={openIds.has(item._id)}
-                                onToggle={(id) => {
-                                    setOpenIds(prev => {
-                                        const newSet = new Set(prev);
-                                        if (newSet.has(id)) {
-                                            newSet.delete(id);
-                                        } else {
-                                            newSet.add(id);
-                                        }
-                                        return newSet;
-                                    });
-                                }}
-                                viewMode={viewMode}
-                                fullContent={contentMap.get(item._id)}
-                                loadingContent={loadingContent.has(item._id)}
-                                contentError={contentErrors.get(item._id)}
-                                isNowPlaying={nowPlayingId === item._id}
-                                setNowPlayingId={setNowPlayingId}
-                            />
-                        ))}
+                        {data.map((item, i) => {
+                            // Skip the item if it is currently pinned at the top
+                            if (item._id === nowPlayingId) return null;
+                            
+                            return (
+                                <SgCard
+                                    key={item?._id ? String(item._id) : `row-${i}`}
+                                    item={item}
+                                    isOpen={openIds.has(item._id)}
+                                    viewMode={viewMode}
+                                    onToggle={(id) => {
+                                        setOpenIds(prev => {
+                                            const newSet = new Set(prev);
+                                            if (newSet.has(id)) {
+                                                newSet.delete(id);
+                                            } else {
+                                                newSet.add(id);
+                                            }
+                                            return newSet;
+                                        });
+                                    }}
+                                    fullContent={contentMap.get(item._id)}
+                                    loadingContent={loadingContent.has(item._id)}
+                                    contentError={contentErrors.get(item._id)}
+                                    isNowPlaying={nowPlayingId === item._id}
+                                    setNowPlayingId={setNowPlayingId}
+                                />
+                            );
+                        })}
                         {hasMore && (
                             <div className="sg-loadMore">
                                 <button 
@@ -1777,6 +1783,7 @@ function SgSearch({
     );
 }
 
-globalThis.TaposSearch = SgSearch;
+globalThis.Tapos = Tapos;
+globalThis.TaposSearch = Tapos;
 
-return SgSearch;
+return Tapos;

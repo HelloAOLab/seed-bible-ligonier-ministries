@@ -92,7 +92,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch; /* Cards in same row will have equal height */
 }
 
 /* Card base */
@@ -118,7 +118,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  height: fit-content;
+  height: 100%;
 }
 
 /* Card with audio - give more height and use flexbox */
@@ -142,6 +142,31 @@
 
 .sg-card:active {
   transform: translateY(1px);
+}
+
+/* Now Playing Card */
+.sg-now-playing-card {
+  border: 2px solid #8ca443 !important;
+  box-shadow: 0 4px 16px rgba(140, 164, 67, 0.2);
+  background: linear-gradient(135deg, #f8faf3 0%, #fff 100%);
+  position: relative;
+  grid-column: 1 / -1 !important; /* Span all columns in grid mode */
+  width: 100% !important;
+}
+
+.sg-now-playing-card::before {
+  content: 'NOW PLAYING';
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8ca443;
+  background: rgba(140, 164, 67, 0.15);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin: 14px 18px 0;
+  width: fit-content;
 }
 
 /* Optional meta bar (favicon, domain, date) */

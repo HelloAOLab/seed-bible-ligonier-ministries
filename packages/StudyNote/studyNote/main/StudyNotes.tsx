@@ -1,7 +1,7 @@
 const getStyleOf = await thisBot.GetStyle();
 import { BibleDataManager } from 'app.hooks.bibleDataManager';
-const ApologistSearch = await thisBot.Apologist();
-const SgSearch = await thisBot.Tapos();
+const Apologist = await thisBot.Apologist();
+const Tapos = await thisBot.Tapos();
 const TableTalkEmbed = await thisBot.TableTalk();
 import { TextEditor } from 'app.components.editor';
 const { useEffect, useState, useRef, useLayoutEffect, useCallback, useMemo } = os.appHooks;
@@ -2517,7 +2517,7 @@ function StudyNotes({ id, chapter: propChapter }) {
                 <div className={`sn-panel ${active === 'discover' ? 'show' : 'hide'}`}>
                     <div className="sg-searchWrap">
                         {searchType === 'apologist' ? (
-                            <ApologistSearch
+                            <Apologist
                                 search={searchQuery}
                                 trigger={searchTrigger}
                                 level={searchLevel}
@@ -2525,7 +2525,7 @@ function StudyNotes({ id, chapter: propChapter }) {
                                 label={searchLabel}
                             />
                         ) : (
-                            <SgSearch 
+                            <Tapos 
                                 search={searchQuery} 
                                 trigger={searchTrigger}
                                 level={searchLevel}
