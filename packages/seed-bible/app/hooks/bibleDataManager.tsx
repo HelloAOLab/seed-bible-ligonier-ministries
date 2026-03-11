@@ -1,11 +1,41 @@
-const bibleTabDataCache = new Map();
+import { saveUserReadingHistory } from "db.annotations.library";
+const bibleDataCache = new Map();
+const footnotesCache = new Map();
 
+// Cache key based on content (translation:bookId:chapter)
+export function getCacheKey(translation, bookId, chapter) {
+  return `${translation}:${bookId}:${chapter}`;
+}
+
+export function getCachedBibleData(translation, bookId, chapter) {
+  const key = getCacheKey(translation, bookId, chapter);
+  return bibleDataCache.get(key);
+}
+
+export function setCachedBibleData(translation, bookId, chapter, data) {
+  const key = getCacheKey(translation, bookId, chapter);
+  bibleDataCache.set(key, data);
+}
+
+export function getCachedFootnotes(translation, bookId, chapter) {
+  const key = getCacheKey(translation, bookId, chapter);
+  return footnotesCache.get(key) || null;
+}
+
+export function setCachedFootnotes(translation, bookId, chapter, footnotes) {
+  const key = getCacheKey(translation, bookId, chapter);
+  if (footnotes) {
+    footnotesCache.set(key, footnotes);
+  }
+}
+
+// Keep old functions for backwards compatibility
 export function getCachedTabData(tabId) {
-  return bibleTabDataCache.get(tabId);
+  return null; // Deprecated - use getCachedBibleData instead
 }
 
 export function setCachedTabData(tabId, data) {
-  bibleTabDataCache.set(tabId, data);
+  // Deprecated - cache is now set automatically via setCachedBibleData
 }
 
 function parseContent(content) {
@@ -32,10 +62,14 @@ function parseContent(content) {
     } else if (type === "verse") {
       const verseText = parseText(sectionContent);
       currentSection.verses.push({ verseNumber: number, text: verseText });
-    } else if (type === 'line_break') {
-      currentSection.verses.push({ verseNumber: null, text: '\n', lineBreak: true });
-    }else if (type === "hebrew_subtitle") {
-      console.log(sectionContent, "sectionContent")
+    } else if (type === "line_break") {
+      currentSection.verses.push({
+        verseNumber: null,
+        text: "\n",
+        lineBreak: true,
+      });
+    } else if (type === "hebrew_subtitle") {
+      console.log(sectionContent, "sectionContent");
       currentSection.hebrew_subtitle = parseText(sectionContent);
     }
   });
@@ -50,7 +84,7 @@ export class BibleDataManager {
     translation = "BSB",
     bookId = "GEN",
     chapter = 1,
-    baseUrl = "https://bible.helloao.org",
+    baseUrl = "https://vmfnri.helloao.org",
   } = {}) {
     this.tabId = tabId;
     this.translation = translation;
@@ -58,8 +92,11 @@ export class BibleDataManager {
     this.chapter = chapter;
     this.baseUrl = baseUrl;
 
-    this.data = getCachedTabData(tabId) || { content: [] };
-    this.footnotes = null;
+    // Try to get cached data by content key (translation:bookId:chapter)
+    this.data = getCachedBibleData(translation, bookId, chapter) || {
+      content: [],
+    };
+    this.footnotes = getCachedFootnotes(translation, bookId, chapter);
     this.loading = false;
     this.error = null;
 
@@ -79,46 +116,61 @@ export class BibleDataManager {
   }
 
   _scheduleMaskRecord() {
-
-    const timestamp = Date.now()
-
-    const lastReading = thisBot.vars.tempLastReading ??= {};
-    const tempHistory = thisBot.vars.tempReadingHistory ??= {};
-    const userHistory = tempHistory[configBot.id] ??= {};
-    const bookHistory = userHistory[this.bookId] ??= {};
-    if(!bookHistory[this.chapter]) bookHistory[this.chapter] = [];
-    const length = bookHistory[this.chapter].push({start: timestamp});
-    if(lastReading[configBot.id]) 
-    {
-      const {bookId, chapter, index} = lastReading[configBot.id];
-      const lastEntry = userHistory[bookId]?.[chapter]?.[index];
-      if(lastEntry) lastEntry.end = timestamp;
-      else
-      {
-        console.warn(`[Debug] BibleDataManager._scheduleMaskRecord lastEntry not found`, thisBot.vars.tempLastReading[configBot.id]);
-      }
+    // Clear any existing reading history interval first
+    if (thisBot.masks.readingHistoryInterval) {
+      clearInterval(thisBot.masks.readingHistoryInterval);
+      thisBot.masks.readingHistoryInterval = null;
     }
 
-    lastReading[configBot.id] = {bookId: this.bookId, chapter: this.chapter, index: length - 1};
-    
+    // Debounce: don't start new interval if we just started one
+    const now = Date.now();
+    if (
+      globalThis.__lastHistorySchedule &&
+      now - globalThis.__lastHistorySchedule < 2000
+    ) {
+      return;
+    }
+    globalThis.__lastHistorySchedule = now;
+
+    // Capture current values at schedule time (not `this` which can change)
+    const scheduledBookId = this.bookId;
+    const scheduledChapter = this.chapter;
+
+    // Validate before scheduling
+    if (!scheduledBookId || !scheduledChapter) {
+      console.log("_scheduleMaskRecord: skipping - invalid bookId or chapter");
+      return;
+    }
+
+    // Use captured values directly in the interval, not `this`
+    const readingHistoryInterval = setInterval(() => {
+      // Double-check values are still valid
+      if (scheduledBookId && scheduledChapter) {
+        saveUserReadingHistory(scheduledBookId, scheduledChapter);
+      }
+    }, 5000); // every 5 seconds
+    setTagMask(thisBot, "readingHistoryInterval", readingHistoryInterval);
+
     if (!this.tabId) return;
-    
+
     if (!Array.isArray(masks[this.tabId])) {
       masks[this.tabId] = [];
     }
-    
+
     if (this._viewingTimer) clearTimeout(this._viewingTimer);
-      
+
+    this._viewingStart = Date.now();
     const keyAtScheduleTime = this._getKey();
-    this._viewingStart = timestamp;
+    const tabIdCapture = this.tabId;
+    const translationCapture = this.translation;
 
     this._viewingTimer = setTimeout(() => {
       if (keyAtScheduleTime === this._getKey()) {
         if (this._lastRecordedKey !== keyAtScheduleTime) {
-          masks[this.tabId].push({
-            bookId: this.bookId,
-            chapter: this.chapter,
-            translation: this.translation,
+          masks[tabIdCapture].push({
+            bookId: scheduledBookId,
+            chapter: scheduledChapter,
+            translation: translationCapture,
             recordedAt: new Date().toISOString(),
             secondsOpen: Math.round((Date.now() - this._viewingStart) / 1000),
           });
@@ -144,8 +196,9 @@ export class BibleDataManager {
     try {
       const url = customUrl
         ? `${forcedBaseUrl || this.baseUrl}${customUrl}`
-        : `${forcedBaseUrl || this.baseUrl}/api/${forcedTranslation || this.translation
-        }/${this.bookId}/${this.chapter}.json`;
+        : `${forcedBaseUrl || this.baseUrl}/api/${
+            forcedTranslation || this.translation
+          }/${this.bookId}/${this.chapter}.json`;
       console.log(url, customUrl, "firstChapterApiLink");
 
       const response = await web.get(url);
@@ -161,23 +214,40 @@ export class BibleDataManager {
           content: parsedContent,
           bookId: json?.data?.book?.id || this.bookId,
           translation: forcedTranslation || this.translation,
-          nextChapter: json?.data?.nextChapterApiLink || json?.nextChapterApiLink,
-          prevChapter: json?.data?.previousChapterApiLink || json?.previousChapterApiLink,
-          numberOfChapters: json?.data?.book?.numberOfChapters || json?.numberOfChapters,
+          nextChapter:
+            json?.data?.nextChapterApiLink || json?.nextChapterApiLink,
+          prevChapter:
+            json?.data?.previousChapterApiLink || json?.previousChapterApiLink,
+          numberOfChapters:
+            json?.data?.book?.numberOfChapters || json?.numberOfChapters,
+          baseUrl: forcedBaseUrl || this.baseUrl,
+          shortName: json?.data?.translation?.shortName || "",
         };
 
         this.footnotes = json?.data?.chapter?.footnotes || null;
 
-        if (this.tabId) {
-          setCachedTabData(this.tabId, this.data);
-        }
+        // Cache by content key (translation:bookId:chapter)
+        setCachedBibleData(
+          this.data.translation,
+          this.data.bookId,
+          this.data.chapter,
+          this.data
+        );
+
+        // Cache footnotes alongside the bible data
+        setCachedFootnotes(
+          this.data.translation,
+          this.data.bookId,
+          this.data.chapter,
+          this.footnotes
+        );
 
         // schedule the "open ≥ 1 min" record
         this._scheduleMaskRecord();
       }
     } catch (err) {
       this.error = err;
-      console.error('Failed to fetch bible data:', err);
+      console.error("Failed to fetch bible data:", err);
     } finally {
       this.loading = false;
     }
@@ -197,12 +267,20 @@ export class BibleDataManager {
 
   async openNext() {
     if (this.data?.nextChapter) {
+      const match = this.data.nextChapter.match(
+        /^\/api\/([^/]+)\/([^/]+)\/(\d+)\.json$/
+      );
 
-      const match = this.data.nextChapter.match(/^\/api\/([^/]+)\/([^/]+)\/(\d+)\.json$/);
+      const codexMatch = this.data.nextChapter.match(
+        /([^/]+)\/api\/([^/]+)\/([^/]+)\/(\d+)\.json$/
+      );
 
-      if (match) 
-      {
+      if (match) {
         const [, , bookId, chapter] = match;
+        this.bookId = bookId;
+        this.chapter = Number(chapter);
+      } else if (codexMatch) {
+        const [, , , bookId, chapter] = codexMatch;
         this.bookId = bookId;
         this.chapter = Number(chapter);
       }
@@ -213,12 +291,20 @@ export class BibleDataManager {
 
   async openPrevious() {
     if (this.data?.prevChapter) {
+      const match = this.data.prevChapter.match(
+        /^\/api\/([^/]+)\/([^/]+)\/(\d+)\.json$/
+      );
 
-      const match = this.data.prevChapter.match(/^\/api\/([^/]+)\/([^/]+)\/(\d+)\.json$/);
+      const codexMatch = this.data.prevChapter.match(
+        /([^/]+)\/api\/([^/]+)\/([^/]+)\/(\d+)\.json$/
+      );
 
-      if (match) 
-      {
+      if (match) {
         const [, , bookId, chapter] = match;
+        this.bookId = bookId;
+        this.chapter = Number(chapter);
+      } else if (codexMatch) {
+        const [, , , bookId, chapter] = codexMatch;
         this.bookId = bookId;
         this.chapter = Number(chapter);
       }
@@ -227,16 +313,30 @@ export class BibleDataManager {
     }
   }
 
-  async changeTranslation(newTranslation, bookData, forcedBaseUrl) {
-    console.log("changeTranslation tra");
+  async changeTranslation(newTranslation, booksData, forcedBaseUrl) {
+    console.log(
+      newTranslation,
+      booksData,
+      forcedBaseUrl,
+      this.getState(),
+      "changeTranslation"
+    );
     this.translation = newTranslation;
-    this.bookId = bookData?.id || 'GEN';
-    if (forcedBaseUrl) {
+    const bookData =
+      booksData.find((book) => book.id === this.bookId) || booksData[0];
+    if (this.bookId !== bookData.id) {
+      this.bookId = bookData.id;
       this.chapter = 1;
     }
+    // this.bookId = bookData?.id || "GEN";
+    // if (forcedBaseUrl) {
+    //   this.chapter = 1;
+    // }
     this.baseUrl = forcedBaseUrl || this.baseUrl;
     await this.fetch(
-      bookData ? bookData.firstChapterApiLink : `/api/${newTranslation}/${bookData?.id || 'GEN'}/1.json`,
+      bookData
+        ? bookData.firstChapterApiLink.replace("1.json", `${this.chapter}.json`)
+        : `/api/${newTranslation}/${this.bookId}/${this.chapter}.json`,
       newTranslation,
       forcedBaseUrl
     );

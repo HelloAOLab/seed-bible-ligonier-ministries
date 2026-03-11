@@ -1,17 +1,17 @@
 const keys = [...(that?.keys || [])];
-
-const multiSelectKeys = {
-    'control': true,
-    'meta': true
+const G = globalThis as any;
+const multiSelectKeys: any = {
+  control: true,
+  meta: true,
 };
 
-keys?.forEach(key => {
-    if (!globalThis.KEY_HOLD) {
-        globalThis.KEY_HOLD = {};
-    }
-    globalThis.KEY_HOLD[key.toLocaleLowerCase()] = true;
-    if (multiSelectKeys[key.toLocaleLowerCase()]) {
-        globalThis[`SetSelectPlaylist`] && globalThis[`SetSelectPlaylist`](true);
-        globalThis[`SetChecklistEnabled`] && globalThis[`SetChecklistEnabled`](true);
-    }
+keys?.forEach((key) => {
+  if (!G.KEY_HOLD) {
+    G.KEY_HOLD = {};
+  }
+  G.KEY_HOLD[key.toLocaleLowerCase()] = true;
+  if (multiSelectKeys[key.toLocaleLowerCase()]) {
+    G[`SetSelectPlaylist`] && G[`SetSelectPlaylist`](true);
+    G[`SetChecklistEnabled`] && G[`SetChecklistEnabled`](true);
+  }
 });

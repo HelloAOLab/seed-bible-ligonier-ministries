@@ -6,10 +6,16 @@ import { useMouseMove } from "app.hooks.mouseMove";
 import SurroundingDivs from "app.components.surroundingDivs";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
-import {getIcon} from "app.components.icons";
+import { getIcon, BurgerMenuIcon, MoreIcon, TabsIcon } from "app.components.icons";
 
 // Simple, single-toolbar component (no edit layer). Main logic unchanged.
 export function Toolbar() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     navFunctions,
     setScreens,
@@ -20,6 +26,7 @@ export function Toolbar() {
     setTools,
     setCanvasTools,
     setMapTools,
+    showNavArrows,
   } = useBibleContext();
 
   const {
@@ -28,7 +35,12 @@ export function Toolbar() {
     isMobile,
     setSidebarWidth,
     setOpenOnMobile,
+    setCollapsed,
+    setSideBarMode,
   } = useSideBarContext();
+
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [activeMoreApp, setActiveMoreApp] = useState(null);
   const { setIsDragging, isDragging, setElement } = useMouseMove();
   const {
     activeSpace,
@@ -39,10 +51,11 @@ export function Toolbar() {
   } = useTabsContext();
 
   // === keep original default-toolbar logic ===
-  const [showToolbar, setShowToolbar] = useState(true);
-  useEffect(() => {
-    setShowToolbar(!openOnMobile);
-  }, [openOnMobile]);
+  const [showToolbar, setShowToolbar] = useState(false);
+  globalThis.SetShowToolbar = setShowToolbar;
+  // useEffect(() => {
+  //   setShowToolbar(!openOnMobile);
+  // }, [openOnMobile]);
 
   const TabTools = getToolsForActiveSpace();
   const setActiveTools = (newTools) =>
@@ -86,10 +99,22 @@ export function Toolbar() {
     setDraggedIndex(null);
   }
 
+  // Detect if current translation is RTL (Arabic)
+  const [isRTL, setIsRTL] = useState(false);
+
   // Sync tools with active tab type (keeps main logic)
   useEffect(() => {
     if (!activeTab || !tabs) return;
     const activeTabObj = tabs.find((t) => t.id === activeTab);
+
+    // Check if translation is Arabic/RTL
+    const translation = activeTabObj?.data?.translation;
+    if (translation === "ARBNAV" || translation === "arb_vdv") {
+      setIsRTL(true);
+    } else {
+      setIsRTL(false);
+    }
+
     if (activeTabObj?.data?.type === "canvas") {
       setActiveTools([...canvasTools]);
     } else {
@@ -113,8 +138,17 @@ export function Toolbar() {
   useEffect(() => {
     const handleContextMenu = (e) => e.preventDefault();
     window.addEventListener("contextmenu", handleContextMenu);
+    os.addBotListener(configBot, "onBotChanged", (that) => {
+      if (that.tags.includes("book")) {
+        globalThis.Open(configBot.tags.book, configBot.tags.chapter);
+      } else if (that.tags.includes("chapter")) {
+        globalThis.Open(configBot.tags.book, configBot.tags.chapter);
+      }
+    });
     return () => window.removeEventListener("contextmenu", handleContextMenu);
   }, []);
+
+  const moreTools = tools ? tools.filter((t) => t?.active !== false) : [];
 
   if (!showToolbar) return <></>;
 
@@ -127,18 +161,151 @@ export function Toolbar() {
 
       <div className="toolbar-container-1 boundElements">
         <SurroundingDivs action={handleMouseLeaveContainer}>
+          {/* Mobile Bottom Navbar */}
+          <div className="mobile-bottom-navbar">
+            <button
+              style={{ display: showNavArrows ? "" : "none" }}
+              className="mobile-navbar-arrow left-arrow"
+              onClick={() =>
+                isRTL
+                  ? navFunctions?.openNextChapter()
+                  : navFunctions?.openPrevChapter()
+              }
+              title="Previous"
+              aria-label="Previous chapter"
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+
+            <button
+              className="mobile-navbar-btn today-btn"
+              title="Today"
+              aria-label="Today"
+            >
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  os.log("Opening mobile settings", setOpenOnMobile);
+                  setOpenOnMobile(true);
+                  setSidebarWidth(280);
+                  setCollapsed(false);
+                  setSideBarMode("default");
+                }}
+                className="mobile-btn-content"
+              >
+                <TabsIcon color="var(--text1)" />
+                <span className="mobile-btn-label">Tabs</span>
+              </div>
+            </button>
+
+            <div
+              onClick={() => {
+                globalThis.setOpenSidebar(!openSidebar);
+                globalThis.setSelectingTranslation(false);
+              }}
+              className="mobile-center-logo"
+            >
+              <div className="logo-container">
+                <img
+                  src="https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
+                  alt="Seed Bible"
+                  className="seed-bible-logo"
+                />
+              </div>
+            </div>
+
+            <div className="more-btn-wrapper">
+              {showMoreMenu && (
+                <div className="more-menu-popup">
+                  {moreTools
+                    .filter((tool) => tool.label !== "Books")
+                    .map((tool, i) => (
+                      <button
+                        key={i}
+                        className="more-menu-item"
+                        onClick={() => {
+                          tool?.onClick?.();
+                          setShowMoreMenu(false);
+                          setActiveMoreApp(tool.label);
+                        }}
+                      >
+                        {tool?.isImg ? (
+                          <img
+                            src={tool.icon}
+                            style={{ width: "20px" }}
+                            alt={tool.label}
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined">
+                            {tool?.icon}
+                          </span>
+                        )}
+                        <span className="more-menu-item-label">
+                          {tool?.label}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
+              <button
+                className="mobile-navbar-btn more-btn"
+                title={activeMoreApp ? "Close" : "More"}
+                aria-label={activeMoreApp ? "Close" : "More"}
+                onClick={() => {
+                  if (activeMoreApp) {
+                    (globalThis as any).RemoveApplicationByLabel(activeMoreApp);
+                    (globalThis as any).makingApp = null;
+                    setActiveMoreApp(null);
+                  } else {
+                    setShowMoreMenu((prev) => !prev);
+                  }
+                }}
+              >
+                <div className="mobile-btn-content">
+                  {activeMoreApp ? (
+                    <span className="material-symbols-outlined">close</span>
+                  ) : (
+                    <MoreIcon color="var(--text1)" />
+                  )}
+                  <span className="mobile-btn-label">
+                    {activeMoreApp ? "Close" : "More"}
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            <button
+              style={{ display: showNavArrows ? "" : "none" }}
+              className="mobile-navbar-arrow right-arrow"
+              onClick={() =>
+                isRTL
+                  ? navFunctions?.openPrevChapter()
+                  : navFunctions?.openNextChapter()
+              }
+              title="Next"
+              aria-label="Next chapter"
+            >
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+
+          {/* Desktop Toolbar */}
           <div
             onMouseUp={handleMouseUp}
-            className="toolbar-1 boundElements"
+            className={`toolbar-1 boundElements ${mounted ? "mounted" : ""}`}
             style={{
               border: sidebarMode?.includes("toolbarSettings")
-                ? "2px solid #4459F3"
+                ? "2px solid var(--spaceSelection)"
                 : null,
             }}
           >
             <div className="toolbar-item-wrapper leftClick">
               <button
-                onClick={() => navFunctions?.openPrevChapter()}
+                onClick={() =>
+                  isRTL
+                    ? navFunctions?.openNextChapter()
+                    : navFunctions?.openPrevChapter()
+                }
                 className="toolbar-button"
               >
                 <span className="material-symbols-outlined">chevron_left</span>
@@ -152,8 +319,12 @@ export function Toolbar() {
               }}
               className="toolbar-item-wrapper mobile-only"
             >
-              <button className={`toolbar-button firstToolbarbutton`}>
-                <span className="material-symbols-outlined">menu</span>
+              <button
+                className={`toolbar-button firstToolbarbutton`}
+                title="Open menu"
+                aria-label="Open menu"
+              >
+                <BurgerMenuIcon size={24} color="var(--text1)" />
               </button>
             </div>
             {tools?.map((tool, index) =>
@@ -184,9 +355,9 @@ export function Toolbar() {
                         clearTimeout(holdTimeoutRef.current);
                         if (!hasHeldRef.current && tool?.onClick) {
                           tool.onClick();
-                          EmitData("appClick", {
-                            name: `${tool?.pkgName}_package`,
-                          });
+                          // EmitData("appClick", {
+                          //   name: `${tool?.pkgName}_package`,
+                          // });
                         }
                         if (isDragging) {
                           setIsDragging(false);
@@ -206,7 +377,7 @@ export function Toolbar() {
                       })() : tool.isImg ? (
                         <img
                           src={tool.icon}
-                          style={{ width: "22px" }}
+                          style={{ width: "25px" }}
                           alt={tool.label}
                         />
                       ) : (
@@ -222,7 +393,11 @@ export function Toolbar() {
 
             <div className="toolbar-item-wrapper rightClick">
               <button
-                onClick={() => navFunctions?.openNextChapter()}
+                onClick={() =>
+                  isRTL
+                    ? navFunctions?.openPrevChapter()
+                    : navFunctions?.openNextChapter()
+                }
                 className="toolbar-button"
               >
                 <span className="material-symbols-outlined">chevron_right</span>
@@ -233,12 +408,67 @@ export function Toolbar() {
         <style>{getStyleOf("toolbar.css")}</style>
       </div>
       <style>{`
+                .more-btn-wrapper {
+                    position: relative;
+                }
+
+                .more-menu-popup {
+                    position: absolute;
+                    bottom: calc(100% + 8px);
+                    right: 0;
+                    background: var(--bg1, #fff);
+                    border: 1px solid var(--border1, #e0e0e0);
+                    border-radius: 12px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                    min-width: 180px;
+                    overflow: hidden;
+                    z-index: 1000;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .more-menu-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 16px;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    width: 100%;
+                    text-align: left;
+                    color: var(--text1);
+                    font-size: 14px;
+                    transition: background 0.15s;
+                }
+
+                .more-menu-item:hover {
+                    background: var(--hover1, rgba(0,0,0,0.06));
+                }
+
+                .more-menu-item .material-symbols-outlined {
+                    font-size: 20px;
+                    flex-shrink: 0;
+                }
+
+                .more-menu-item-label {
+                    flex: 1;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .mobile-navbar-btn svg {
+                    width: 24px;
+                    height: 24px;
+                }
+                
                 .toolbar-edit-toggle {
                     margin-left: auto;
                 }
                 
                 .toolbar-button.edit-active {
-                    background-color: #4459F3;
+                    background-color: var(--spaceSelection);
                     color: white;
                 }
                 
@@ -350,7 +580,7 @@ export function Toolbar() {
                     }
 
                 .tool-edit-item:hover {
-                    border-color: #4459F3;
+                    border-color: var(--spaceSelection);
                     box-shadow: 0 4px 12px rgba(68, 89, 243, 0.1);
                 }
                 
@@ -416,7 +646,7 @@ export function Toolbar() {
                 
                 .text-input:focus {
                     outline: none;
-                    border-color: #4459F3;
+                    border-color: var(--spaceSelection);
                     box-shadow: 0 0 0 3px rgba(68, 89, 243, 0.1);
                 }
                 
@@ -470,7 +700,7 @@ export function Toolbar() {
                 }
                 
                 .modified-indicator {
-                    color: #4459F3;
+                    color: var(--spaceSelection);
                     font-weight: 600;
                 }
                 
@@ -508,7 +738,7 @@ export function Toolbar() {
                 }
                 
                 .apply-btn {
-                    background: #4459F3;
+                    background: var(--spaceSelection);
                     color: white;
                 }
                 

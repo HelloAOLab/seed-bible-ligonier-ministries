@@ -1,60 +1,69 @@
-import {ScriptureMap2D, ScriptureMap2DModes} from "scriptureMap2D.main.ScriptureMap2D"
-import { useBibleContext } from 'app.hooks.bibleVariables'
+import { ScriptureMap2D } from "scriptureMap2D.main.ScriptureMap2D";
+import { ScriptureMap2DModes } from "scriptureMap2D.main.enums";
+import type {
+  AppProps,
+  ScriptureMap2DConfig,
+} from "scriptureMap2D.main.interfaces";
+import { BibleVizDataRepository } from "bibleVizUtils.data.BibleVizDataRepository";
+import { ConvertDividedPsalmsToComplete } from "bibleVizUtils.functions.index";
 
-const {useCallback} = os.appHooks;
+const onChapterClickDependencies: unknown[] = [];
+const onChapterClickAndHold = () => {};
+const onBookNameClickAndHold = () => {};
+const onBookNameClickAndHoldDependencies: unknown[] = [];
 
-const App = () => {
-    
-    const { navFunctions } = useBibleContext()
+const { useCallback } = os.appHooks;
 
-    const handleChapterClick = useCallback(( _, key) => {
-        const {bookName, chapterIndex} = key;
+const App: (args: AppProps) => React.JSX.Element = ({ id }) => {
+  const handleChapterClick = useCallback<
+    ScriptureMap2DConfig["onChapterClick"]
+  >((_, key) => {
+    const { bookName, chapterIndex } = key;
 
-        
-        let bookId = BibleVizUtils.Data.tags.booksStaticInfo[bookName].abbreviation;
-        let chapter = chapterIndex + 1;
+    const bookInfo = BibleVizDataRepository.getBookStaticInfo(bookName);
+    if (bookInfo) {
+      let { abbreviation: bookId } = bookInfo;
+      let chapter = chapterIndex + 1;
 
-        if(bookName.includes("Psalms"))
-        {
-            ({chapter} = BibleVizUtils.Functions.ConvertDividedPsalmsToComplete({book: bookName, chapter}))
-            bookId = "PSA";
-        }
+      if (bookName.includes("Psalms")) {
+        ({ chapter } = ConvertDividedPsalmsToComplete({
+          book: bookName,
+          chapter,
+        }));
+        bookId = "PSA";
+      }
+      globalThis.Open(bookId, chapter);
+    }
+  }, []);
 
-        navFunctions?.open?.(bookId, chapter)
-    }, [navFunctions])
-    
-    return (
-        <div style={{
-            height: "100%",
-            display: "flex",
-            flexGrow: "1",
-            flexDirection: "column",
-            padding: "20px 0",
-            backgroundColor: "white"
-        }}>
-            <ScriptureMap2D parentContext={{
-                mode: ScriptureMap2DModes.Viewer,
-                arrangementIndex: 0,
-                // selection,
-                // isInSelectionMode,
-                onChapterClick: handleChapterClick,
-                onChapterClickDependencies: [],
-                onChapterClickAndHold: () => {},
-                onBookNameClickAndHold: () => {},
-                onBookNameClickAndHoldDependencies: [],
-                // project,
-                // selectedChaptersKeys,
-                // onSelectionModeCheckboxClick: handleSelectionModeCheckboxClick,
-                // onSelectionModeDoneButtonClick: handleSelectionModeDoneButtonClick,
-                // onStateSetterOptionClick: handleStateSetterOptionClick,
-                // onSelectionModeClearSelectionButtonClick: clearSelection,
-                showingAllChapters: false, // !menuState.areBooksClosed,
-                showLabels: true, // !menuState.hideHeadings,
-                initialScaleFactor: 0.5,
-                initialIsReadingHistoryEnabled: true
-            }} />
-        </div>
-    )
-}
+  return (
+    <div
+      style={{
+        height: "100%",
+        display: "flex",
+        flexGrow: "1",
+        flexDirection: "column",
+        backgroundColor: "white",
+      }}
+    >
+      <ScriptureMap2D
+        config={{
+          mode: ScriptureMap2DModes.Viewer,
+          onChapterClick: handleChapterClick,
+          onChapterClickDependencies,
+          onChapterClickAndHold,
+          onBookNameClickAndHold,
+          onBookNameClickAndHoldDependencies,
+          initialShowingAllChapters: true,
+          initialShowTestamentLabels: true,
+          initialShowSectionLabels: false,
+          initialScaleFactor: 0.6,
+          initialIsReadingHistoryEnabled: false,
+          appId: id,
+        }}
+      />
+    </div>
+  );
+};
 
 return App;

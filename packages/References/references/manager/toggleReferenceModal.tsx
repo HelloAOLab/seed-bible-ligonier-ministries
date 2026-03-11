@@ -1,21 +1,39 @@
-import ReferenceModal from "references.manager.ReferenceModal";
-const { book, chapter, verse } = that;
-const verseNumber = verse.verseNumber;
+import ReferenceModal from "references.manager.NewReferenceModal";
+import {
+  GetReferences,
+  CalculatePopupPosition,
+} from "references.manager.GetReferences";
+import type { ReferencesInterface } from "references.manager.interfaces";
 
-const references = () => {
-    let referenceManager = getBot('system', 'references.manager');
-    const key = `${tags.NameToId[book]}.${chapter}.${verseNumber}`;
-    console.log(key, "key")
-    const referencesArray = referenceManager.tags.references[key];
-    return {
-        key,
-        referencesArray: referencesArray.map(item => item.split(",")[0])
-    }
-}
-closePopupSettings();
-await os.sleep(100);
-openPopupSettings(
-    <ReferenceModal references={references()} book={book} chapter={chapter} verse={verse} />,
-    null,
-    true
-)
+const { book, chapter, verse, mouseEvent, baseUrl, translation, bookId } = that;
+
+const ToggleReferenceModal = async () => {
+  const reference: ReferencesInterface = await GetReferences({
+    bookId: bookId,
+    chapter,
+    verse,
+    baseUrl,
+    translation,
+    bookName: book,
+  });
+
+  if (!reference || !reference.references || reference.references.length == 0) {
+    return;
+  }
+  if (globalThis?.closePopupSettings) {
+    globalThis.closePopupSettings();
+  }
+
+  if (globalThis?.openPopupSettings) {
+    await os.sleep(100);
+    const position = CalculatePopupPosition(mouseEvent);
+    globalThis.openPopupSettings(
+      <ReferenceModal reference={reference} />,
+      null,
+      true,
+      position
+    );
+  }
+};
+
+await ToggleReferenceModal();

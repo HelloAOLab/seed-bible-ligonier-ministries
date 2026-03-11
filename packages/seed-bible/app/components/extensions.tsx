@@ -23,7 +23,11 @@ const ToggleSwitch = ({ isOn, onToggle, disabled = false }) => {
     display: "inline-block",
     width: "44px",
     height: "24px",
-    backgroundColor: isOn ? "#4285f4" : disabled ? "#e0e0e0" : "#9e9e9e",
+    backgroundColor: isOn
+      ? "var(--spaceSelection)"
+      : disabled
+        ? "#e0e0e0"
+        : "#9e9e9e",
     borderRadius: "12px",
     cursor: disabled ? "default" : "pointer",
     transition: "background-color 0.2s ease",
@@ -58,6 +62,7 @@ function SettingsPanel({
   data,
   iconUrl,
 }) {
+  const { t } = useSideBarContext();
   const [buttonEnabled, setbuttonEnabled] = useState(true);
   const [showInToolbar, setShowInToolbar] = useState(false);
   const [showInPanel, setShowInPanel] = useState(false);
@@ -69,7 +74,7 @@ function SettingsPanel({
     items: [
       {
         icon: <MenuIcon name={installed ? "extension_off" : "download"} />,
-        title: installed ? "Uninstall" : "Install",
+        title: installed ? t("uninstall") : t("install"),
         onClick: async () => {
           if (!installed) {
             await Packager.installPackage({ name: address });
@@ -95,6 +100,7 @@ function SettingsPanel({
                 style={{
                   width: "18px",
                   objectPosition: "center",
+                  filter: "var(--filter-mode)",
                 }}
               />
             ) : (
@@ -110,24 +116,23 @@ function SettingsPanel({
                 isOn={buttonEnabled}
                 onToggle={() => {
                   setbuttonEnabled(!buttonEnabled);
-                  globalThis.ToggleToolActive(name, "stop");
+                  (globalThis as any).ToggleToolActive(name, "stop");
                 }}
               />
             )}
             <span
-              onClick={() => {
-                openPopupSettings(OPTIONS, undefined, undefined, 61);
-              }}
+              onClick={() => (openPopupSettings as any)(OPTIONS)}
               className="material-symbols-outlined"
-              style={iconStyle}>
+              style={iconStyle}
+            >
               more_vert
             </span>
             {installed && (
               <span
-                onCLick={() => setExpand((prev) => !prev)}
+                onClick={() => setExpand((prev) => !prev)}
                 className="material-symbols-outlined"
-                style={{ cursor: "pointer" }}
-                style={iconStyle}>
+                style={iconStyle}
+              >
                 {expand ? "expand_less" : "expand_more"}
               </span>
             )}{" "}
@@ -141,34 +146,37 @@ function SettingsPanel({
                 <span className="material-symbols-outlined" style={iconStyle}>
                   close
                 </span>
-                <span>Show in Toolbar</span>
+                <span>{t("showInToolbar")}</span>
               </div>
               <ToggleSwitch
-                isOn={globalThis.IsToolActive && globalThis.IsToolActive(name)}
+                isOn={
+                  (globalThis as any).IsToolActive &&
+                  (globalThis as any).IsToolActive(name)
+                }
                 onToggle={() => {
-                  globalThis.ToggleToolActive(name);
+                  (globalThis as any).ToggleToolActive(name);
                   setShowInToolbar(!showInToolbar);
                 }}
                 disabled={!buttonEnabled}
               />
             </div>
 
-            <div style={subHeaderStyle}>Or show in</div>
+            <div style={subHeaderStyle}>{t("orShowIn")}</div>
 
             <div style={optionStyle}>
               <div style={optionLabelStyle}>
                 <span className="material-symbols-outlined" style={iconStyle}>
                   view_sidebar
                 </span>
-                <span>Panel</span>
+                <span>{t("panel")}</span>
               </div>
               <ToggleSwitch
                 isOn={
-                  globalThis.IsToolSraterToolbar &&
-                  globalThis.IsToolSraterToolbar(name)
+                  (globalThis as any).IsToolSraterToolbar &&
+                  (globalThis as any).IsToolSraterToolbar(name)
                 }
                 onToggle={() => {
-                  globalThis.ToToggleShowInStarterToolbar(name);
+                  (globalThis as any).ToToggleShowInStarterToolbar(name);
                   setShowInPanel(!showInPanel);
                 }}
                 disabled={!buttonEnabled}
@@ -180,15 +188,15 @@ function SettingsPanel({
                 <span className="material-symbols-outlined" style={iconStyle}>
                   description
                 </span>
-                <span>Below the page</span>
+                <span>{t("belowThePage")}</span>
               </div>
               <ToggleSwitch
                 isOn={
-                  globalThis.IsToolInPageToolbar &&
-                  globalThis.IsToolInPageToolbar(name)
+                  (globalThis as any).IsToolInPageToolbar &&
+                  (globalThis as any).IsToolInPageToolbar(name)
                 }
                 onToggle={() => {
-                  globalThis.ToToggleShowInPageToolbar(name);
+                  (globalThis as any).ToToggleShowInPageToolbar(name);
                   setShowBelowPage(!showBelowPage);
                 }}
                 disabled={!buttonEnabled}
@@ -202,7 +210,7 @@ function SettingsPanel({
 }
 
 const Extensions = () => {
-  const { sidebarMode, setSideBarMode } = useSideBarContext();
+  const { sidebarMode, setSideBarMode, t } = useSideBarContext();
   const [packages, setPackages] = useState();
   const [update, setUpdate] = useState();
   const { tools } = useBibleContext();
@@ -224,14 +232,15 @@ const Extensions = () => {
         <div
           onClick={() => setSideBarMode("settings")}
           style={{ cursor: "pointer" }}
-          className="blackText">
+          className="blackText"
+        >
           <MenuIcon name="arrow_back" />
         </div>
-        <div className="softText">Extensions</div>
+        <div className="softText">{t("configureExtensions")}</div>
         <div className="softText">
           <MenuIcon name="chevron_right" />
         </div>
-        <div className="softText">Toolbar</div>
+        <div className="softText">{t("tools")}</div>
       </div>
 
       <div className="routerTitle blackText">
@@ -239,13 +248,13 @@ const Extensions = () => {
           {" "}
           <MenuIcon name="extension" />
         </div>
-        <div>Extensions</div>
+        <div>{t("configureExtensions")}</div>
       </div>
 
-      <div className="mediumText">Settings for your Extensions in the page</div>
+      <div className="mediumText">{t("extensionSettingsDesc")}</div>
       <div style={{ overflow: "scroll" }} className="extensions-tools">
         {packages &&
-          [...packages].map((item) => {
+          [...packages].map((item: any) => {
             let data;
             let address;
             if ("data" in item && "address" in item) {
@@ -278,14 +287,14 @@ const Extensions = () => {
 
 const containerStyle = {
   marginBottom: "8px",
-  backgroundColor: "#f8f9fa",
-  border: "1px solid #e1e4e8",
+  backgroundColor: "var(--pageBackground)",
+  border: "1px solid var(--pageBackground)",
   borderRadius: "8px",
   // padding: '0',
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   fontSize: "14px",
-  color: "#24292e",
+  color: "var(--text1)",
   // width: '400px',
   // margin: '20px'
 };
@@ -295,7 +304,7 @@ const headerStyle = {
   alignItems: "center",
   justifyContent: "space-between",
   padding: "16px 20px",
-  borderBottom: "1px solid #e1e4e8",
+  // borderBottom: '1px solid #e1e4e8'
 };
 
 const headerLeftStyle = {
