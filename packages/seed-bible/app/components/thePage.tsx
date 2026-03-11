@@ -466,9 +466,6 @@ function ThePage({
     };
   };
 
-    globalThis.refreshScrollers && globalThis.refreshScrollers();
-  }
-
   async function globalLoadingDataFromSN(bookId, chapter) {
     if (!tab) return;
     const bible = new BibleDataManager({
