@@ -1295,9 +1295,19 @@ function ThePage({
   const [selected, setSelected] = useState({});
   const [holded, setHolded] = useState({});
 
+  const prevDataRef = useRef<{ bookId?: string; chapter?: number } | null>(null);
+
   useEffect(() => {
     setInHold(null);
-    scrollToVerse(1);
+    const prev = prevDataRef.current;
+    const chapterChanged =
+      prev === null ||
+      prev.bookId !== data?.bookId ||
+      prev.chapter !== data?.chapter;
+    prevDataRef.current = { bookId: data?.bookId, chapter: data?.chapter };
+    if (chapterChanged && prev !== null) {
+      scrollToVerse(1);
+    }
     if (globalThis.SetCurrentBook) {
       globalThis.SetCurrentBook(data);
       globalThis.CHAPTER_DATA = {
