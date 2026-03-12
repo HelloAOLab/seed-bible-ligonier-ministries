@@ -2338,48 +2338,50 @@ function ThePage({
                       )}
                   </div>
                 )}
-                <div
-                  onClick={(e) => {
-                    if (globalThis.setOpenSidebar && globalThis.openSidebar) {
-                      globalThis.setOpenSidebar(false);
-                      globalThis.selectBookSelectorBook &&
-                        globalThis.selectBookSelectorBook(null);
-                    } else {
-                      globalThis.setOpenSidebar &&
-                        globalThis.setOpenSidebar(true);
-                      globalThis.selectBookSelectorBook &&
-                        globalThis.selectBookSelectorBook(data.bookId);
-                    }
-                  }}
-                  style={{ "pointer-events": isDragging ? "none" : null }}
-                  className="bookTitle"
-                >
-                  {`${data?.book} ${data?.chapter}`}{" "}
-                  <span
-                    style={{
-                      fontSize: "24px",
-                      color:
-                        "color-mix(in srgb, var(--text1), transparent 40%)",
-                    }}
+                <div style={{ display: "flex", alignItems: "flex-start", position: "relative" }}>
+                  <div
                     onClick={(e) => {
-                      e.stopPropagation();
                       if (globalThis.setOpenSidebar && globalThis.openSidebar) {
                         globalThis.setOpenSidebar(false);
-                        globalThis.setSelectingTranslation &&
-                          globalThis.setSelectingTranslation(false);
                         globalThis.selectBookSelectorBook &&
                           globalThis.selectBookSelectorBook(null);
                       } else {
-                        globalThis.setOpenSidebar(true);
-                        globalThis.setSelectingTranslation &&
-                          globalThis.setSelectingTranslation(true);
+                        globalThis.setOpenSidebar &&
+                          globalThis.setOpenSidebar(true);
                         globalThis.selectBookSelectorBook &&
                           globalThis.selectBookSelectorBook(data.bookId);
                       }
                     }}
-                  >{` / ${data?.shortName}`}</span>
+                    style={{ "pointer-events": isDragging ? "none" : null, flex: 1, textAlign: "center" }}
+                    className="bookTitle"
+                  >
+                    {`${data?.book} ${data?.chapter}`}{" "}
+                    <span
+                      style={{
+                        fontSize: "24px",
+                        color:
+                          "color-mix(in srgb, var(--text1), transparent 40%)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (globalThis.setOpenSidebar && globalThis.openSidebar) {
+                          globalThis.setOpenSidebar(false);
+                          globalThis.setSelectingTranslation &&
+                            globalThis.setSelectingTranslation(false);
+                          globalThis.selectBookSelectorBook &&
+                            globalThis.selectBookSelectorBook(null);
+                        } else {
+                          globalThis.setOpenSidebar(true);
+                          globalThis.setSelectingTranslation &&
+                            globalThis.setSelectingTranslation(true);
+                          globalThis.selectBookSelectorBook &&
+                            globalThis.selectBookSelectorBook(data.bookId);
+                        }
+                      }}
+                    >{` / ${data?.shortName}`}</span>
+                  </div>
+                  <MoreResources />
                 </div>
-                <MoreResources />
                 {showHeading[activeSpace] && (
                   <div style={{ height: "1rem" }}></div>
                 )}

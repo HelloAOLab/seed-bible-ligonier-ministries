@@ -166,7 +166,8 @@
   font-size: 14px;
   font-weight: 500;
   transition: opacity 0.2s ease;
-  margin-right: 20px;
+  flex-shrink: 0;
+  padding-right: 12px;
 }
 
 .sectionTitle {
