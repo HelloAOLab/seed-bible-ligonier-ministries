@@ -2338,49 +2338,52 @@ function ThePage({
                       )}
                   </div>
                 )}
-                <div style={{ display: "flex", alignItems: "flex-start", position: "relative" }}>
-                  <div
+                <div
+                  onClick={(e) => {
+                    if (globalThis.setOpenSidebar && globalThis.openSidebar) {
+                      globalThis.setOpenSidebar(false);
+                      globalThis.selectBookSelectorBook &&
+                        globalThis.selectBookSelectorBook(null);
+                    } else {
+                      globalThis.setOpenSidebar &&
+                        globalThis.setOpenSidebar(true);
+                      globalThis.selectBookSelectorBook &&
+                        globalThis.selectBookSelectorBook(data.bookId);
+                    }
+                  }}
+                  style={{ "pointer-events": isDragging ? "none" : null, position: "relative" }}
+                  className="bookTitle"
+                >
+                  {`${data?.book} ${data?.chapter}`}{" "}
+                  <span
+                    style={{
+                      fontSize: "24px",
+                      color:
+                        "color-mix(in srgb, var(--text1), transparent 40%)",
+                    }}
                     onClick={(e) => {
+                      e.stopPropagation();
                       if (globalThis.setOpenSidebar && globalThis.openSidebar) {
                         globalThis.setOpenSidebar(false);
+                        globalThis.setSelectingTranslation &&
+                          globalThis.setSelectingTranslation(false);
                         globalThis.selectBookSelectorBook &&
                           globalThis.selectBookSelectorBook(null);
                       } else {
-                        globalThis.setOpenSidebar &&
-                          globalThis.setOpenSidebar(true);
+                        globalThis.setOpenSidebar(true);
+                        globalThis.setSelectingTranslation &&
+                          globalThis.setSelectingTranslation(true);
                         globalThis.selectBookSelectorBook &&
                           globalThis.selectBookSelectorBook(data.bookId);
                       }
                     }}
-                    style={{ "pointer-events": isDragging ? "none" : null, flex: 1, textAlign: "center" }}
-                    className="bookTitle"
+                  >{` / ${data?.shortName}`}</span>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ position: "absolute", right: 0, top: 0 }}
                   >
-                    {`${data?.book} ${data?.chapter}`}{" "}
-                    <span
-                      style={{
-                        fontSize: "24px",
-                        color:
-                          "color-mix(in srgb, var(--text1), transparent 40%)",
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (globalThis.setOpenSidebar && globalThis.openSidebar) {
-                          globalThis.setOpenSidebar(false);
-                          globalThis.setSelectingTranslation &&
-                            globalThis.setSelectingTranslation(false);
-                          globalThis.selectBookSelectorBook &&
-                            globalThis.selectBookSelectorBook(null);
-                        } else {
-                          globalThis.setOpenSidebar(true);
-                          globalThis.setSelectingTranslation &&
-                            globalThis.setSelectingTranslation(true);
-                          globalThis.selectBookSelectorBook &&
-                            globalThis.selectBookSelectorBook(data.bookId);
-                        }
-                      }}
-                    >{` / ${data?.shortName}`}</span>
+                    <MoreResources />
                   </div>
-                  <MoreResources />
                 </div>
                 {showHeading[activeSpace] && (
                   <div style={{ height: "1rem" }}></div>
