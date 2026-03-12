@@ -1,43 +1,72 @@
-import {FiltersSelectorOption} from "scriptureMap2D.main.FiltersSelectorOption"
-import { useScriptureMap2DContext } from "scriptureMap2D.main.ScriptureMap2DContext"
-const { useMemo, useEffect } = os.appHooks;
+import { FiltersSelectorOption } from "scriptureMap2D.main.FiltersSelectorOption";
+import { useReadingHistoryContext } from "scriptureMap2D.main.ReadingHistoryContext";
+import { userColorStore } from "bibleVizUtils.services.UserColorStore";
+
+import { useSideBarContext } from "app.hooks.sideBar";
+
+const { useMemo } = os.appHooks;
 
 export const ReadingHistoryUserFiltersSelector = () => {
-    const { handleReadingHistoryUserSelectorClick, readingHistoryUsersFilters } = useScriptureMap2DContext();
-    
-    const allSelected = useMemo(() => {
-        return Array.from(readingHistoryUsersFilters).every(([, value]) => { return value });
-    }, [readingHistoryUsersFilters])
+  const { t } = useSideBarContext();
+  const {
+    handleReadingHistoryUserSelectorClick,
+    readingHistoryUserFilters,
+    myAuthBotId,
+    usersDataMap,
+  } = useReadingHistoryContext();
 
+  const allSelected = useMemo(() => {
+    return Array.from(readingHistoryUserFilters).every(([, value]) => {
+      return value;
+    });
+  }, [readingHistoryUserFilters]);
 
-    return (
-        <div className="readingHistoryUserSelector">
-            
-            <FiltersSelectorOption 
-                content="All" 
-                onClick={() => {handleReadingHistoryUserSelectorClick("all")}} 
-                selected={allSelected} 
+  return (
+    <div className="reading-history-user-selector">
+      <FiltersSelectorOption
+        content={t("all")}
+        onClick={() => {
+          handleReadingHistoryUserSelectorClick("all");
+        }}
+        selected={allSelected}
+      />
+
+      {Array.from(readingHistoryUserFilters).map(([userId, selected]) => {
+        const userData = usersDataMap.get(userId);
+        if (userData) {
+          const { profileName } = userData;
+          const fixedName: string =
+            userId === myAuthBotId
+              ? t("you")
+              : (profileName?.length ?? 0) > 0
+                ? profileName
+                : t("Unknown User");
+          return (
+            <FiltersSelectorOption
+              content={[
+                <div
+                  style={{
+                    backgroundColor: userColorStore.getUserColor({
+                      authId: userId,
+                    }),
+                    borderStyle: "solid",
+                    borderColor: userColorStore.getUserColor({
+                      authId: userId,
+                    }),
+                  }}
+                  className="filter-option-icon"
+                ></div>,
+                fixedName,
+              ]}
+              onClick={() => {
+                handleReadingHistoryUserSelectorClick(userId);
+              }}
+              selected={selected}
             />
-
-            {Array.from(readingHistoryUsersFilters).map(([userId, selected]) => {
-                return <FiltersSelectorOption 
-                    content={[
-                        <div
-                            style={{
-                                backgroundColor: userId === configBot.id ? BibleVizUtils.Data.tags.myUserColor : (BibleVizUtils.Data.vars.userPresenceData?.[userId]?.user?.color ?? thisBot.vars.FakeReadingHistoryUsersColorMap?.get(userId) ?? "pink"),
-                                borderStyle: "solid",
-                                borderColor: userId === configBot.id ? BibleVizUtils.Data.tags.myUserColor : (BibleVizUtils.Data.vars.userPresenceData?.[userId]?.user?.color ?? thisBot.vars.FakeReadingHistoryUsersColorMap?.get(userId) ?? "pink")
-                            }} 
-                            className="filterOptionIcon"
-                        >
-                        </div>, 
-                        userId === configBot.id ? "You": "Guest"
-                    ]}
-                    onClick={() => {handleReadingHistoryUserSelectorClick(userId)}} 
-                    selected={selected}
-                />
-            })
-            }
-        </div>
-    )
-}
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
+};

@@ -9,7 +9,7 @@ async function waitForGlobals(required = [], delay = 250) {
 }
 
 // === Begin of your code ===
-await(async function mainInstaller(that) {
+await (async function mainInstaller(that) {
   // --- pre-check at start ---
   await waitForGlobals([
     "AddTool",
@@ -89,6 +89,7 @@ await(async function mainInstaller(that) {
   }
 
   async function SetUpApplication(applicationFunction, bot, toolbarConfig) {
+    os.log("Setting up application", toolbarConfig);
     function generateAppItem({
       icon,
       iconUrl,
@@ -167,8 +168,11 @@ await(async function mainInstaller(that) {
       return {
         icon,
         label,
-        hasToggle: toolbarConfig.hasToggle,
-        active: toolbarConfig.active,
+        hasToggle: true,
+        active:
+          typeof toolbarConfig?.active === "boolean"
+            ? toolbarConfig.active
+            : true,
         isCurrentIcon: toolbarConfig.isCurrentIcon,
         onHold,
         pkgName: name,
@@ -218,11 +222,17 @@ await(async function mainInstaller(that) {
       icon: toolbarConfig.icon,
       label: toolbarConfig.label,
       AppComponent: App,
+      active:
+        typeof toolbarConfig?.active === "boolean"
+          ? toolbarConfig.active
+          : true,
       iconUrl: toolbarConfig?.iconUrl,
       hasToggle: toolbarConfig.hasToggle,
       showInPageToolbar: toolbarConfig.showInPageToolbar,
       showInStarterToolbar: toolbarConfig.showInStarterToolbar,
     });
+
+    console.log("WE ARE ADDING TOOL?", toolbarOption);
 
     if (globalThis.AddTool) globalThis.AddTool(toolbarOption);
 
@@ -230,7 +240,11 @@ await(async function mainInstaller(that) {
   }
 
   async function SetUpApplicationWithoutApp(toolbarConfig, bot) {
-    const runFn = () => bot[toolbarConfig.run]();
+    os.log("Setting up application", toolbarConfig);
+    const runFn = (e) => {
+      os.log("Running toolbar action", toolbarConfig.run, e);
+      bot[toolbarConfig.run]({ ...e });
+    };
 
     const toolbarOption = {
       icon: toolbarConfig.isCurrentIcon ? toolbarConfig.icon : !toolbarConfig?.iconUrl
@@ -273,7 +287,7 @@ await(async function mainInstaller(that) {
           const check = getBot("system", bot.tags.system);
           if (!check)
             create(bot, {
-              space: "local",
+              space: tags.installSpace ?? "local",
               forPackage: NameHolder,
               packageName: depName,
             });
@@ -317,7 +331,7 @@ await(async function mainInstaller(that) {
   }
 
   os.log("installing package", name, data);
-  setTagMask(thisBot, `${name}-data`, data, "local");
+  setTagMask(thisBot, `${name}-data`, data, tags.installSpace ?? "local");
 
   // Load record/source
   // Load record/source
@@ -349,7 +363,7 @@ await(async function mainInstaller(that) {
   // Push secondary bots first (await if async)
   for (let i = 1; i < bots.length; i++) {
     const b = create(bots[i], {
-      space: "local",
+      space: tags.installSpace ?? "local",
       forPackage: NameHolder,
       packageName: name,
     });
@@ -358,7 +372,7 @@ await(async function mainInstaller(that) {
 
   // Push the primary (first) bot
   const bot = create(bots[0], {
-    space: "local",
+    space: tags.installSpace ?? "local",
     forPackage: NameHolder,
     packageName: name,
   });
@@ -413,13 +427,18 @@ await(async function mainInstaller(that) {
 
   // Ensure installedPackages tag is updated (FIX: use masks not tags)
   if (!masks.installedPackages) {
-    setTagMask(thisBot, "installedPackages", [name], "local");
+    setTagMask(
+      thisBot,
+      "installedPackages",
+      [name],
+      tags.installSpace ?? "local"
+    );
   } else if (!masks.installedPackages.includes(name)) {
     setTagMask(
       thisBot,
       "installedPackages",
       [...masks.installedPackages, name],
-      "local"
+      tags.installSpace ?? "local"
     );
   }
 

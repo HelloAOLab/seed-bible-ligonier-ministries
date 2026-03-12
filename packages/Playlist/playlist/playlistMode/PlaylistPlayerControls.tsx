@@ -1,15 +1,17 @@
 const { useState, useLayoutEffect, useRef, useMemo, createRef } = os.appHooks;
-const { Button } = Components;
+const G = globalThis as any;
+const { Button } = G.Components;
 const VideoPlayer = await thisBot.VideoSmallScreen();
 const AudioPlayer = await thisBot.AudioPlayer();
 const AttachLink = await thisBot.AttachLink();
+const RenderHTMLContent = await thisBot.RenderHTMLContent();
 
 const EditPlaylist =
   "https://auth-aux-aobot-prod-filesbucket-141297942820.s3.amazonaws.com/aoBot/a48b4bb0182ac0b5f8c8437e3d985f9af99c8b64c61249496ef797b9b8ac88df.svg";
 const SharePlaylist =
   "https://auth-aux-aobot-prod-filesbucket-141297942820.s3.amazonaws.com/aoBot/d205ab2613e2feb14123b39522527dc72a7b649078fd434c81b0b44ede4cdecf.svg";
 
-const outerWebsiteItem = {
+const outerWebsiteItem: Record<string, boolean> = {
   youtube: true,
   iframe: true,
   video: true,
@@ -23,7 +25,8 @@ const PrevIcon = ({ fill = "#939393" }) => (
     height="32"
     viewBox="0 0 32 32"
     fill="none"
-    xmlns="http://www.w3.org/2000/svg">
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       d="M7.33325 24V8H9.99992V24H7.33325ZM24.6666 24L12.6666 16L24.6666 8V24Z"
       fill={fill}
@@ -37,7 +40,8 @@ const NextIcon = ({ fill = "#939393" }) => (
     height="16"
     viewBox="0 0 18 16"
     fill="none"
-    xmlns="http://www.w3.org/2000/svg">
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       d="M14.9999 16V0H17.6666V16H14.9999ZM0.333252 16V0L12.3333 8L0.333252 16Z"
       fill={fill}
@@ -45,7 +49,13 @@ const NextIcon = ({ fill = "#939393" }) => (
   </svg>
 );
 
-const getCurrentItem = (key, index, playlists, subIndex, isHint = false) => {
+const getCurrentItem = (
+  key: number,
+  index: number,
+  playlists: any,
+  subIndex: number,
+  isHint = false
+) => {
   const list = playlists[key]?.list;
 
   let targetItem = null;
@@ -70,7 +80,7 @@ const getCurrentItem = (key, index, playlists, subIndex, isHint = false) => {
     if (subIndex === 0) {
       nextTargetItem = targetItem.additionalInfo.layers[subIndex + 1] || null;
       if (nextTargetItem && !isHint) {
-        nextTargetItemVideo = globalThis.IsVideoAttachment(nextTargetItem);
+        nextTargetItemVideo = G.IsVideoAttachment(nextTargetItem);
         if (!nextTargetItemVideo || !nextTargetItem.autoPlay) {
           nextTargetItem = null;
         }
@@ -99,55 +109,54 @@ const PlayerControls = ({ parentId = "default" }) => {
   const [showCurrent, setShowCurrent] = useState(false);
   const [queue, setQueue] = useState([]);
 
-  const [transformedHistory, setTransformedHistory] = useState(
-    globalThis.PPthh
-  );
+  const [transformedHistory, setTransformedHistory] = useState(G.PPthh);
   const [oldData, setOldData] = useState([]);
   const [openAttachLink, setOpenAttachLink] = useState(false);
 
   const [checkedItems, setCheckedItems] = useState(
-    globalThis.PPreadingPlanEnabled ? { ...globalThis.PPpastDateEvents } : {}
+    G.PPreadingPlanEnabled
+      ? { ...G.PPpastDateEvents }
+      : { ...(G.PlayingPlaylistCheckedItems?.[G.PlayingPlaylistID] || {}) }
   );
 
   const [currIndex, setCurreIndex] = useState({
     key: 0,
-    index: globalThis.PPchecklistEnabled
+    index: G.PPchecklistEnabled
       ? -1
-      : globalThis.PPreadingPlanEnabled
-      ? globalThis.PPfirstActiveIndex
-      : globalThis.PPfirstIndex,
+      : G.PPreadingPlanEnabled
+        ? G.PPfirstActiveIndex
+        : G.PPfirstIndex,
     fromButton: 0,
     isPreviousQueue: false,
-    subIndex: globalThis.PPsubIndex,
+    subIndex: G.PPsubIndex,
   });
 
-  const [playlists, setPlaylists] = useState({
+  const [playlists, setPlaylists] = useState<any>({
     0: {
-      name: globalThis.PPplaylistName,
-      list: [
-        ...thisBot.PlayingLayersConversion(globalThis.PPplaylist?.list || []),
-      ],
-      id: createUUID(),
-      playlistID: globalThis.PPplaylist?.id,
-      isLayers: globalThis.PPplaylist?.isLayers,
+      name: G.PPplaylistName,
+      list: [...thisBot.PlayingLayersConversion(G.PPplaylist?.list || [])],
+      id: G.createUUID(),
+      playlistID: G.PPplaylist?.id,
+      isLayers: G.PPplaylist?.isLayers,
     },
   });
 
   // Audio
   const [mediaURL, setMediaURL] = useState("");
   const [videoSrc, setVideoSrc] = useState(false);
+  const [textInfo, setTextInfo] = useState("");
 
-  const setIncrementalCount = async (data) => {
+  const setIncrementalCount = async (data: any) => {
     if (!data) return;
     setMediaURL(data);
   };
 
   // May Use Later
   const [activeIndexs, setActiveIndexs] = useState({
-    ...globalThis.PPclosestNearDateEvent,
+    ...G.PPclosestNearDateEvent,
   });
 
-  const handlesetIndex = (index = 0, key) => {
+  const handlesetIndex = (index = 0, key: any) => {
     const nextItem = transformedHistory[index];
     const isPlaylist = !!nextItem?.list;
     if (isPlaylist) {
@@ -169,12 +178,12 @@ const PlayerControls = ({ parentId = "default" }) => {
     }
   };
 
-  const handleOnButtonPress = (
+  const handleOnButtonPress: any = (
     order = 0,
     getIndexOnly = false,
     directSet = false,
     directSetKey = false,
-    newIndexs
+    newIndexs?: any
   ) => {
     const indexes = newIndexs ? newIndexs : { ...currIndex };
 
@@ -192,7 +201,7 @@ const PlayerControls = ({ parentId = "default" }) => {
 
     const isCurrentItemChapterRange =
       currentItem?.type === "chapter-range" ||
-      !!currentItem.additionalInfo?.layers?.length;
+      !!currentItem?.additionalInfo?.layers?.length;
 
     if (!isCurrentItemChapterRange) newSubIndex = 0;
 
@@ -217,8 +226,8 @@ const PlayerControls = ({ parentId = "default" }) => {
           const prevItemList = wasPrevItemArray
             ? prevItem?.additionalInfo
             : prevItem?.additionalInfo?.layers?.length
-            ? prevItem?.additionalInfo?.layers
-            : [];
+              ? prevItem?.additionalInfo?.layers
+              : [];
           // This Might Break When Order is > 1
           newSubIndex = prevItemList.length + newSubIndex + order;
           if (prevItem) newIndex -= 1;
@@ -284,8 +293,21 @@ const PlayerControls = ({ parentId = "default" }) => {
       ["heading", "date"].findIndex((ele) => ele === targetItem?.type) > -1 ||
       isLayersAndScripture
     ) {
+      if (
+        targetItem?.type === "heading" &&
+        // targetItem?.additionalInfo?.subType === "text" &&
+        !getIndexOnly
+      ) {
+        const isMobile =
+          (window?.innerWidth || gridPortalBot.tags.pixelWidth) <
+          G.MOBILE_VIEWPORT_THRESHOLD;
+        if (isMobile) {
+          G.SetTextInfo(targetItem.content);
+        }
+      }
+
       if (targetItem?.type === "date" && !getIndexOnly) {
-        globalThis.PlaylingItemVisitiedMap?.((prev) => ({
+        G.PlaylingItemVisitiedMap?.((prev: any) => ({
           ...prev,
           [targetItem.id]: true,
         }));
@@ -315,37 +337,39 @@ const PlayerControls = ({ parentId = "default" }) => {
     // }
 
     if (targetItem.type === "verse") {
-      if (globalThis.FocusOnVerse) {
-        FocusOnVerse(targetItem.additionalInfo.verse);
+      if (G.FocusOnVerse) {
+        G.FocusOnVerse(targetItem.additionalInfo.verse);
       }
     }
 
     justAddedQueue.current = false;
-    globalThis.LAST_QUEUE_IIEM = {};
+    G.LAST_QUEUE_IIEM = {};
     setCurreIndex(newValues);
   };
 
   const justAddedQueue = useRef(false);
 
-  const addToQueue = (item, combineLast) => {
+  const addToQueue = (item: any, combineLast: boolean) => {
     const isArr = Array.isArray(item);
 
     let toAddItems = [];
 
     if (isArr) {
-      toAddItems = [...item.map((ele) => ({ id: createUUID(), ...ele }))];
-      globalThis.LAST_QUEUE_IIEM = item[item.length];
+      toAddItems = [
+        ...item.map((ele: any) => ({ id: G.createUUID(), ...ele })),
+      ];
+      G.LAST_QUEUE_IIEM = item[item.length];
     } else {
-      const isSame = objectComparator(item, globalThis.LAST_QUEUE_IIEM || {}, [
+      const isSame = G.objectComparator(item, G.LAST_QUEUE_IIEM || {}, [
         "content",
       ]);
 
       if (isSame) return os.toast("Last Item Repeated!");
-      toAddItems = [{ ...item, id: createUUID() }];
-      globalThis.LAST_QUEUE_IIEM = item;
+      toAddItems = [{ ...item, id: G.createUUID() }];
+      G.LAST_QUEUE_IIEM = item;
     }
 
-    setPlaylists((prevPlaylists) => {
+    setPlaylists((prevPlaylists: any) => {
       let currentKey = currIndex.key;
       const currentPlaylist = prevPlaylists[currentKey];
       const playlistID = currentPlaylist.playlistID;
@@ -362,7 +386,7 @@ const PlayerControls = ({ parentId = "default" }) => {
 
       const thh = currentList;
 
-      thh.forEach((ele, index) => {
+      thh.forEach((ele: any, index: number) => {
         if (index <= splitIndex) {
           if (Array.isArray(ele.additionalInfo)) {
             extraPoints += ele.additionalInfo.length - 1;
@@ -388,7 +412,7 @@ const PlayerControls = ({ parentId = "default" }) => {
         }
         // Case: Adding to an existing special queue
         updatedPlaylists[currentKey].list = [
-          ...updatedPlaylists[currentKey]?.list,
+          ...(updatedPlaylists[currentKey]?.list || []),
           ...toAddItems,
         ];
       } else {
@@ -400,12 +424,12 @@ const PlayerControls = ({ parentId = "default" }) => {
         const newQueue = {
           name: `Queue ${totalQueue + 1}`,
           list: [...toAddItems],
-          id: createUUID(),
+          id: G.createUUID(),
           SQ: true, // Mark this as a special queue,
           playlistID: null,
         };
 
-        if (!globalThis.PPchecklistEnabled) {
+        if (!G.PPchecklistEnabled) {
           // Update the current playlist with items before the split
           updatedPlaylists[currentKey] = {
             ...currentPlaylist,
@@ -423,13 +447,13 @@ const PlayerControls = ({ parentId = "default" }) => {
         //     setActiveIndexs(prev => ({ ...prev, [item.id]: true }));
         // }
 
-        if (!globalThis.PPchecklistEnabled) {
+        if (!G.PPchecklistEnabled) {
           updatedPlaylists[currentKey].broken = true;
           if (afterCurrentIndex.length > 0) {
             updatedPlaylists[`${currIndex.key}.2`] = {
               name: `${currentPlaylist.name}`,
               list: [...afterCurrentIndex],
-              id: createUUID(),
+              id: G.createUUID(),
               SQ: false, // Mark this as a special queue
               playlistID,
             };
@@ -439,12 +463,12 @@ const PlayerControls = ({ parentId = "default" }) => {
       justAddedQueue.current = true;
 
       // Renumber keys to ensure sequential ordering
-      const reorderedPlaylists = {};
+      const reorderedPlaylists: any = {};
       Object.keys(updatedPlaylists)
         .sort((a, b) => Number(a) - Number(b)) // Sort numerically
         .forEach((key, index) => {
           reorderedPlaylists[index] = { ...updatedPlaylists[key] };
-          if(!reorderedPlaylists[index]?.list?.length) {
+          if (!reorderedPlaylists[index]?.list?.length) {
             delete reorderedPlaylists[index];
           }
         });
@@ -455,64 +479,73 @@ const PlayerControls = ({ parentId = "default" }) => {
   };
 
   useLayoutEffect(() => {
-    globalThis.SetCurreIndexPlaylist = handlesetIndex;
-    globalThis.SetCurreIndexDirect = setCurreIndex;
-    globalThis.HandleOnButtonPress = handleOnButtonPress;
-    globalThis.ModifyTransformedHistory = setTransformedHistory;
-    globalThis.IsPlaylistPlaying = true;
-    globalThis.SetQueue = addToQueue;
-    globalThis.SetPlayingList = setPlaylists;
-    globalThis.HandleOnButtonPress = handleOnButtonPress;
+    G.SetCurreIndexPlaylist = handlesetIndex;
+    G.SetCurreIndexDirect = setCurreIndex;
+    G.HandleOnButtonPress = handleOnButtonPress;
+    G.ModifyTransformedHistory = setTransformedHistory;
+    G.IsPlaylistPlaying = true;
+    G.SetQueue = addToQueue;
+    G.SetPlayingList = setPlaylists;
+    G.HandleOnButtonPress = handleOnButtonPress;
 
-    globalThis.SetIncrementalCountPlayingPlaylist = setIncrementalCount;
-    globalThis.SetVideoSrc = setVideoSrc;
-    globalThis.SetMediaURL = setMediaURL;
+    G.SetIncrementalCountPlayingPlaylist = setIncrementalCount;
+    G.SetVideoSrc = setVideoSrc;
+    G.SetMediaURL = setMediaURL;
+    G.SetTextInfo = setTextInfo;
 
-    globalThis.PlayingPlaylistCheckedItems = checkedItems;
-    globalThis.PlayingPlaylists = playlists;
-    globalThis.SetPlayingPlaylists = setPlaylists;
-    globalThis.CurrentIndexItem = currIndex;
-    globalThis.SetCheckedItemsPlayingPlaylist = setCheckedItems;
+    G.PlayingPlaylists = playlists;
+    G.SetPlayingPlaylists = setPlaylists;
+    G.CurrentIndexItem = currIndex;
+    G.SetCheckedItemsPlayingPlaylist = (ids: any) => {
+      setCheckedItems(ids);
+      setTimeout(() => {
+        G.RenderPlaylistPlaying?.();
+      }, 100);
+    };
 
-    globalThis.UpdateJustAddedToQueue = (val) => {
+    G.UpdateJustAddedToQueue = (val: boolean) => {
       justAddedQueue.current = val;
     };
 
-    if (globalThis.PPreadingPlanEnabled) {
-      globalThis.READING_PLAN_WORK = true;
-      // globalThis.IS_PLAYLIST_ACTIVE = 0;
+    if (G.PPreadingPlanEnabled) {
+      G.READING_PLAN_WORK = true;
+      // G.IS_PLAYLIST_ACTIVE = 0;
     }
     return () => {
-      globalThis.SetCurreIndexPlaylist = null;
-      globalThis.HandleOnButtonPress = null;
-      globalThis.ModifyTransformedHistory = null;
-      globalThis.SetQueue = false;
-      globalThis.SetCurreIndexDirect = null;
-      globalThis.SetPlayingList = () => {};
-      globalThis.SetSelected && SetSelected({});
-      globalThis.READING_PLAN_WORK = false;
-      globalThis.HandleOnButtonPress = null;
-      globalThis.SetIncrementalCountPlayingPlaylist = null;
-      globalThis.SetVideoSrc = null;
-      globalThis.SetMediaURL = null;
-      globalThis.PlayingPlaylistCheckedItems = null;
-      globalThis.PlayingPlaylists = null;
-      globalThis.SetPlayingPlaylists = null;
-      globalThis.CurrentIndexItem = null;
-      globalThis.SetCheckedItemsPlayingPlaylist = null;
-      globalThis.UpdateJustAddedToQueue = null;
+      G.SetCurreIndexPlaylist = null;
+      G.HandleOnButtonPress = null;
+      G.ModifyTransformedHistory = null;
+      G.SetQueue = false;
+      G.SetCurreIndexDirect = null;
+      G.SetPlayingList = () => {};
+      G.SetSelected && G.SetSelected({});
+      G.READING_PLAN_WORK = false;
+      G.HandleOnButtonPress = null;
+      G.SetIncrementalCountPlayingPlaylist = null;
+      G.SetVideoSrc = null;
+      G.SetTextInfo = null;
+      G.SetMediaURL = null;
+      G.PlayingPlaylists = null;
+      G.SetPlayingPlaylists = null;
+      G.CurrentIndexItem = null;
+      G.SetCheckedItemsPlayingPlaylist = null;
+      G.UpdateJustAddedToQueue = null;
       // globalThis.IS_PLAYLIST_ACTIVE = true;
     };
   }, [handleOnButtonPress, transformedHistory]);
 
   useLayoutEffect(() => {
     return () => {
-      globalThis.IsPlaylistPlaying = false;
-      globalThis.IsQueuePresent = false;
-      globalThis.RemotePlaylistPlayed = false;
-      EmitData("playlistStopped", {});
+      G.IsPlaylistPlaying = false;
+      G.IsQueuePresent = false;
+      G.RemotePlaylistPlayed = false;
+      G.EmitData("playlistStopped", {});
     };
   }, []);
+
+  useLayoutEffect(() => {
+    G.UpdateCheckedItemsPlayingPlaylist(checkedItems, G.PlayingPlaylistID);
+  }, [checkedItems]);
 
   const [
     currentPlaylistName,
@@ -522,7 +555,6 @@ const PlayerControls = ({ parentId = "default" }) => {
     prevItemName,
     currentItem,
   ] = useMemo(() => {
-    
     const { name: currentPlaylistName } = playlists[currIndex.key];
 
     const targetItem = getCurrentItem(
@@ -543,8 +575,7 @@ const PlayerControls = ({ parentId = "default" }) => {
       nextIndexes.index,
       playlists,
       nextIndexes.subIndex,
-      playlists[nextIndexes.key]?.isLayers,
-      true
+      playlists[nextIndexes.key]?.isLayers
     );
     const prevItem = prevIndex.isPreviousQueue
       ? oldData[oldData.length - 1]
@@ -553,12 +584,11 @@ const PlayerControls = ({ parentId = "default" }) => {
           prevIndex.index,
           playlists,
           prevIndex.subIndex,
-          playlists[prevIndex.key]?.isLayers,
-          true
+          playlists[prevIndex.key]?.isLayers
         );
 
     // setOldData(prev => [...prev, targetItem]);
-    globalThis.PlaylingItemVisitiedMap?.((prev) => ({
+    G.PlaylingItemVisitiedMap?.((prev: any) => ({
       ...prev,
       [targetItem.id]: true,
     }));
@@ -582,19 +612,31 @@ const PlayerControls = ({ parentId = "default" }) => {
         targetItem?.type === "heading" ||
         (!!targetItem?.nextTargetItem?.id && currIndex.fromButton === 1)
       ) {
-        if (globalThis.SetMediaURL) {
-          globalThis.SetMediaURL(null);
+        if (
+          targetItem?.type === "heading"
+          // &&
+          // targetItem?.additionalInfo?.subType === "text"
+        ) {
+          const isMobile =
+            (window?.innerWidth || gridPortalBot.tags.pixelWidth) <
+            G.MOBILE_VIEWPORT_THRESHOLD;
+          if (isMobile) {
+            G.SetTextInfo(targetItem.content);
+          }
+        }
+        if (G.SetMediaURL) {
+          G.SetMediaURL(null);
         }
         setTimeout(() => {
           thisBot.CloseFloatingApp();
         }, 100);
 
-        if (globalThis.SetVideoSrc) {
-          globalThis.SetVideoSrc(null);
+        if (G.SetVideoSrc) {
+          G.SetVideoSrc(null);
         }
         if (targetItem?.type === "heading")
-          globalThis.PlayingPlaylistSetHeading(targetItem.content);
-        const allKeys = Object.keys(playlists);
+          G.PlayingPlaylistSetHeading(targetItem.content);
+        const allKeys: any = Object.keys(playlists);
 
         const isFirstKey = currIndex.key == 0;
         const isLastKey = currIndex.key == allKeys[allKeys.length - 1];
@@ -613,8 +655,8 @@ const PlayerControls = ({ parentId = "default" }) => {
             bulkAdd: isBulk,
           });
           handleOnButtonPress(currIndex.fromButton);
-          globalThis[`${targetItem.id}OpenToggle`] &&
-            globalThis[`${targetItem.id}OpenToggle`](true);
+          G[`${targetItem.id}OpenToggle`] &&
+            G[`${targetItem.id}OpenToggle`](true);
         }
         if (!isFirstItemAndBackButton && !isLastItemAndLastButton)
           handleOnButtonPress(currIndex.fromButton);
@@ -633,11 +675,11 @@ const PlayerControls = ({ parentId = "default" }) => {
       }
     }
 
-    if (globalThis.RenderPlaylistTimer) {
-      clearTimeout(globalThis.RenderPlaylistTimer);
-      globalThis.RenderPlaylistTimer = null;
+    if (G.RenderPlaylistTimer) {
+      clearTimeout(G.RenderPlaylistTimer);
+      G.RenderPlaylistTimer = null;
     }
-    globalThis.RenderPlaylistTimer = setTimeout(() => {
+    G.RenderPlaylistTimer = setTimeout(() => {
       thisBot.SetItemsPlayerPlaylist({
         currentPlaylistName: currentPlaylistName,
         currentItemID: targetItem.id,
@@ -646,8 +688,8 @@ const PlayerControls = ({ parentId = "default" }) => {
         prevItemName: prevItem,
         currentItemName: currentItemName,
       });
-      globalThis.RenderPlaylist && globalThis.RenderPlaylist();
-      globalThis.RenderPlaylistTimer = null;
+      G.RenderPlaylist && G.RenderPlaylist();
+      G.RenderPlaylistTimer = null;
     }, 50);
     // nextItemName, nextItemType, prevItemName, prevItemType
     //  nextItemName, nextItemType, prevItemName, prevItemType
@@ -668,7 +710,7 @@ const PlayerControls = ({ parentId = "default" }) => {
 
   useLayoutEffect(() => {
     const i = currIndex.index;
-    const list = globalThis.PPplaylist?.list;
+    const list = G.PPplaylist?.list;
 
     const gp = list;
 
@@ -682,19 +724,19 @@ const PlayerControls = ({ parentId = "default" }) => {
     }
 
     setShowCurrent(true);
-    if (globalThis.TIMER_SHOW_NEXT) {
-      clearTimeout(globalThis.TIMER_SHOW_NEXT);
-      globalThis.TIMER_SHOW_NEXT = null;
+    if (G.TIMER_SHOW_NEXT) {
+      clearTimeout(G.TIMER_SHOW_NEXT);
+      G.TIMER_SHOW_NEXT = null;
     }
-    globalThis.TIMER_SHOW_NEXT = setTimeout(() => {
+    G.TIMER_SHOW_NEXT = setTimeout(() => {
       setShowCurrent(false);
     }, 3000);
 
-    globalThis.SetActiveDate?.(lastActiveDateID);
+    G.SetActiveDate?.(lastActiveDateID);
   }, [currIndex]);
 
-  const attachLink = (title, link, linkState) => {
-    globalThis.SetQueue({
+  const attachLink = (title: string, link: string, linkState: any) => {
+    G.SetQueue({
       content: title,
       additionalInfo: {
         link,
@@ -705,31 +747,37 @@ const PlayerControls = ({ parentId = "default" }) => {
     setOpenAttachLink(false);
   };
 
-  const massAdd = (items) => {
-    globalThis.SetQueue(items);
+  const massAdd = (items: any) => {
+    G.SetQueue(items);
   };
 
   useLayoutEffect(() => {
-    if (!globalThis.UPDATE_VIA_SHOUT) {
-      if (globalThis.REMOTE_UPDATE_TIMER) {
-        clearTimeout(globalThis.REMOTE_UPDATE_TIMER);
-        globalThis.REMOTE_UPDATE_TIMER = null;
+    if (!G.UPDATE_VIA_SHOUT) {
+      if (G.REMOTE_UPDATE_TIMER) {
+        clearTimeout(G.REMOTE_UPDATE_TIMER);
+        G.REMOTE_UPDATE_TIMER = null;
       }
-      globalThis.REMOTE_UPDATE_TIMER = setTimeout(() => {
+      G.REMOTE_UPDATE_TIMER = setTimeout(() => {
         EmitData("playlistQueueUpdated", { playlists });
         EmitData("playlistCurrentIndexUpdate", { currIndex });
       }, 100);
     } else {
-      globalThis.UPDATE_VIA_SHOUT = false;
+      G.UPDATE_VIA_SHOUT = false;
     }
 
     return () => {
-      clearTimeout(globalThis.REMOTE_UPDATE_TIMER);
-      globalThis.REMOTE_UPDATE_TIMER = null;
+      clearTimeout(G.REMOTE_UPDATE_TIMER);
+      G.REMOTE_UPDATE_TIMER = null;
     };
   }, [currIndex, playlists]);
 
   const isItemLink = outerWebsiteItem[currentItem?.additionalInfo?.type];
+
+  const isMobile =
+    (window?.innerWidth || gridPortalBot.tags.pixelWidth) <
+    G.MOBILE_VIEWPORT_THRESHOLD;
+
+  const GetLabelT = useMemo(() => G.GetLabel, []);
 
   return (
     <>
@@ -746,18 +794,20 @@ const PlayerControls = ({ parentId = "default" }) => {
             // zIndex: "1001",
             textTransform: "capitalize",
             // padding: "12px",
-            background: "white",
             borderRadius: "4px",
             fontWeight: "600",
             width: "calc(100%)",
             // borderTop: "1px solid #DADADA",
-            backgroundColor: "#F7F7F5",
+            backgroundColor: "var(--pageBackground)",
             height: "auto",
           }}
-          className="flaoting-attach-link">
+          className="flaoting-attach-link"
+        >
           <AttachLink
             canClose
+            canRecord={false}
             massAdd={massAdd}
+            sSelectedType="SCRIPTURE"
             attachLink={attachLink}
             onClose={() => setOpenAttachLink(false)}
           />
@@ -765,19 +815,26 @@ const PlayerControls = ({ parentId = "default" }) => {
       ) : (
         <div
           style={{
-            background: "white",
+            background: "var(--pageBackground)",
             display: "flex",
             flexDirection: "column",
             height: "100%",
             boxShadow: "0px 0px 9px 0px #00000026",
-            padding: "0.5rem",
+            padding: "0.75rem 1rem",
             borderRadius: "8px",
             justifyContent: "center",
-          }}>
+          }}
+        >
+          {!!textInfo && (
+            <div className="textinfo-playlist">
+              <RenderHTMLContent htmlContent={textInfo} />
+            </div>
+          )}
           {!!videoSrc && (
             <VideoPlayer videoSrc={videoSrc} playlistItem={currentItem} />
           )}
           {!!mediaURL && <AudioPlayer mediaURL={mediaURL} />}
+
           {isItemLink && false && (
             <div>
               <p>Link showing refuse to connect Problems? </p>
@@ -785,7 +842,8 @@ const PlayerControls = ({ parentId = "default" }) => {
                 href={currentItem?.additionalInfo?.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Visit link">
+                title="Visit link"
+              >
                 Click here to open
               </a>
             </div>
@@ -797,13 +855,17 @@ const PlayerControls = ({ parentId = "default" }) => {
               justifyContent: "space-between",
               gap: "0.5rem",
               width: "calc(100%)",
-            }}>
+            }}
+          >
             <div
               style={{
-                width: "50%",
-                flexDirection: "column",
+                width: "auto",
+                flexDirection: "row",
                 display: "flex",
-              }}>
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
               <p
                 style={{
                   fontSize: "12px",
@@ -811,29 +873,35 @@ const PlayerControls = ({ parentId = "default" }) => {
                   display: "flex",
                   alignItems: "center",
                   margin: "0",
-                  marginBottom: "0.5rem",
+                  // marginBottom: "0.5rem",
                   fontFamily: "DM Sans",
                   height: "12px",
-                }}>
+                  color: "var(--pageTextColor)",
+                  minWidth: "max-content",
+                }}
+              >
                 {showCurrent
-                  ? "Playing now"
+                  ? `${t("playingNow")}:`
                   : nextItemName?.content
-                  ? "Playing Next"
-                  : null}
+                    ? `${t("playingNext")}:`
+                    : null}
               </p>
               <div style={{ gap: "0.5rem" }} className="align-center">
                 <div
                   style={{
-                    height: "2.5rem",
-                    width: "2.5rem",
+                    height: "1.5rem",
+                    width: "1.5rem",
                     display: "grid",
                     placeItems: "center",
-                    backgroundColor: "#D3643329",
+                    backgroundColor: "var(--activeTabFill)",
                     borderRadius: "0.25rem",
-                  }}>
+                    color: "var(--pageTextColor)",
+                  }}
+                >
                   <span
-                    style={{ margin: "0", fontSize: "18px" }}
-                    class="material-symbols-outlined unfollow">
+                    style={{ margin: "0", fontSize: "14px" }}
+                    class="material-symbols-outlined unfollow"
+                  >
                     {nextItemName?.type === "attachment-link"
                       ? "media_link"
                       : "description"}
@@ -843,28 +911,41 @@ const PlayerControls = ({ parentId = "default" }) => {
                   <div
                     className={`fade-in-animation  ${
                       showCurrent ? "" : "show"
-                    }`}>
+                    }`}
+                  >
                     {nextItemName?.content ? (
-                      <p
-                        style={{
-                          fontSize: "1rem",
-                          fontWeight: "600",
-                          display: "flex",
-                          alignItems: "center",
-                          fontFamily: "DM Sans",
-                          margin: "0",
-                        }}>
-                        {nextItemName?.content
-                          ? `${nextItemName?.content}${nextItemName?.prefix}`.substring(
-                              0,
-                              16
-                            )
-                          : ""}
-                        {`${nextItemName?.content}${nextItemName?.prefix}`
-                          .length > 16
-                          ? "..."
-                          : ""}
-                      </p>
+                      nextItemName?.additionalInfo?.book && isMobile ? (
+                        <GetLabelT
+                          needToShowInMobile={true}
+                          value="discover"
+                          fontSize="0.75rem"
+                          currentOpenedBook={{ book: nextItemName.content }}
+                          widthCompare={isMobile ? 65 : 300}
+                        />
+                      ) : (
+                        <p
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: "600",
+                            display: "flex",
+                            alignItems: "center",
+                            fontFamily: "DM Sans",
+                            margin: "0",
+                            color: "var(--pageTextColor)",
+                          }}
+                        >
+                          {nextItemName?.content
+                            ? `${nextItemName?.content}${nextItemName?.prefix}`.substring(
+                                0,
+                                isMobile ? 9 : 16
+                              )
+                            : ""}
+                          {`${nextItemName?.content}${nextItemName?.prefix}`
+                            .length > (isMobile ? 9 : 16)
+                            ? "..."
+                            : ""}
+                        </p>
+                      )
                     ) : (
                       <p
                         style={{
@@ -873,49 +954,85 @@ const PlayerControls = ({ parentId = "default" }) => {
                           fontWeight: "900",
                           fontFamily: "DM Sans",
                           margin: "0",
-                        }}>
+                          minWidth: "max-content",
+                        }}
+                      >
                         Playlist Ended
                       </p>
                     )}
-                    {!globalThis.ValidTypes[nextItemName?.type] && (
+                    {!G.ValidTypes[nextItemName?.type] &&
+                      !showCurrent &&
+                      !!nextItemName?.type && (
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: "400",
+                            margin: "0",
+                            textTransform: "capitalize",
+                            color: "var(--pageTextColor)",
+                          }}
+                        >
+                          {isMobile
+                            ? nextItemName?.type.substring(0, 10)
+                            : nextItemName?.type}
+                        </p>
+                      )}
+
+                    {!G.ValidTypes[currentItem?.type] && showCurrent && (
                       <p
                         style={{
                           fontSize: "12px",
                           fontWeight: "400",
-                          color: "#0000001",
                           margin: "0",
                           textTransform: "capitalize",
-                        }}>
-                        {nextItemName?.type}
+                          color: "var(--pageTextColor)",
+                        }}
+                      >
+                        {isMobile
+                          ? currentItem?.type.substring(0, 10)
+                          : currentItem?.type}
                       </p>
                     )}
                   </div>
                   <div
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", minWidth: "max-content" }}
                     className={`fade-in-animation overlay-top-left  ${
                       showCurrent ? "show" : ""
-                    }`}>
+                    }`}
+                  >
                     {currentItem?.content ? (
-                      <p
-                        style={{
-                          fontSize: "1rem",
-                          fontWeight: "600",
-                          display: "flex",
-                          alignItems: "center",
-                          fontFamily: "DM Sans",
-                          margin: "0",
-                        }}>
-                        {currentItem?.content
-                          ? `${currentItem?.content}${currentItem?.prefix}`.substring(
-                              0,
-                              16
-                            )
-                          : ""}
-                        {`${currentItem?.content}${currentItem?.prefix}`
-                          .length > 16
-                          ? "..."
-                          : ""}
-                      </p>
+                      currentItem.additionalInfo?.book && isMobile ? (
+                        <GetLabelT
+                          needToShowInMobile={true}
+                          fontSize="0.75rem"
+                          value="discover"
+                          currentOpenedBook={{ book: currentItem.content }}
+                          widthCompare={isMobile ? 65 : 300}
+                        />
+                      ) : (
+                        <p
+                          style={{
+                            fontSize: "0.65rem",
+                            fontWeight: "600",
+                            display: "flex",
+                            alignItems: "center",
+                            fontFamily: "DM Sans",
+                            margin: "0",
+                            color: "var(--pageTextColor)",
+                          }}
+                        >
+                          {currentItem?.content
+                            ? `${currentItem?.content}${currentItem?.prefix}`.substring(
+                                0,
+                                isMobile ? 10 : 16
+                              )
+                            : ""}
+                          {`${currentItem?.content}${currentItem?.prefix}`
+                            .length > (isMobile ? 10 : 16)
+                            ? "..."
+                            : ""}
+                        </p>
+                      )
                     ) : (
                       <p
                         style={{
@@ -924,21 +1041,26 @@ const PlayerControls = ({ parentId = "default" }) => {
                           fontWeight: "900",
                           fontFamily: "DM Sans",
                           margin: "0",
-                        }}>
+                          minWidth: "max-content",
+                        }}
+                      >
                         Playlist Ended
                       </p>
                     )}
 
-                    {!globalThis.ValidTypes[currentItem?.type] && (
+                    {!G.ValidTypes[currentItem?.type] && showCurrent && (
                       <p
                         style={{
                           fontSize: "12px",
                           fontWeight: "400",
-                          color: "#0000001",
+                          color: "var(--pageTextColor)",
                           margin: "0",
                           textTransform: "capitalize",
-                        }}>
-                        {currentItem?.type}
+                        }}
+                      >
+                        {isMobile
+                          ? currentItem?.type.substring(0, 10)
+                          : currentItem?.type}
                       </p>
                     )}
                   </div>
@@ -950,35 +1072,34 @@ const PlayerControls = ({ parentId = "default" }) => {
                 style={{
                   margin: "0",
                   width: "24px",
-                  backgroundColor: "#D364334D",
+                  backgroundColor: "var(--themeSideMenu)",
                   height: "24px",
-                  border: "1px solid #D36433",
+                  border: "1px solid var(--secondaryColor)",
                 }}
                 className="playlist-action small"
                 onClick={() => {
-                  if (globalThis.makingPlaylist) {
+                  if (G.makingPlaylist) {
                     // globalThis.PlaylistPlaytoggleHide();
                     thisBot.CloseSelf({ force: true });
                   } else {
                     thisBot.OpenSelf();
                   }
-                }}>
+                }}
+              >
                 <img
                   src="https://auth-aux-aobot-prod-filesbucket-141297942820.s3.amazonaws.com/aoBot/fe3ea1784fbed6a33fb06bc8885bca18211293462adcb06311db83f1450589b8.svg"
-                  class="material-symbols-outlined unfollow"
+                  class="material-symbols-outlined unfollow img-icon"
                   style={{
                     margin: "0",
-                    width: "12px",
+                    minWidth: "10px",
                   }}
                 />
-
-                {false && <span>{checklistEnabled ? "Player" : "Queue"}</span>}
               </p>
               <p
                 onClick={() => {
-                  if (globalThis.RemotePlaylistPlayed) {
+                  if (G.RemotePlaylistPlayed) {
                     return ShowNotification({
-                      message: "Only Host can add items to the queue..",
+                      message: t("onlyHostCanAddItemsToQueue"),
                       severity: "error",
                     });
                   }
@@ -990,13 +1111,15 @@ const PlayerControls = ({ parentId = "default" }) => {
                   height: "26px",
                   padding: "0",
                   borderRadius: "6px",
-                  border: "0px solid #D36433",
-                  backgroundColor: "#E6E6E6",
+                  border: "0px solid var(--secondaryColor)",
+                  backgroundColor: "var(--activeTabFill)",
                 }}
-                className="playlist-action small">
+                className="playlist-action small"
+              >
                 <span
                   style={{ margin: "0", fontSize: "20px" }}
-                  class="material-symbols-outlined unfollow">
+                  class="material-symbols-outlined unfollow"
+                >
                   add
                 </span>
               </p>
@@ -1020,7 +1143,8 @@ const PlayerControls = ({ parentId = "default" }) => {
               gap: "1rem",
               justifyContent: "space-between",
               alignItems: "center",
-            }}>
+            }}
+          >
             {false && (
               <img
                 src={EditPlaylist}
@@ -1031,16 +1155,15 @@ const PlayerControls = ({ parentId = "default" }) => {
                   marginRight: "1rem",
                   cursor: "pointer",
                 }}
-                onClick={globalThis.PlaylistPlaytoggleHide}
+                onClick={G.PlaylistPlaytoggleHide}
               />
             )}
             <Button
               style={{
-                fontSize: "12px",
                 margin: "0",
                 minWidth: "auto",
                 backgroundColor: "transparent",
-                border: "0px solid #D36433",
+                border: "0px solid var(--secondaryColor)",
                 boxShadow: "none",
                 padding: "8px",
                 cursor: !prevItemName?.content ? "not-allowed" : "",
@@ -1049,29 +1172,28 @@ const PlayerControls = ({ parentId = "default" }) => {
               onClick={() => {
                 if (!prevItemName?.content) return;
                 DataManager.cancelCurrentPlayingSound();
-                if (globalThis.HandleOnButtonPress)
-                  globalThis.HandleOnButtonPress(-1);
-              }}>
+                if (G.HandleOnButtonPress) G.HandleOnButtonPress(-1);
+              }}
+            >
               <PrevIcon fill={!prevItemName?.content ? "#939393" : "#000"} />
             </Button>
             <p
               onClick={() => {
-                globalThis.IsPlaylistPlaying = false;
+                G.IsPlaylistPlaying = false;
                 DataManager.cancelCurrentPlayingSound();
-                globalThis.SetSelected && SetSelected({});
-                globalThis.SetHolded && SetHolded({});
+                G.SetSelected && G.SetSelected({});
+                G.SetHolded && G.SetHolded({});
                 // globalThis.SetPlayingPlaylist && globalThis.SetPlayingPlaylist(false);
-                globalThis[`${parentId}ToggleGreyCheckPLayingPlaylist`] &&
-                  globalThis[`${parentId}ToggleGreyCheckPLayingPlaylist`](null);
-                globalThis.IsQueuePresent = false;
+                G[`${parentId}ToggleGreyCheckPLayingPlaylist`] &&
+                  G[`${parentId}ToggleGreyCheckPLayingPlaylist`](null);
+                G.IsQueuePresent = false;
                 // os.unregisterApp("playing-playlist");
-                globalThis.IS_PLAYLIST_ACTIVE = false;
-                globalThis.SetSplitAppPanel2 &&
-                  globalThis.SetSplitAppPanel2(null);
+                G.IS_PLAYLIST_ACTIVE = false;
+                G.SetSplitAppPanel2 && G.SetSplitAppPanel2(null);
                 thisBot.OpenSelf();
                 // thisBot.showInfo(`History Mode`);
-                if (globalThis.RemoveNowBarApp) {
-                  globalThis.RemoveNowBarApp("player-playlist-bar");
+                if (G.RemoveNowBarApp) {
+                  G.RemoveNowBarApp("player-playlist-bar");
                 }
                 os.unregisterApp("playing-playlist-flaot");
                 thisBot.CloseFloatingApp();
@@ -1083,14 +1205,16 @@ const PlayerControls = ({ parentId = "default" }) => {
                 borderRadius: "50%",
                 border: "none",
               }}
-              className="playlist-action small">
+              className="playlist-action small"
+            >
               <span
                 style={{
                   margin: "0",
                   fontSize: "14px",
-                  backgroundColor: "#D36433",
+                  backgroundColor: "var(--secondaryColor)",
                 }}
-                class="material-symbols-outlined unfollow">
+                class="material-symbols-outlined unfollow"
+              >
                 stop
               </span>
             </p>
@@ -1100,37 +1224,34 @@ const PlayerControls = ({ parentId = "default" }) => {
                 margin: "0",
                 minWidth: "auto",
                 backgroundColor: "transparent",
-                border: "0px solid #D36433",
+                border: "0px solid var(--secondaryColor)",
                 boxShadow: "none",
                 color: "#000",
                 padding: "8px",
-                fontSize: "12px",
                 cursor: !nextItemName?.content ? "not-allowed" : "",
               }}
               onClick={() => {
                 if (!nextItemName?.content) return;
                 DataManager.cancelCurrentPlayingSound();
-                if (
-                  !!nextItemName?.content &&
-                  !!globalThis.HandleOnButtonPress
-                ) {
-                  globalThis.HandleOnButtonPress(1);
+                if (!!nextItemName?.content && !!G.HandleOnButtonPress) {
+                  G.HandleOnButtonPress(1);
                   return;
                 }
                 // globalThis.SetPlayingPlaylist && globalThis.SetPlayingPlaylist(false);
-                globalThis[`${parentId}ToggleGreyCheckPLayingPlaylist`] &&
-                  globalThis[`${parentId}ToggleGreyCheckPLayingPlaylist`](null);
-                globalThis.IsQueuePresent = false;
-                globalThis.IS_PLAYLIST_ACTIVE = false;
+                G[`${parentId}ToggleGreyCheckPLayingPlaylist`] &&
+                  G[`${parentId}ToggleGreyCheckPLayingPlaylist`](null);
+                G.IsQueuePresent = false;
+                G.IS_PLAYLIST_ACTIVE = false;
                 thisBot.CloseFloatingApp();
-                globalThis.SetSplitAppPanel2(null);
+                G.SetSplitAppPanel2(null);
                 // os.unregisterApp("playing-playlist");
                 // thisBot.showInfo(`History Mode`);
                 os.unregisterApp("playing-playlist-flaot");
-                if (globalThis.RemoveNowBarApp) {
-                  globalThis.RemoveNowBarApp("player-playlist-bar");
+                if (G.RemoveNowBarApp) {
+                  G.RemoveNowBarApp("player-playlist-bar");
                 }
-              }}>
+              }}
+            >
               <NextIcon fill={!nextItemName?.content ? "#939393" : "#000"} />
             </Button>
             {false && (
@@ -1145,7 +1266,7 @@ const PlayerControls = ({ parentId = "default" }) => {
                 }}
                 onClick={() => {
                   return ShowNotification({
-                    message: "Coming Soon!",
+                    message: t("comingSoon"),
                     severity: "error",
                   });
                 }}

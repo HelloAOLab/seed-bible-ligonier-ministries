@@ -1,12 +1,14 @@
 // Float system with window on top and toolbar underneath
 // Enhanced with slide-in/out functionality like iPhone
 // + Mobile tweaks: center at top & keep toolbar visible
+import { preactRenderToString } from "https://esm.helloao.org/vendor-RPNXNWQB.js";
+import { globalAPI } from "app.controller.controllerBuilder";
 
 const { createContext, useContext, useState, useEffect, useRef } = os.appHooks;
 
 const MyContext = createContext();
 
-const MOBILE_QUERY = "(max-width: 768px)";
+const MOBILE_QUERY = "(max-width: 480px)";
 const isMobileNow = () =>
   (typeof window !== "undefined" &&
     window.matchMedia?.(MOBILE_QUERY)?.matches) ||
@@ -24,11 +26,11 @@ function computeMobilePlacement95() {
     window.innerHeight || 0
   );
 
-  const width = Math.round(vw * 0.95);
+  const width = Math.round(vw * 1);
   const height = Math.round(vh - vh * 0.7);
 
-  const x = Math.round((vw - width) / 2);
-  const y = 12; // stick to top; change if you want centered: Math.round((vh - height) / 2)
+  const x = 0;
+  const y = 0; // stick to top; change if you want centered: Math.round((vh - height) / 2)
 
   return { size: { width, height }, position: { x, y } };
 }
@@ -42,10 +44,12 @@ export function MouseMoveProvider({ children }) {
   const [floatingApps, setFloatingApps] = useState([]);
   const [slideIn, setSlideIn] = useState(false);
   const [hiddenApps, setHiddenApps] = useState([]);
-
+  const [modalContent, setModalContent] = useState(null);
+  const [currentCanvasApp, setCurrentCanvasApp] = useState(null);
+  globalThis.ShowModal = (content) => setModalContent(content);
+  globalThis.CloseModal = () => setModalContent(null);
   useEffect(() => {
-    // safe if not defined
-    globalThis.LocateCanvas?.();
+    globalAPI.updateCanvasStyleAndGridPortal();
   }, [floatingApps]);
 
   // expose your globals
@@ -55,6 +59,56 @@ export function MouseMoveProvider({ children }) {
 
   // create
   globalThis.AddFloatingApp = (appConfig) => {
+    // Handle "panel" mode - go directly to panel without creating floating window
+    if (appConfig.mode === "panel") {
+      const checkEmpty = PanelsApps.find((e) => !e.tabData);
+      const id = globalThis.LastClickedPanelUpdate || checkEmpty?.id;
+      os.log(
+        "RemoveApplicationByID",
+        checkEmpty,
+        globalThis.LastClickedPanelUpdate
+      );
+      if (
+        typeof AddApplication === "function" &&
+        typeof RemoveApplicationByID === "function"
+      ) {
+        ReplaceApplication(id, {
+          id,
+          App: (
+            <PanelAppWrapper
+              onReturnToFloat={() => {
+                os.log(PanelsApps, id, "RemoveApplicationByID");
+                RemoveApplicationByID(id);
+                globalThis.AddFloatingApp({
+                  ...appConfig,
+                  id,
+                  mode: undefined, // Remove mode so it floats
+                });
+              }}
+              title={appConfig.title || "App"}
+              onClose={() => {
+                RemoveApplicationByID(id);
+                configBot.tags.gridPortal = null;
+                configBot.tags.miniGridPortal = null;
+                configBot.tags.mapPortal = null;
+                configBot.tags.miniMapPortal = null;
+                setCurrentCanvasApp(null);
+                shout("onFloatingAppRemoved", { appId: id });
+              }}
+            >
+              {appConfig.App}
+            </PanelAppWrapper>
+          ),
+        });
+        return id;
+      } else {
+        console.warn(
+          "Panel infrastructure not available, falling back to floating window"
+        );
+      }
+    }
+
+    // Original floating app logic continues here...
     const baseSize = appConfig.size || { width: 360, height: 240 };
 
     let initialSize = baseSize;
@@ -72,7 +126,7 @@ export function MouseMoveProvider({ children }) {
     }
 
     const newApp = {
-      id: Date.now() + Math.random(),
+      id: appConfig?.id || Date.now() + Math.random(),
       App: appConfig.App,
       title: appConfig.title || "Floating App",
       position: initialPos,
@@ -86,85 +140,33 @@ export function MouseMoveProvider({ children }) {
       isHidden: false,
       dragOffset: { x: 0, y: 0 },
       resizeHandle: null,
-      // remember if we auto-centered for mobile so we can re-center on rotate
       __autoCenteredMobile: autoCentered,
+      type: appConfig?.type,
     };
 
-    // Check if new app contains mainCanvas class
-    const tempDiv = document.createElement("div");
-    const renderToString = (element) => {
-      const container = document.createElement("div");
-      try {
-        // Simple check: render React element to temp container
-        const root = ReactDOM.createRoot
-          ? ReactDOM.createRoot(container)
-          : null;
-        if (root) {
-          root.render(element);
-        }
-        return container.innerHTML;
-      } catch (e) {
-        // Fallback: convert to string
-        return String(element);
-      }
-    };
+    // ... rest of your existing canvas app logic ...
 
-    let hasMainCanvas = false;
-    try {
-      const appString = String(appConfig.App);
-      hasMainCanvas =
-        appString.includes("mainCanvas") ||
-        appConfig.App?.props?.className?.includes("mainCanvas") ||
-        (appConfig.App?.type === "div" &&
-          appConfig.App?.props?.className?.includes("mainCanvas"));
-    } catch (e) {
-      // Silent fail for string check
-    }
-
-    // Remove previous apps with mainCanvas if this new app has mainCanvas
-    if (hasMainCanvas) {
+    if (
+      currentCanvasApp &&
+      currentCanvasApp.id !== newApp.id &&
+      newApp?.type &&
+      newApp.type === "canvas"
+    ) {
       setFloatingApps((prev) => {
-        const appsToRemove = prev.filter((app) => {
-          try {
-            const appString = String(app.App);
-            return (
-              appString.includes("mainCanvas") ||
-              app.App?.props?.className?.includes("mainCanvas") ||
-              (app.App?.type === "div" &&
-                app.App?.props?.className?.includes("mainCanvas"))
-            );
-          } catch (e) {
-            return false;
-          }
-        });
-
-        // Notify about removed apps
-        appsToRemove.forEach((app) => {
-          shout("onFloatingAppRemoved", { appId: app.id });
-        });
-
-        return prev.filter((app) => !appsToRemove.includes(app));
+        shout("onFloatingAppRemoved", { appId: currentCanvasApp.id });
+        setHiddenApps((prev) =>
+          prev.filter((app) => app.id !== currentCanvasApp.id)
+        );
+        RemoveApplicationByID(currentCanvasApp.id);
+        setCurrentCanvasApp(newApp);
+        return prev.filter((app) => app.id !== currentCanvasApp.id);
       });
-
-      // Also remove from hidden apps
-      setHiddenApps((prev) => {
-        return prev.filter((app) => {
-          try {
-            const appString = String(app.App);
-            return !(
-              appString.includes("mainCanvas") ||
-              app.App?.props?.className?.includes("mainCanvas") ||
-              (app.App?.type === "div" &&
-                app.App?.props?.className?.includes("mainCanvas"))
-            );
-          } catch (e) {
-            return true;
-          }
-        });
-      });
+    } else if (!currentCanvasApp && newApp?.type && newApp.type === "canvas") {
+      setCurrentCanvasApp(newApp);
     }
 
-    setFloatingApps((prev) => [...prev, newApp]);
+    setFloatingApps((prev) => [...prev, { ...newApp }]);
+
     return newApp.id;
   };
 
@@ -172,6 +174,9 @@ export function MouseMoveProvider({ children }) {
   globalThis.RemoveFloatingApp = (appId) => {
     setFloatingApps((prev) => prev.filter((app) => app.id !== appId));
     setHiddenApps((prev) => prev.filter((app) => app.id !== appId));
+    if (currentCanvasApp?.id === appId) {
+      setCurrentCanvasApp(null);
+    }
     shout("onFloatingAppRemoved", { appId });
   };
 
@@ -220,8 +225,8 @@ export function MouseMoveProvider({ children }) {
             const dx = e.clientX - app.resizeStartPos.x;
             const dy = e.clientY - app.resizeStartPos.y;
 
-            let size = { ...app.size };
-            let pos = { ...app.position };
+            const size = { ...app.size };
+            const pos = { ...app.position };
 
             switch (app.resizeHandle) {
               case "se":
@@ -402,6 +407,7 @@ export function MouseMoveProvider({ children }) {
       }
       await os.unregisterApp("exitButton");
       await os.registerApp("exitButton", thisBot);
+      globalThis?.setOpenSidebar(false);
       os.compileApp(
         "exitButton",
         <button
@@ -487,6 +493,9 @@ export function MouseMoveProvider({ children }) {
           setSlideIn={setSlideIn}
           updateFloatingApp={updateFloatingApp}
           slideOutApp={slideOutApp}
+          setFloatingApps={setFloatingApps}
+          setHiddenApps={setHiddenApps}
+          setCurrentCanvasApp={setCurrentCanvasApp}
         />
       ))}
 
@@ -542,11 +551,38 @@ export function MouseMoveProvider({ children }) {
           ))}
         </div>
       )}
-
+      {modalContent && (
+        <div
+          onClick={() => setModalContent(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              height: "fit-content",
+              width: "fit-content",
+              overflow: "auto",
+            }}
+          >
+            {modalContent}
+          </div>
+        </div>
+      )}
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          width: "100dvw",
+          height: "100dvh",
           pointerEvents: isAbleToRightClick ? "none" : "",
         }}
       >
@@ -562,17 +598,38 @@ const FloatingAppContainer = ({
   slideIn,
   setSlideIn,
   slideOutApp,
+  setFloatingApps,
+  setHiddenApps,
+  setCurrentCanvasApp,
 }) => {
+  // Default to false - only show VR button if WebXR is actually supported
+  const [userHaveVR, setUserHaveVR] = useState(false);
+  const checkVR = async () => {
+    // Check WebXR support regardless of hasMainCanvas
+    // This ensures VR button only shows on actual XR devices
+    try {
+      const support = await os.vrSupported();
+      setUserHaveVR(support);
+    } catch {
+      setUserHaveVR(false);
+    }
+  };
+  useEffect(() => {
+    checkVR();
+  }, []);
   // visual constants to match the sketch
   const stroke = "rgba(255,255,255,0.85)";
   const radius = 16;
-  const toolbarGap = 12;
+  const toolbarGap = 0.5;
   const toolbarH = 44;
 
   // per-window toolbar auto-hide state
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const [forceVisable, setForceVisable] = useState(false);
-  const hideDelayMs = 1000; // 1s
+  const [isHoveringToolbar, setIsHoveringToolbar] = useState(false);
+  const isHoveringToolbarRef = useRef(false); // ref for reliable timing checks
+  const isHoveringWrapperRef = useRef(false); // track wrapper hover state
+  const hideDelayMs = 1500; // delay after user stops interacting
   const wrapRef = useRef(null);
   const hideTimerRef = useRef(null);
 
@@ -591,10 +648,13 @@ const FloatingAppContainer = ({
     }
     if (!toolbarVisible) setToolbarVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(
-      () => !forceVisable && setToolbarVisible(false),
-      hideDelayMs
-    );
+    // Don't start hide timer if hovering toolbar
+    if (!isHoveringToolbar) {
+      // hideTimerRef.current = setTimeout(
+      //   () => !forceVisable && !isHoveringToolbar && setToolbarVisible(false),
+      //   hideDelayMs
+      // );
+    }
   };
 
   useEffect(() => {
@@ -657,10 +717,10 @@ const FloatingAppContainer = ({
       setToolbarVisible(true);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     } else {
-      hideTimerRef.current = setTimeout(
-        () => setToolbarVisible(false),
-        hideDelayMs
-      );
+      // hideTimerRef.current = setTimeout(
+      //   () => setToolbarVisible(false),
+      //   hideDelayMs
+      // );
     }
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -686,7 +746,6 @@ const FloatingAppContainer = ({
     setForceVisable(app.isMinimized);
     if (app.isMinimized) setToolbarVisible(true);
     kickVisibility();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app.isMinimized]);
 
   const handleResizeStart = (handle, e) => {
@@ -710,6 +769,10 @@ const FloatingAppContainer = ({
 
   const handleClose = () => {
     globalThis.RemoveFloatingApp(app.id);
+    configBot.tags.gridPortal = null;
+    configBot.tags.miniGridPortal = null;
+    configBot.tags.mapPortal = null;
+    configBot.tags.miniMapPortal = null;
   };
 
   const handleSlideOut = () => {
@@ -722,8 +785,9 @@ const FloatingAppContainer = ({
       typeof AddApplication === "function" &&
       typeof RemoveApplicationByID === "function"
     ) {
-      const id = typeof uuid === "function" ? uuid() : `panel-${Date.now()}`;
-      RemoveFloatingApp?.(app.id);
+      const id = app.id;
+      setFloatingApps((prev) => prev.filter((subApp) => subApp.id !== app.id));
+      setHiddenApps((prev) => prev.filter((subApp) => subApp.id !== app.id));
       AddApplication({
         id,
         App: (
@@ -733,7 +797,15 @@ const FloatingAppContainer = ({
               AddFloatingApp(app);
             }}
             title={app.title}
-            onClose={() => RemoveApplicationByID(id)}
+            onClose={() => {
+              RemoveApplicationByID(id);
+              configBot.tags.gridPortal = null;
+              configBot.tags.miniGridPortal = null;
+              configBot.tags.mapPortal = null;
+              configBot.tags.miniMapPortal = null;
+              setCurrentCanvasApp(null);
+              shout("onFloatingAppRemoved", { appId: id });
+            }}
           >
             {app.App}
           </PanelAppWrapper>
@@ -751,7 +823,7 @@ const FloatingAppContainer = ({
   let width = app.size.width;
   let height = app.size.height;
 
-  if (mobile) {
+  if (mobile && !app.isFullscreen) {
     const margin = 12;
     const vw = Math.max(
       document.documentElement?.clientWidth || 0,
@@ -772,14 +844,17 @@ const FloatingAppContainer = ({
   // sizes for layout: wrapper contains window (top) + toolbar (underneath)
   const wrapperStyle = {
     position: "fixed",
-    left: `${posX}px`,
-    top: `${posY}px`,
-    width: `${width}px`,
-    height: `${
-      (app.isMinimized ? 0 : height) +
-      (app.isDocked ? 0 : toolbarGap + toolbarH)
-    }px`,
-    zIndex: 1000,
+    left: isMobileNow() || app.isFullscreen ? "0" : `${posX}px`,
+    top: isMobileNow() || app.isFullscreen ? "0" : `${posY}px`,
+    width: mobile && app.isFullscreen ? "100vw" : `${width}px`,
+    height:
+      mobile && app.isFullscreen
+        ? "100vh"
+        : `${
+            (app.isMinimized ? 0 : height) +
+            (app.isDocked || app.isFullscreen ? 0 : toolbarGap + toolbarH)
+          }px`,
+    zIndex: app.isFullscreen ? 999999 : 1000,
     pointerEvents: "auto",
     transition: app.isDragging || app.isResizing ? "none" : "all 0.18s ease",
     cursor: app.isDragging ? "grabbing" : "default",
@@ -790,9 +865,12 @@ const FloatingAppContainer = ({
     position: "absolute",
     left: 0,
     top: 0,
-    width: `${width}px`,
-    height: `${app.isMinimized ? 0 : height}px`,
-    borderRadius: `${radius}px`,
+    width: isMobileNow() || app.isFullscreen ? "100vw" : `${width}px`,
+    height:
+      mobile && app.isFullscreen
+        ? "100vh"
+        : `${app.isMinimized ? 0 : height}px`,
+    borderRadius: app.isFullscreen || app.type === "canvas" ? 0 : `${radius}px`,
     boxShadow: `0 0 0 2px ${stroke}`,
     background: "rgba(17,17,17,0.75)",
     color: "#e5e7eb",
@@ -816,7 +894,7 @@ const FloatingAppContainer = ({
     borderRadius: 12,
     boxShadow: `0 0 0 2px ${stroke}`,
     background: "rgba(0, 0, 0, 0.65)",
-    display: app.isDocked ? "none" : "flex",
+    display: app.isDocked || app.isFullscreen ? "none" : "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
@@ -873,7 +951,7 @@ const FloatingAppContainer = ({
       });
     }
     setTimeout(() => {
-      globalThis.LocateCanvas?.();
+      globalAPI.updateCanvasStyleAndGridPortal();
     }, 200);
   };
 
@@ -881,7 +959,7 @@ const FloatingAppContainer = ({
     updateFloatingApp(app.id, {
       prevSize: app.size,
       prevPosition: app.position,
-      size: { width: 525, height: 300 },
+      size: { width: 604, height: 345 },
     });
   };
 
@@ -889,7 +967,7 @@ const FloatingAppContainer = ({
     updateFloatingApp(app.id, {
       prevSize: app.size,
       prevPosition: app.position,
-      size: { width: 350, height: 200 },
+      size: { width: 403, height: 230 },
     });
   };
 
@@ -899,6 +977,9 @@ const FloatingAppContainer = ({
         {`
           @media (max-width: 550px) {
             .view-only-laptop { display: none !important; }
+          }
+          @media (min-width: 551px) {
+            .view-only-mobile { display: none !important; }
           }`}
       </style>
 
@@ -906,13 +987,33 @@ const FloatingAppContainer = ({
         className="floating-wrap"
         style={wrapperStyle}
         onMouseDown={handleMouseDown}
-        onMouseEnter={() => setToolbarVisible(true)}
-        onMouseLeave={() => setToolbarVisible(false)}
+        onMouseEnter={() => {
+          isHoveringWrapperRef.current = true;
+          setToolbarVisible(true);
+          if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        }}
+        onMouseLeave={() => {
+          isHoveringWrapperRef.current = false;
+          if (!mobile && !forceVisable) {
+            // Clear any existing timer first
+            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+            // Use hideDelayMs to give user time before hiding
+            (hideTimerRef as any).current = setTimeout(() => {
+              // Only hide if not hovering wrapper or toolbar
+              if (
+                !isHoveringWrapperRef.current &&
+                !isHoveringToolbarRef.current
+              ) {
+                setToolbarVisible(false);
+              }
+            }, hideDelayMs);
+          }
+        }}
         ref={wrapRef}
       >
         <div className="floating-app" style={windowStyle}>
           <div style={contentStyle}>{app.App}</div>
-          {!app.isDocked && !app.isMinimized && (
+          {!app.isDocked && !app.isMinimized && !app.isFullscreen && (
             <>
               <ResizeHandle
                 handle="nw"
@@ -959,16 +1060,59 @@ const FloatingAppContainer = ({
         </div>
 
         {!app.isDocked && (
-          <div style={toolbarStyle}>
+          <div
+            style={toolbarStyle}
+            onMouseEnter={() => {
+              isHoveringToolbarRef.current = true;
+              setIsHoveringToolbar(true);
+              setToolbarVisible(true);
+              if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+            }}
+            onMouseLeave={() => {
+              isHoveringToolbarRef.current = false;
+              setIsHoveringToolbar(false);
+              if (!mobile && !forceVisable) {
+                // Clear any existing timer first
+                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+                // Use hideDelayMs when leaving toolbar
+                (hideTimerRef as any).current = setTimeout(() => {
+                  // Only hide if not hovering wrapper or toolbar
+                  if (
+                    !isHoveringWrapperRef.current &&
+                    !isHoveringToolbarRef.current
+                  ) {
+                    setToolbarVisible(false);
+                  }
+                }, hideDelayMs);
+              }
+            }}
+          >
+            {userHaveVR && (
+              <button
+                onClick={async () => {
+                  os.enableVR();
+                }}
+                style={pillBtn}
+                title="Enter VR/AR"
+                className="control-button view-only-laptop"
+              >
+                <span
+                  className="material-symbols-outlined whiteColored"
+                  style={{ fontSize: 20, color: "#fff !important" }}
+                >
+                  view_in_ar
+                </span>
+              </button>
+            )}
             <button
               onClick={screen2}
               style={pillBtn}
-              title="Square"
+              title="Small window"
               className="control-button view-only-laptop"
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 20 }}
+                className="material-symbols-outlined whiteColored"
+                style={{ fontSize: 20, color: "#fff !important" }}
               >
                 rectangle
               </span>
@@ -977,12 +1121,12 @@ const FloatingAppContainer = ({
             <button
               onClick={screen1}
               style={pillBtn}
-              title="Bring to front / Pop out"
+              title="Large window"
               className="control-button view-only-laptop"
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 25 }}
+                className="material-symbols-outlined whiteColored"
+                style={{ fontSize: 25, color: "#fff !important" }}
               >
                 rectangle
               </span>
@@ -991,25 +1135,26 @@ const FloatingAppContainer = ({
             <button
               onClick={() => handleFullscreen()}
               style={pillBtn}
+              title="Full screen"
               className="control-button"
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 25 }}
+                className="material-symbols-outlined whiteColored"
+                style={{ fontSize: 25, color: "#fff !important" }}
               >
                 fullscreen
               </span>
             </button>
 
             <button
-              className="control-button view-only-laptop"
+              className="control-button view-only-mobile"
               onClick={handleSlideOut}
               title="Hide to side panel"
               style={pillBtn}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 25 }}
+                className="material-symbols-outlined whiteColored"
+                style={{ fontSize: 25, color: "#fff !important" }}
               >
                 chevron_right
               </span>
@@ -1018,12 +1163,12 @@ const FloatingAppContainer = ({
             <button
               className="control-button"
               onClick={moveToPanel}
-              title="Move to panel (or restore)"
+              title="Move to panel"
               style={pillBtn}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 25 }}
+                className="material-symbols-outlined whiteColored"
+                style={{ fontSize: 25, color: "#fff !important" }}
               >
                 dock_to_left
               </span>
@@ -1052,7 +1197,7 @@ const FloatingAppContainer = ({
               style={{ ...pillBtn, outlineColor: "rgba(255,80,80,.9)" }}
             >
               <span
-                className="material-symbols-outlined"
+                className="material-symbols-outlined whiteColored"
                 style={{ fontSize: 25 }}
               >
                 close
@@ -1116,7 +1261,7 @@ export function PanelAppWrapper({
               onClick={onReturnToFloat}
             >
               <span className="material-symbols-outlined">open_in_new</span>
-              <span style={{ fontSize: 12 }}>Return to Float</span>
+              {null /* <span style={{ fontSize: 12 }}>Return to Float</span> */}
             </button>
           )}
           {onClose && (
@@ -1127,7 +1272,7 @@ export function PanelAppWrapper({
               onClick={onClose}
             >
               <span className="material-symbols-outlined">close</span>
-              <span style={{ fontSize: 12 }}>Close</span>
+              {null /* <span style={{ fontSize: 12 }}>Close</span> */}
             </button>
           )}
         </div>
