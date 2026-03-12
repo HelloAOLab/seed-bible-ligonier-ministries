@@ -7,7 +7,6 @@
   overflow: scroll;
   border-radius: 12px;
   user-select: text;
-  transition: none !important;
 }
 @media (max-width: 480px) {
   .pageContainer {
@@ -292,7 +291,6 @@
   align-items: center;
   background: var(--pageBackground) !important;
   border-radius: 12px;
-  transition: none !important;
   /* height: 100vh !important; */
 
 }
@@ -305,7 +303,6 @@
   align-items: center;
   background: rgb(190, 187, 187);
   border-radius: 12px;
-  transition: none !important;
 }
 
 
