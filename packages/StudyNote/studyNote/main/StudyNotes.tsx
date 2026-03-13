@@ -2213,6 +2213,14 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 function StudyNotes({ id, chapter: propChapter }) {
     // Get extension bot for state management
     const mainBot = getBot('system', 'studyNote.main');
+
+    // Manage studyNotesPresent flag — true while panel is mounted, false on unmount
+    useEffect(() => {
+        globalThis.studyNotesPresent = true;
+        return () => {
+            globalThis.studyNotesPresent = false;
+        };
+    }, []);
     
     // Track book and chapter changes - use prop if provided, otherwise use globals
     const [bookId, setBookId] = useState(globalThis.BookId);
