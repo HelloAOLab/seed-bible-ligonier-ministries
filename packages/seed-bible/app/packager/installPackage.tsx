@@ -282,19 +282,37 @@ await (async function mainInstaller(that) {
         const read = await web.get(data.recordFile?.url || data.source);
 
         const bots = GetBotsFromData(read.data);
-        bots.forEach((bot) => {
-          // console.log('check dep bot', bot)
+        const createdSystemTags = [];
+        for (const bot of bots) {
           const check = getBot("system", bot.tags.system);
-          if (!check)
+          if (!check) {
             create(bot, {
               space: tags.installSpace ?? "local",
               forPackage: NameHolder,
               packageName: depName,
             });
-        });
+            createdSystemTags.push(bot.tags.system);
+          }
+        }
+
+        // Wait for all created dependency bots to be registered in the runtime
+        // so their modules can be resolved by dependent packages
+        if (createdSystemTags.length > 0) {
+          let retries = 0;
+          const maxRetries = 50; // up to 5 seconds
+          while (retries < maxRetries) {
+            const allFound = createdSystemTags.every(
+              (tag) => getBot("system", tag)
+            );
+            if (allFound) break;
+            await os.sleep(100);
+            retries++;
+          }
+          // Additional buffer for module compilation
+          await os.sleep(500);
+        }
       }
     }
-    await os.sleep(100);
   }
 
   async function SetUpTabApplication(tabConfig, bot) {
