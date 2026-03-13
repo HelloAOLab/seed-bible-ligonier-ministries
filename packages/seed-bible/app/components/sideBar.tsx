@@ -2414,13 +2414,9 @@ function SideBar({ panelsNumber }) {
                     <span></span>
                   )}
                 </div>
-                {isSiteOfClient && (
-                  <ClientLogo
-                    handleOpenClientSite={handleOpenClientSite}
-                    url={clientLogo}
-                    alt={clientName}
-                  />
-                )}
+                <div onClick={handleLogoClick} style={{ cursor: "pointer" }}>
+                  <LigonierLogo />
+                </div>
               </div>
               <div className="canvasOptions">
                 <span

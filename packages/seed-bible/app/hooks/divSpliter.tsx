@@ -363,7 +363,7 @@ export const SplitApp = ({
   });
 
   // Default overlap for 2 panels, or when explicitly enabled
-  const isOverlap = count >= 2 && screens.overlap !== false;
+  const isOverlap = false; // count >= 2 && screens.overlap !== false;
 
   useEffect(() => {
     if (isOverlap) {
@@ -833,15 +833,15 @@ export const SplitApp = ({
         style={{
           width: currentContainerWidth,
           height: currentContainerHeight,
-          overflow: "auto",
-          padding: "0px",
-          borderRadius: "12px",
-        }}
-      >
+            overflow: "auto",
+            padding: "0px",
+            borderRadius: "12px",
+          }}
+        >
         {apps.map(({ App, id }, index) => (
           <div style={{ height: "100%", width: "100%" }} key={id}>
             {App}
-          </div>
+        </div>
         ))}
       </div>
     );
