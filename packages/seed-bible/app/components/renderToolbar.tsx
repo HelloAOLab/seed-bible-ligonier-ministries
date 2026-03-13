@@ -151,7 +151,11 @@ export function Toolbar() {
               </button>
             </div>
 
-            {[...(tools || [])].sort((a, b) => (b.isCurrentIcon ? 1 : 0) - (a.isCurrentIcon ? 1 : 0)).map((tool, index) =>
+            {[...(tools || [])].sort((a, b) => {
+              const aFirst = a.label === "BookSelector" || a.isCurrentIcon ? -1 : 0;
+              const bFirst = b.label === "BookSelector" || b.isCurrentIcon ? -1 : 0;
+              return aFirst - bFirst;
+            }).map((tool, index) =>
               tool?.active === false ? null : (
                 <div
                   key={`${tool.icon || "tool"}-${index}`}
