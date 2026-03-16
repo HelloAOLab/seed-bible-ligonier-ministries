@@ -3,6 +3,7 @@ import {
   getCachedBibleData,
   getCachedFootnotes,
 } from "app.hooks.bibleDataManager";
+import { getSettingsPreset } from "app.components.types";
 
 import { getStyleOf } from "app.styles.styler";
 const {
@@ -33,25 +34,77 @@ import {
 import { useSideBarContext } from "app.hooks.sideBar";
 
 const BOOK_ID_TO_ENGLISH = {
-  GEN: "Genesis", EXO: "Exodus", LEV: "Leviticus", NUM: "Numbers", DEU: "Deuteronomy",
-  JOS: "Joshua", JDG: "Judges", RUT: "Ruth", "1SA": "1 Samuel", "2SA": "2 Samuel",
-  "1KI": "1 Kings", "2KI": "2 Kings", "1CH": "1 Chronicles", "2CH": "2 Chronicles",
-  EZR: "Ezra", NEH: "Nehemiah", EST: "Esther", JOB: "Job", PSA: "Psalms",
-  PRO: "Proverbs", ECC: "Ecclesiastes", SNG: "Song of Solomon", ISA: "Isaiah",
-  JER: "Jeremiah", LAM: "Lamentations", EZK: "Ezekiel", DAN: "Daniel",
-  HOS: "Hosea", JOL: "Joel", AMO: "Amos", OBA: "Obadiah", JON: "Jonah",
-  MIC: "Micah", NAM: "Nahum", HAB: "Habakkuk", ZEP: "Zephaniah", HAG: "Haggai",
-  ZEC: "Zechariah", MAL: "Malachi",
-  MAT: "Matthew", MRK: "Mark", LUK: "Luke", JHN: "John", ACT: "Acts",
-  ROM: "Romans", "1CO": "1 Corinthians", "2CO": "2 Corinthians", GAL: "Galatians",
-  EPH: "Ephesians", PHP: "Philippians", COL: "Colossians", "1TH": "1 Thessalonians",
-  "2TH": "2 Thessalonians", "1TI": "1 Timothy", "2TI": "2 Timothy", TIT: "Titus",
-  PHM: "Philemon", HEB: "Hebrews", JAS: "James", "1PE": "1 Peter", "2PE": "2 Peter",
-  "1JN": "1 John", "2JN": "2 John", "3JN": "3 John", JUD: "Jude", REV: "Revelation"
+  GEN: "Genesis",
+  EXO: "Exodus",
+  LEV: "Leviticus",
+  NUM: "Numbers",
+  DEU: "Deuteronomy",
+  JOS: "Joshua",
+  JDG: "Judges",
+  RUT: "Ruth",
+  "1SA": "1 Samuel",
+  "2SA": "2 Samuel",
+  "1KI": "1 Kings",
+  "2KI": "2 Kings",
+  "1CH": "1 Chronicles",
+  "2CH": "2 Chronicles",
+  EZR: "Ezra",
+  NEH: "Nehemiah",
+  EST: "Esther",
+  JOB: "Job",
+  PSA: "Psalms",
+  PRO: "Proverbs",
+  ECC: "Ecclesiastes",
+  SNG: "Song of Solomon",
+  ISA: "Isaiah",
+  JER: "Jeremiah",
+  LAM: "Lamentations",
+  EZK: "Ezekiel",
+  DAN: "Daniel",
+  HOS: "Hosea",
+  JOL: "Joel",
+  AMO: "Amos",
+  OBA: "Obadiah",
+  JON: "Jonah",
+  MIC: "Micah",
+  NAM: "Nahum",
+  HAB: "Habakkuk",
+  ZEP: "Zephaniah",
+  HAG: "Haggai",
+  ZEC: "Zechariah",
+  MAL: "Malachi",
+  MAT: "Matthew",
+  MRK: "Mark",
+  LUK: "Luke",
+  JHN: "John",
+  ACT: "Acts",
+  ROM: "Romans",
+  "1CO": "1 Corinthians",
+  "2CO": "2 Corinthians",
+  GAL: "Galatians",
+  EPH: "Ephesians",
+  PHP: "Philippians",
+  COL: "Colossians",
+  "1TH": "1 Thessalonians",
+  "2TH": "2 Thessalonians",
+  "1TI": "1 Timothy",
+  "2TI": "2 Timothy",
+  TIT: "Titus",
+  PHM: "Philemon",
+  HEB: "Hebrews",
+  JAS: "James",
+  "1PE": "1 Peter",
+  "2PE": "2 Peter",
+  "1JN": "1 John",
+  "2JN": "2 John",
+  "3JN": "3 John",
+  JUD: "Jude",
+  REV: "Revelation",
 };
 
 function prepareAISearchParamOnChapter(chapterData) {
-  const englishBookName = BOOK_ID_TO_ENGLISH[chapterData.bookId] || chapterData.book;
+  const englishBookName =
+    BOOK_ID_TO_ENGLISH[chapterData.bookId] || chapterData.book;
   const combinedText = englishBookName + " " + chapterData.chapter;
 
   globalThis.GlobalSearch = combinedText.trim();
@@ -59,7 +112,12 @@ function prepareAISearchParamOnChapter(chapterData) {
   globalThis.StudyNoteParentSearch = combinedText.trim();
   globalThis.GlobalSearchLabel = combinedText.trim();
 
-  console.log("[Chapter Search] Using English book name:", englishBookName, "for bookId:", chapterData.bookId);
+  console.log(
+    "[Chapter Search] Using English book name:",
+    englishBookName,
+    "for bookId:",
+    chapterData.bookId
+  );
 }
 
 function MoreResources() {
@@ -604,7 +662,7 @@ function ThePage({
             });
             if (bookData) {
               let chapterNo;
-              if (Number(configBot.tags.chapter) < bookData.numberOfChapters)
+              if (Number(configBot.tags.chapter) <= bookData.numberOfChapters)
                 chapterNo = configBot.tags.chapter;
               const chapterUrl = chapterNo
                 ? bookData.firstChapterApiLink.replace(
@@ -630,7 +688,7 @@ function ThePage({
               }
             });
             let chapterNo;
-            if (Number(configBot.tags.chapter) < bookData.numberOfChapters)
+            if (Number(configBot.tags.chapter) <= bookData.numberOfChapters)
               chapterNo = configBot.tags.chapter;
             const chapterUrl = chapterNo
               ? bookData.firstChapterApiLink.replace(
@@ -641,6 +699,10 @@ function ThePage({
                   "1.json",
                   `${tab.data.chapter}.json`
                 );
+            os.log("opening with chapter url", chapterUrl, {
+              bookData,
+              configBot,
+            });
             await bible.open(
               bookData.id,
               configBot.tags.chapter || 1,
@@ -652,10 +714,21 @@ function ThePage({
           if (configBot.tags?.book) {
             await bible.open(
               configBot.tags?.book,
-              configBot.tags?.chapter || tab.data.chapter
+              configBot.tags?.chapter || tab.data.chapter,
+              configBot.tags?.translation ||
+                configBot.tags?.translationId ||
+                null,
+              undefined
             );
           } else if (configBot.tags?.chapter) {
-            await bible.open(tab.data.book, configBot.tags?.chapter);
+            await bible.open(
+              tab.data.book,
+              configBot.tags?.chapter,
+              configBot.tags?.translation ||
+                configBot.tags?.translationId ||
+                null,
+              undefined
+            );
           }
         }
         configBot.tags.defaultChecked = true;
@@ -772,7 +845,7 @@ function ThePage({
         book: data?.book,
         chapter: data?.chapter,
       });
-      os.syncConfigBotTagsToURL(["book", "chapter"]);
+      os.syncConfigBotTagsToURL(["book", "chapter", "translation", "lang"]);
     }
   }, [data]);
 
@@ -780,6 +853,7 @@ function ThePage({
     if (data && tab?.id === activeTab) {
       configBot.tags.book = data?.bookId;
       configBot.tags.chapter = data?.chapter;
+      configBot.tags.translation = data?.translation;
     }
   }, [activeTab, data, tab]);
 
@@ -1934,9 +2008,14 @@ function ThePage({
   }, []);
 
   const removeBibleStack =
-    tags?.settingsConfigs?.presets?.[
-      configBot?.tags?.settingsPreset || thisBot.tags.settingsPreset || "full"
-    ]?.appSettings?.removeBibleStack;
+    tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
+      ?.removeBibleStack;
+
+  const removeBookMark =
+    tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
+      ?.removeBookMark;
+  const mobileBookLogo =
+    tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.mobileBookLogo;
 
   return (
     <>
@@ -1981,7 +2060,7 @@ function ThePage({
             onMouseUp={handleMouseUp}
             onClick={hanldNavFunctions}
             onScroll={(e) => {
-              os.log("scrolling, closing popups", e);
+              // os.log("scrolling, closing popups", e);
               globalThis.closePopupSettings();
               const el = e.currentTarget;
               const currentScrollTop = el.scrollTop;
@@ -1993,6 +2072,10 @@ function ThePage({
                   currentScrollTop > 50
                 ) {
                   document.body.classList.add("scroll-hide-bars");
+                  shout("onMobileScrollDown", {
+                    book: data?.book,
+                    chapter: data?.chapter,
+                  });
                 } else if (currentScrollTop < lastScrollTopRef.current) {
                   document.body.classList.remove("scroll-hide-bars");
                 }
@@ -2256,7 +2339,7 @@ function ThePage({
           left: 0;
           right: 0;
           text-align: center;
-          padding: 8px 16px;
+          padding: 1px 16px;
           background: var(--pageBackground);
           z-index: 99;
           font-size: 14px;
@@ -2307,7 +2390,7 @@ function ThePage({
                         </div>
                       </div>
 
-                      <div className="mobile-header-right">
+                      {/* <div className="mobile-header-right">
                         <button
                           className="mobile-icon-button"
                           onClick={(e) => {
@@ -2322,9 +2405,10 @@ function ThePage({
                         >
                           <MobileSettingsIcon />
                         </button>
-                      </div>
+                      </div> */}
                     </div>
-                    {tab?.id &&
+                    {!removeBookMark &&
+                      tab?.id &&
                       masks?.mobileBookmarks &&
                       Object.values(masks.mobileBookmarks)
                         .flat()
@@ -2351,7 +2435,10 @@ function ThePage({
                         globalThis.selectBookSelectorBook(data.bookId);
                     }
                   }}
-                  style={{ "pointer-events": isDragging ? "none" : null, position: "relative" }}
+                  style={{
+                    "pointer-events": isDragging ? "none" : null,
+                    position: "relative",
+                  }}
                   className="bookTitle"
                 >
                   {`${data?.book} ${data?.chapter}`}{" "}
@@ -2503,7 +2590,10 @@ function ThePage({
                       <img
                         className="coloredIcon"
                         style={{ width: "50px" }}
-                        src="https://res.cloudinary.com/dfbtwwa8p/image/upload/v1755365776/717a8527988cca7e0bdc9449ec68581a8400b977_vqc7mx.png"
+                        src={
+                          mobileBookLogo ||
+                          "https://res.cloudinary.com/dfbtwwa8p/image/upload/v1755365776/717a8527988cca7e0bdc9449ec68581a8400b977_vqc7mx.png"
+                        }
                       />
                     </div>
 
@@ -2526,11 +2616,13 @@ function ThePage({
                         position: "relative",
                       }}
                     >
-                      <PageToolbar
-                        panelId={panelId}
-                        tab={tab}
-                        path="showInStarterToolbar"
-                      />
+                      {!removeBibleStack && (
+                        <PageToolbar
+                          panelId={panelId}
+                          tab={tab}
+                          path="showInStarterToolbar"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2852,7 +2944,6 @@ function normalizeToSet(payload) {
   return out;
 }
 
-
 function splitByWordHighlights(
   text,
   wordHighlights,
@@ -3019,7 +3110,6 @@ function Section({
   const [sectionMap, setSectionMap] = useState(null);
   const [chunksMap, setChunksMap] = useState(null);
 
-
   const verseRefs = useMemo(() => {
     const m = {};
     verses.forEach((v) => {
@@ -3030,7 +3120,10 @@ function Section({
 
   useEffect(() => {
     const handler = () => {
-      console.log("highlightedSectionKeyChanged: ", globalThis.HighlightedSectionKey);
+      console.log(
+        "highlightedSectionKeyChanged: ",
+        globalThis.HighlightedSectionKey
+      );
       setActiveKey(globalThis.HighlightedSectionKey || "");
     };
     window.addEventListener("highlightedSectionKeyChanged", handler);
@@ -3180,46 +3273,116 @@ function Section({
     const hasNonLatinChars = /[^\u0000-\u007F\u00A0-\u00FF]/.test(rawText);
 
     const ENGLISH_TRANSLATIONS = [
-      "BSB", "WEB", "ASVBT", "AEB", "ASV", "BBP", "BBE", "UBES", "BST", "KJVCP",
-      "DBY", "DRA", "EMTV", "TNTC", "FBV", "GLW", "GNV", "JPSTN", "KJVA", "KJAV",
-      "ILT", "LSV", "LXXSB", "LXXSA", "MSB", "NETB", "NEB", "GNB", "TOJB", "TOE",
-      "OURB", "PEV", "RVA", "T4T", "TCENT", "TNT", "ULB", "W88", "NWB", "WEBC",
-      "WEBBE", "WEBU", "WMB", "WMBBE", "WBMS", "WBMSE", "YLT"
+      "BSB",
+      "WEB",
+      "ASVBT",
+      "AEB",
+      "ASV",
+      "BBP",
+      "BBE",
+      "UBES",
+      "BST",
+      "KJVCP",
+      "DBY",
+      "DRA",
+      "EMTV",
+      "TNTC",
+      "FBV",
+      "GLW",
+      "GNV",
+      "JPSTN",
+      "KJVA",
+      "KJAV",
+      "ILT",
+      "LSV",
+      "LXXSB",
+      "LXXSA",
+      "MSB",
+      "NETB",
+      "NEB",
+      "GNB",
+      "TOJB",
+      "TOE",
+      "OURB",
+      "PEV",
+      "RVA",
+      "T4T",
+      "TCENT",
+      "TNT",
+      "ULB",
+      "W88",
+      "NWB",
+      "WEBC",
+      "WEBBE",
+      "WEBU",
+      "WMB",
+      "WMBBE",
+      "WBMS",
+      "WBMSE",
+      "YLT",
     ];
     const currentTranslationCode = data?.translation || "";
-    const isEnglishTranslation = ENGLISH_TRANSLATIONS.includes(currentTranslationCode);
+    const isEnglishTranslation = ENGLISH_TRANSLATIONS.includes(
+      currentTranslationCode
+    );
 
     const needsEnglishFetch = hasNonLatinChars || !isEnglishTranslation;
 
-    console.log("[Multi-lang DEBUG] Translation:", currentTranslationCode, "isEnglish:", isEnglishTranslation, "needsEnglishFetch:", needsEnglishFetch);
+    console.log(
+      "[Multi-lang DEBUG] Translation:",
+      currentTranslationCode,
+      "isEnglish:",
+      isEnglishTranslation,
+      "needsEnglishFetch:",
+      needsEnglishFetch
+    );
 
     if (needsEnglishFetch && verseNumbers != null) {
-      console.log("[Multi-lang] Non-English detected, fetching English verse...");
+      console.log(
+        "[Multi-lang] Non-English detected, fetching English verse..."
+      );
       try {
         const englishBible = new BibleDataManager({
           translation: "BSB",
           bookId: data?.bookId || globalThis.BookId,
           chapter: chapter,
         });
-        console.log("[Multi-lang] Creating BibleDataManager with bookId:", data?.bookId || globalThis.BookId, "chapter:", chapter);
+        console.log(
+          "[Multi-lang] Creating BibleDataManager with bookId:",
+          data?.bookId || globalThis.BookId,
+          "chapter:",
+          chapter
+        );
         await englishBible.fetch();
 
         const englishData = englishBible.getState().data;
-        console.log("[Multi-lang] englishData:", englishData ? "loaded" : "null", "content:", englishData?.content ? "present" : "missing");
+        console.log(
+          "[Multi-lang] englishData:",
+          englishData ? "loaded" : "null",
+          "content:",
+          englishData?.content ? "present" : "missing"
+        );
 
         if (englishData?.content) {
-          const verseArray = Array.isArray(verseNumbers) ? verseNumbers : [verseNumbers];
+          const verseArray = Array.isArray(verseNumbers)
+            ? verseNumbers
+            : [verseNumbers];
           const englishVerses = [];
 
-          englishData.content.forEach(section => {
-            section.verses?.forEach(v => {
+          englishData.content.forEach((section) => {
+            section.verses?.forEach((v) => {
               if (verseArray.includes(v.verseNumber) && v.text) {
                 englishVerses.push(v.text);
               }
             });
           });
 
-          console.log("[Multi-lang] Found", englishVerses.length, "matching verses, englishBook:", englishData.book);
+          console.log(
+            "[Multi-lang] Found",
+            englishVerses.length,
+            "matching verses, englishBook:",
+            englishData.book
+          );
 
           if (englishVerses.length > 0) {
             searchText = englishVerses.join(" ");
@@ -3228,14 +3391,23 @@ function Section({
               const first = verseArray[0];
               const last = verseArray[verseArray.length - 1];
               verseReference = `${englishData.book} ${chapter}:${first}${first !== last ? `-${last}` : ""}`;
-              console.log("[Multi-lang] Updated verseReference to:", verseReference);
+              console.log(
+                "[Multi-lang] Updated verseReference to:",
+                verseReference
+              );
             }
 
-            console.log("[Multi-lang] Using English text for search:", searchText.substring(0, 100) + "...");
+            console.log(
+              "[Multi-lang] Using English text for search:",
+              searchText.substring(0, 100) + "..."
+            );
           }
         }
       } catch (err) {
-        console.warn("[Multi-lang] Failed to fetch English verse, using original text:", err);
+        console.warn(
+          "[Multi-lang] Failed to fetch English verse, using original text:",
+          err
+        );
       }
     }
 
@@ -3273,7 +3445,6 @@ function Section({
       globalThis.GlobalSearchLabel = label;
     }
   };
-
 
   const getContextData = (verseNumber) => {
     const verse = verses.find((v) => v.verseNumber === verseNumber);
@@ -3484,7 +3655,6 @@ function Section({
         <div style={{ height: "1em" }} />
       )}
 
-
       {hebrew_subtitle && <div className="sectionTitle">{hebrew_subtitle}</div>}
       <div style={textEdit ? editTextStyle : null}>
         {textEdit && <div className="editVerseTitle">Verse - Text</div>}
@@ -3514,7 +3684,6 @@ function Section({
 
             const shouldShowCommands =
               showCommands && commandAnchorVerse === verse.verseNumber;
-
 
             const isTextDecorUnderline =
               holded?.[verse.verseNumber] ||
@@ -3580,7 +3749,7 @@ function Section({
                     };
                     EmitData("onVerseClick", verseClickData);
                     shout("onVerseClick", verseClickData);
-                  sendSearchQueryToStudyNote(verse.text, verse.verseNumber);
+                    sendSearchQueryToStudyNote(verse.text, verse.verseNumber);
                   }}
                   style={{
                     "background-color":
