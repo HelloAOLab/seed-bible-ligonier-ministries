@@ -1,6 +1,7 @@
 const { useState, useRef, useEffect, useCallback } = os.appHooks;
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
+import { useSideBarContext } from "app.hooks.sideBar";
 // import { cloneElement } from "https://cdn.jsdelivr.net/npm/react@18/";
 /**
  * useDivSpliter - Hook to manage split layout logic
@@ -269,6 +270,7 @@ export const SplitApp = ({
   handleTouchMove,
   handleTouchEnd,
 }) => {
+  const { openOnMobile } = useSideBarContext();
   const { panelMode, screens } = useBibleContext();
   const [forcedHeightPlaylist, setForcedHeightPlaylist] = useState(0);
   useEffect(() => {
@@ -353,7 +355,10 @@ export const SplitApp = ({
   }, [activeSpace, currentContainerWidth, count]);
 
   // Overlap panel state
-  const defaultOverlapWidth = Math.max(300, currentContainerWidth * 0.4);
+  const defaultOverlapWidth = openOnMobile
+    ? window.innerWidth
+    : Math.max(300, window.innerWidth * 0.4);
+
   const [overlapWidth, setOverlapWidth] = useState(defaultOverlapWidth);
   const [overlapVisible, setOverlapVisible] = useState(false);
   const overlapDragRef = useRef({
@@ -363,7 +368,7 @@ export const SplitApp = ({
   });
 
   // Default overlap for 2 panels, or when explicitly enabled
-  const isOverlap = false; // count >= 2 && screens.overlap !== false;
+  const isOverlap = count >= 2 && screens.overlap !== false;
 
   useEffect(() => {
     if (isOverlap) {
@@ -833,15 +838,15 @@ export const SplitApp = ({
         style={{
           width: currentContainerWidth,
           height: currentContainerHeight,
-            overflow: "auto",
-            padding: "0px",
-            borderRadius: "12px",
-          }}
-        >
+          overflow: "auto",
+          padding: "0px",
+          borderRadius: "12px",
+        }}
+      >
         {apps.map(({ App, id }, index) => (
           <div style={{ height: "100%", width: "100%" }} key={id}>
             {App}
-        </div>
+          </div>
         ))}
       </div>
     );
