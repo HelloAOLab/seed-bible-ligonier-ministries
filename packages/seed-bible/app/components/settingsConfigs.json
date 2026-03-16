@@ -204,7 +204,16 @@
       "appSettings": {
         "disablePanels": true,
         "removeSpaces": true,
-        "removeEditMode": true
+        "removeEditMode": true,
+        "removeAccountOptions": true,
+        "removeBibleStack": true,
+        "removeJoinSession": true,
+        "removeBookMark": true,
+        "removeAddSession": true
+      },
+      "pageSettings": {
+        "disableHighlighting": true,
+        "removeAiAgent": true
       },
       "onlineUsers": {
         "enabled": true,
