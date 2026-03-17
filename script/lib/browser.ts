@@ -332,6 +332,7 @@ export const DEFAULT_EXTENSIONS = [
   "Draw",
   "Scripture Map 3D",
   "Bible Stack",
+  "StudyNote",
   "Playlist",
   "Calendar",
   "Tabernacle",

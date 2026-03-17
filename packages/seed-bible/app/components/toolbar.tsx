@@ -7,7 +7,12 @@ import { useMouseMove } from "app.hooks.mouseMove";
 import SurroundingDivs from "app.components.surroundingDivs";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
-import { BurgerMenuIcon, MoreIcon, TabsIcon } from "app.components.icons";
+import {
+  getIcon,
+  BurgerMenuIcon,
+  MoreIcon,
+  TabsIcon,
+} from "app.components.icons";
 
 const G = globalThis as any;
 
@@ -458,7 +463,18 @@ export function Toolbar() {
                       }}
                       onMouseLeave={() => clearTimeout(holdTimeoutRef.current)}
                     >
-                      {tool.isImg ? (
+                      {tool.isCurrentIcon ? (
+                        (() => {
+                          const IconComponent = getIcon(tool.icon);
+                          return IconComponent ? (
+                            <IconComponent size={22} />
+                          ) : (
+                            <span className="material-symbols-outlined">
+                              {tool.icon}
+                            </span>
+                          );
+                        })()
+                      ) : tool.isImg ? (
                         <img
                           src={tool.icon}
                           style={{ width: "25px" }}

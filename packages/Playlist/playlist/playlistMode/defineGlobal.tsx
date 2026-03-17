@@ -1229,7 +1229,7 @@ const updateCheckedItemsPlayingPlaylist = async (
   }
 };
 
-const userCheckedItems: any = await os.getData(authBot.id, "userCheckedItems");
+const userCheckedItems: any = authBot?.id ? await os.getData(authBot.id, "userCheckedItems") : null;
 G.PlayingPlaylistCheckedItems = {
   ...(userCheckedItems?.data?.userCheckedItems || {}),
 };
