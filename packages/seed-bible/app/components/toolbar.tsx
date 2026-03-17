@@ -48,13 +48,46 @@ export function Toolbar() {
   }: any = useSideBarContext();
 
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef<any>(null);
   useEffect(() => {
     os.addBotListener(thisBot, "onMobileScrollDown", (data) => {
       setShowMoreMenu(false);
     });
   }, []);
 
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMoreMenu]);
+
   const [activeMoreApp, setActiveMoreApp] = useState(G.ActiveMoreApp || null);
+  const [activeApp, setActiveApp] = useState(G.makingApp || null);
+
+  // Watch globalThis.makingApp so arrows hide for ANY open app, not just More-button apps
+  useEffect(() => {
+    let _val = G.makingApp;
+    Object.defineProperty(G, "makingApp", {
+      get: () => _val,
+      set: (val) => {
+        _val = val;
+        setActiveApp(val || null);
+      },
+      configurable: true,
+    });
+    return () => {
+      Object.defineProperty(G, "makingApp", {
+        value: _val,
+        writable: true,
+        configurable: true,
+      });
+    };
+  }, []);
 
   const { setIsDragging, isDragging, setElement }: any = useMouseMove();
   const {
@@ -198,7 +231,7 @@ export function Toolbar() {
           {/* Mobile Bottom Navbar */}
           <div className="mobile-bottom-navbar">
             <button
-              style={{ display: showNavArrows ? "" : "none" }}
+              style={{ display: showNavArrows && !activeApp ? "" : "none" }}
               className="mobile-navbar-arrow left-arrow"
               onClick={() =>
                 isRTL
@@ -236,6 +269,7 @@ export function Toolbar() {
               onClick={() => {
                 G.setOpenSidebar(!G.openSidebar);
                 G.setSelectingTranslation(false);
+                setShowMoreMenu(false);
               }}
               className="mobile-center-logo"
             >
@@ -252,7 +286,7 @@ export function Toolbar() {
             </div>
 
             {!mobileBookLogo ? (
-              <div className="more-btn-wrapper">
+              <div className="more-btn-wrapper" ref={moreMenuRef}>
                 {showMoreMenu && (
                   <div className="more-menu-popup">
                     {moreTools
@@ -339,7 +373,7 @@ export function Toolbar() {
             )}
 
             <button
-              style={{ display: showNavArrows ? "" : "none" }}
+              style={{ display: showNavArrows && !activeApp ? "" : "none" }}
               className="mobile-navbar-arrow right-arrow"
               onClick={() =>
                 isRTL
