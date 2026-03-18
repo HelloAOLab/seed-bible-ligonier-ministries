@@ -443,19 +443,21 @@
             "yourAccount": { "enabled": true }
           }
         },
-        "accountOptions": {
+         "accountOptions": {
           "enabled": true,
           "showDivider": false,
           "items": {
             "theme": { "enabled": true },
-            "notifications": { "enabled": true }
+            "notifications": { "enabled": true },
+            "keepScreenAwake": { "enabled": true }
           }
         },
         "preferences": {
           "enabled": true,
           "showDivider": false,
           "items": {
-            "language": { "enabled": true }
+            "language": { "enabled": true },
+            "reportBug": { "enabled": true }
           }
         }
       }
