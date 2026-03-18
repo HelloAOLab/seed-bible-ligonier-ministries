@@ -901,7 +901,7 @@ function ThePage({
       await bible.open(
         configBot.tags.book.toUpperCase(),
         configBot.tags.chapter,
-        configBot.tags.translation || "BSB"
+        configBot.tags.translation || "NASB95"
       );
       setData(bible.data);
       configBot.tags.defaultChecked = true;
@@ -1159,7 +1159,7 @@ function ThePage({
           book: bookId,
           bookId: bookId,
           chapter: chapter,
-          translation: translation || "BSB",
+          translation: translation || "NASB95",
         },
       });
       setTab(newTab);
@@ -3289,7 +3289,7 @@ function Section({
     const hasNonLatinChars = /[^\u0000-\u007F\u00A0-\u00FF]/.test(rawText);
 
     const ENGLISH_TRANSLATIONS = [
-      "BSB",
+      "NASB95",
       "WEB",
       "ASVBT",
       "AEB",
@@ -3359,7 +3359,7 @@ function Section({
       );
       try {
         const englishBible = new BibleDataManager({
-          translation: "BSB",
+          translation: "NASB95",
           bookId: data?.bookId || globalThis.BookId,
           chapter: chapter,
         });
