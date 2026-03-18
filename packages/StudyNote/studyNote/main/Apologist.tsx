@@ -123,7 +123,9 @@ function dedupeResults(results) {
   const deduped = [];
 
   results.forEach((item) => {
-    const normalizedTitle = normalizeTitleValue(item?.title || item?.Name || "");
+    const normalizedTitle = normalizeTitleValue(
+      item?.title || item?.Name || ""
+    );
     if (!normalizedTitle) {
       deduped.push(item);
       return;
@@ -132,7 +134,10 @@ function dedupeResults(results) {
     const candidatePriority = computeResultRank(item);
 
     if (!seen.has(normalizedTitle)) {
-      seen.set(normalizedTitle, { index: deduped.length, priority: candidatePriority });
+      seen.set(normalizedTitle, {
+        index: deduped.length,
+        priority: candidatePriority,
+      });
       deduped.push(item);
       return;
     }
@@ -180,7 +185,15 @@ function toEmbeddableUrl(item) {
   return url;
 }
 
-function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId, onClose, isPinned }) {
+function SgCard({
+  item,
+  isOpen,
+  viewMode = "list",
+  isNowPlaying,
+  setNowPlayingId,
+  onClose,
+  isPinned,
+}) {
   const [previewH, setPreviewH] = useState(0);
   const previewRef = useMemo(() => ({ el: null }), []);
   const [frameKey, setFrameKey] = useState(0);
@@ -204,14 +217,16 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
 
   // Helper to extract YouTube ID
   const getYouTubeId = (url) => {
-      if (!url) return null;
-      const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-      return match ? match[1] : null;
+    if (!url) return null;
+    const match = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
+    );
+    return match ? match[1] : null;
   };
 
   const openInNewTab = (e) => {
     e.preventDefault();
-    
+
     // If it's a TableTalk item, open in devotional tab iframe
     if (isTableTalk) {
       const previewUrl = item.url || item.referral_url || item.listing_url;
@@ -224,7 +239,10 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
     }
   };
 
-  const embUrl = useMemo(() => toEmbeddableUrl(item), [item.listing_url, item.type, item.url]);
+  const embUrl = useMemo(
+    () => toEmbeddableUrl(item),
+    [item.listing_url, item.type, item.url]
+  );
   const videoSrc = useMemo(() => {
     if (!isYoutube || !embUrl) return "";
     const separator = embUrl.includes("?") ? "&" : "?";
@@ -244,16 +262,17 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
         </div>
       );
     }
-    
+
     // Explicitly play this video if it is the "now playing" item
     if (isNowPlaying && videoSrc) {
       return (
         <div className="sg-previewVideo">
-           <iframe
+          <iframe
             key={frameKey}
             src={videoSrc}
             title={item.title || "YouTube video"}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
             allowFullScreen
             onError={() => setVideoError(true)}
           />
@@ -264,33 +283,47 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
     // Otherwise show thumbnail with play overlay
     return (
       <div className="sg-previewVideo">
-        <button 
-           className="sg-previewVideoButton" 
-           onClick={() => {
-              setVideoError(false);
-              setNowPlayingId?.(item.id);
-           }}
-           aria-label={`Play ${item.title || "video"}`}
+        <button
+          className="sg-previewVideoButton"
+          onClick={() => {
+            setVideoError(false);
+            setNowPlayingId?.(item.id);
+          }}
+          aria-label={`Play ${item.title || "video"}`}
         >
           {(() => {
-              let thumbUrl = item.image_url;
-              // If item is youtube, try to get better thumb or fallback if missing
-              if (isYoutube) {
-                  const ytId = getYouTubeId(item.url || item.referral_url);
-                  if (ytId) thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-              }
+            let thumbUrl = item.image_url;
+            // If item is youtube, try to get better thumb or fallback if missing
+            if (isYoutube) {
+              const ytId = getYouTubeId(item.url || item.referral_url);
+              if (ytId)
+                thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+            }
 
-              if (thumbUrl) {
-                  return <img className="sg-previewVideoThumb" src={thumbUrl} alt="" />;
-              }
-              return <div className="sg-previewVideoThumb sg-previewVideoThumb--fallback" aria-hidden="true" />;
+            if (thumbUrl) {
+              return (
+                <img className="sg-previewVideoThumb" src={thumbUrl} alt="" />
+              );
+            }
+            return (
+              <div
+                className="sg-previewVideoThumb sg-previewVideoThumb--fallback"
+                aria-hidden="true"
+              />
+            );
           })()}
-          
+
           <span className="sg-videoPlayIcon">
-             <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="30" cy="30" r="30" fill="rgba(0,0,0,0.6)"/>
-                <path d="M40 30L25 39V21L40 30Z" fill="white"/>
-             </svg>
+            <svg
+              width="60"
+              height="60"
+              viewBox="0 0 60 60"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="30" cy="30" r="30" fill="rgba(0,0,0,0.6)" />
+              <path d="M40 30L25 39V21L40 30Z" fill="white" />
+            </svg>
           </span>
         </button>
       </div>
@@ -337,8 +370,8 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
               {isYoutube
                 ? "YouTube"
                 : isEpisode
-                ? "Episode"
-                : formattedDomain || "external"}
+                  ? "Episode"
+                  : formattedDomain || "external"}
             </span>
             {date && (
               <>
@@ -370,8 +403,12 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
                 target={isTableTalk ? undefined : "_blank"}
                 rel={isTableTalk ? undefined : "noopener noreferrer"}
                 referrerPolicy={isTableTalk ? undefined : "no-referrer"}
-                title={isTableTalk ? "Open in devotional tab" : "Open in new tab"}
-                aria-label={isTableTalk ? "Open in devotional tab" : "Open in new tab"}
+                title={
+                  isTableTalk ? "Open in devotional tab" : "Open in new tab"
+                }
+                aria-label={
+                  isTableTalk ? "Open in devotional tab" : "Open in new tab"
+                }
               >
                 <svg
                   width="16"
@@ -388,9 +425,14 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
               </a>
             )}
             {isPinned && onClose && (
-                 <button className="sg-now-playing-close" onClick={onClose} aria-label="Close Now Playing" title="Close Now Playing">
-                     ×
-                 </button>
+              <button
+                className="sg-now-playing-close"
+                onClick={onClose}
+                aria-label="Close Now Playing"
+                title="Close Now Playing"
+              >
+                ×
+              </button>
             )}
           </div>
         </header>
@@ -406,7 +448,9 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
               target={isTableTalk ? undefined : "_blank"}
               rel={isTableTalk ? undefined : "noopener noreferrer"}
               title={isTableTalk ? "Open in devotional tab" : "Open in new tab"}
-              aria-label={isTableTalk ? "Open in devotional tab" : "Open in new tab"}
+              aria-label={
+                isTableTalk ? "Open in devotional tab" : "Open in new tab"
+              }
             >
               <h3 className="sg2-title" title={item.title}>
                 {item.title}
@@ -417,19 +461,16 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
               {item.title}
             </h3>
           )}
-
         </div>
       )}
 
       {!isBook && desc ? <p className="sg2-desc">{desc}</p> : null}
-      
+
       {/* Spacer for bottom alignment */}
       <div style={{ flex: 1 }}></div>
 
       {isYoutube && (
-        <div className="sg-youtubeEmbed">
-          {renderYoutubePlayer()}
-        </div>
+        <div className="sg-youtubeEmbed">{renderYoutubePlayer()}</div>
       )}
 
       {!isYoutube && (
@@ -447,31 +488,31 @@ function SgCard({ item, isOpen, viewMode = "list", isNowPlaying, setNowPlayingId
                   alt={item.title || `preview-${item.id}`}
                 />
               </div>
-            {url && (
-              <a
-                href={url}
-                className="sg-preview-learnMoreLink"
-                target="_blank"
-                rel="noopener noreferrer"
-                referrerPolicy="no-referrer"
-                title="Open in new tab"
-                aria-label="Open in new tab"
-              >
-                Learn More
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+              {url && (
+                <a
+                  href={url}
+                  className="sg-preview-learnMoreLink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  referrerPolicy="no-referrer"
+                  title="Open in new tab"
+                  aria-label="Open in new tab"
                 >
-                  <path
-                    d="M1 12C0.733333 12 0.5 11.9 0.3 11.7C0.1 11.5 0 11.2667 0 11V1C0 0.733333 0.1 0.5 0.3 0.3C0.5 0.1 0.733333 0 1 0H5.65V1H1V11H11V6.35H12V11C12 11.2667 11.9 11.5 11.7 11.7C11.5 11.9 11.2667 12 11 12H1ZM4.36667 8.35L3.66667 7.63333L10.3 1H6.65V0H12V5.35H11V1.71667L4.36667 8.35Z"
-                    fill="#859E3B"
-                  />
-                </svg>
-              </a>
-            )}
+                  Learn More
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M1 12C0.733333 12 0.5 11.9 0.3 11.7C0.1 11.5 0 11.2667 0 11V1C0 0.733333 0.1 0.5 0.3 0.3C0.5 0.1 0.733333 0 1 0H5.65V1H1V11H11V6.35H12V11C12 11.2667 11.9 11.5 11.7 11.7C11.5 11.9 11.2667 12 11 12H1ZM4.36667 8.35L3.66667 7.63333L10.3 1H6.65V0H12V5.35H11V1.71667L4.36667 8.35Z"
+                      fill="#859E3B"
+                    />
+                  </svg>
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -529,9 +570,7 @@ function Apologist({
   const showResetControl = Boolean(isVerseLevel && currentBaselineQuery);
   const headerLabel =
     label ||
-    (isVerseLevel && currentBaselineQuery
-      ? currentBaselineQuery
-      : searchParam);
+    (isVerseLevel && currentBaselineQuery ? currentBaselineQuery : searchParam);
 
   useEffect(() => {
     const trimmed = (search ?? "").trim();
@@ -548,9 +587,9 @@ function Apologist({
   useEffect(() => {
     let timer;
     if (loading) {
-        timer = setTimeout(() => setShowSpinner(true), 2000);
+      timer = setTimeout(() => setShowSpinner(true), 2000);
     } else {
-        setShowSpinner(false);
+      setShowSpinner(false);
     }
     return () => clearTimeout(timer);
   }, [loading]);
@@ -609,9 +648,7 @@ function Apologist({
           ...(authHeader
             ? { Authorization: authHeader }
             : { Authorization: "Bearer apg_TS0V0FHInZlAavPDG5MA9gCGziBz" }),
-          ...(cacheTtl != null
-            ? { "x-cache-ttl": String(cacheTtl) }
-            : {}),
+          ...(cacheTtl != null ? { "x-cache-ttl": String(cacheTtl) } : {}),
         };
 
         const payload = {
@@ -659,10 +696,7 @@ function Apologist({
 
         let finalResults = dedupedResults;
 
-        if (
-          resolvedLevel !== "chapter" &&
-          baselineResultKeysRef.current.size
-        ) {
+        if (resolvedLevel !== "chapter" && baselineResultKeysRef.current.size) {
           finalResults = finalResults.filter((item) => {
             const key = buildResultKey(item);
             if (!key) return true;
@@ -719,7 +753,17 @@ function Apologist({
     return () => {
       cancelled = true;
     };
-  }, [searchParam, searchRunId, organizationId, enabled, authHeader, cacheTtl, url, level, baselineQuery]);
+  }, [
+    searchParam,
+    searchRunId,
+    organizationId,
+    enabled,
+    authHeader,
+    cacheTtl,
+    url,
+    level,
+    baselineQuery,
+  ]);
 
   const handleResetToBaseline = () => {
     if (!currentBaselineQuery) return;
@@ -873,17 +917,34 @@ function Apologist({
                 ×
               </button>
             )}
-            <div className="sg-resultCount">{headerLabel} | {data.length} Results</div>
+            <div className="sg-resultCount">
+              {headerLabel} | {data.length} Results
+            </div>
             <div className="sg-viewToggle">
               <button
                 className={`sg-toggle-btn ${viewMode === "list" ? "active" : ""}`}
                 onClick={() => setViewMode("list")}
                 title="List View"
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 5L2 5C1.73487 4.99971 1.48069 4.89426 1.29321 4.70679C1.10574 4.51931 1.00029 4.26513 1 4L1 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2V4C14.9997 4.26513 14.8943 4.51931 14.7068 4.70679C14.5193 4.89426 14.2651 4.99971 14 5ZM2 2L2 4L14 4V2L2 2Z" fill="currentColor"/>
-                  <path d="M14 15L2 15C1.73487 14.9997 1.48069 14.8943 1.29321 14.7068C1.10574 14.5193 1.00029 14.2651 1 14L1 12C1.00028 11.7349 1.10572 11.4807 1.2932 11.2932C1.48068 11.1057 1.73487 11.0003 2 11L14 11C14.2651 11.0003 14.5193 11.1057 14.7068 11.2932C14.8943 11.4807 14.9997 11.7349 15 12V14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15ZM2 12L2 14L14 14V12L2 12Z" fill="currentColor"/>
-                  <path d="M14 10L2 10C1.73487 9.99971 1.48069 9.89426 1.29321 9.70679C1.10574 9.51931 1.00029 9.26513 1 9L1 7C1.00028 6.73487 1.10572 6.48068 1.2932 6.2932C1.48068 6.10572 1.73487 6.00028 2 6L14 6C14.2651 6.00028 14.5193 6.10572 14.7068 6.2932C14.8943 6.48068 14.9997 6.73487 15 7V9C14.9997 9.26513 14.8943 9.51931 14.7068 9.70679C14.5193 9.89426 14.2651 9.99971 14 10ZM2 7L2 9L14 9V7L2 7Z" fill="currentColor"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M14 5L2 5C1.73487 4.99971 1.48069 4.89426 1.29321 4.70679C1.10574 4.51931 1.00029 4.26513 1 4L1 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2V4C14.9997 4.26513 14.8943 4.51931 14.7068 4.70679C14.5193 4.89426 14.2651 4.99971 14 5ZM2 2L2 4L14 4V2L2 2Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M14 15L2 15C1.73487 14.9997 1.48069 14.8943 1.29321 14.7068C1.10574 14.5193 1.00029 14.2651 1 14L1 12C1.00028 11.7349 1.10572 11.4807 1.2932 11.2932C1.48068 11.1057 1.73487 11.0003 2 11L14 11C14.2651 11.0003 14.5193 11.1057 14.7068 11.2932C14.8943 11.4807 14.9997 11.7349 15 12V14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15ZM2 12L2 14L14 14V12L2 12Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M14 10L2 10C1.73487 9.99971 1.48069 9.89426 1.29321 9.70679C1.10574 9.51931 1.00029 9.26513 1 9L1 7C1.00028 6.73487 1.10572 6.48068 1.2932 6.2932C1.48068 6.10572 1.73487 6.00028 2 6L14 6C14.2651 6.00028 14.5193 6.10572 14.7068 6.2932C14.8943 6.48068 14.9997 6.73487 15 7V9C14.9997 9.26513 14.8943 9.51931 14.7068 9.70679C14.5193 9.89426 14.2651 9.99971 14 10ZM2 7L2 9L14 9V7L2 7Z"
+                    fill="currentColor"
+                  />
                 </svg>
               </button>
               <button
@@ -891,9 +952,21 @@ function Apologist({
                 onClick={() => setViewMode("grid")}
                 title="Grid View"
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 2L15 14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15L10 15C9.73487 14.9997 9.48068 14.8943 9.2932 14.7068C9.10572 14.5193 9.00028 14.2651 9 14L9 2C9.00028 1.73487 9.10572 1.48068 9.2932 1.2932C9.48068 1.10572 9.73487 1.00028 10 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2ZM10 14L14 14L14 2L10 2L10 14Z" fill="currentColor"/>
-                  <path d="M7 2L7 14C6.99972 14.2651 6.89428 14.5193 6.7068 14.7068C6.51932 14.8943 6.26513 14.9997 6 15L2 15C1.73487 14.9997 1.48068 14.8943 1.2932 14.7068C1.10572 14.5193 1.00028 14.2651 1 14L0.999999 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L6 1C6.26513 1.00028 6.51932 1.10572 6.7068 1.2932C6.89428 1.48068 6.99972 1.73487 7 2ZM2 14L6 14L6 2L2 2L2 14Z" fill="currentColor"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M15 2L15 14C14.9997 14.2651 14.8943 14.5193 14.7068 14.7068C14.5193 14.8943 14.2651 14.9997 14 15L10 15C9.73487 14.9997 9.48068 14.8943 9.2932 14.7068C9.10572 14.5193 9.00028 14.2651 9 14L9 2C9.00028 1.73487 9.10572 1.48068 9.2932 1.2932C9.48068 1.10572 9.73487 1.00028 10 1L14 1C14.2651 1.00028 14.5193 1.10572 14.7068 1.2932C14.8943 1.48068 14.9997 1.73487 15 2ZM10 14L14 14L14 2L10 2L10 14Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M7 2L7 14C6.99972 14.2651 6.89428 14.5193 6.7068 14.7068C6.51932 14.8943 6.26513 14.9997 6 15L2 15C1.73487 14.9997 1.48068 14.8943 1.2932 14.7068C1.10572 14.5193 1.00028 14.2651 1 14L0.999999 2C1.00028 1.73487 1.10572 1.48068 1.2932 1.2932C1.48068 1.10572 1.73487 1.00028 2 1L6 1C6.26513 1.00028 6.51932 1.10572 6.7068 1.2932C6.89428 1.48068 6.99972 1.73487 7 2ZM2 14L6 14L6 2L2 2L2 14Z"
+                    fill="currentColor"
+                  />
                 </svg>
               </button>
             </div>
@@ -904,22 +977,22 @@ function Apologist({
       {/* Pinned Now Playing Section */}
       {nowPlayingId && allData && (
         <div style={{ marginBottom: "20px" }}>
-           {(() => {
-             const npItem = allData.find(d => d.id === nowPlayingId);
-             if (!npItem) return null;
-             return (
-               <SgCard
-                 key={`pinned-${npItem.id}`}
-                 item={npItem}
-                 isOpen={true}
-                 viewMode="list"
-                 isNowPlaying={true}
-                 setNowPlayingId={setNowPlayingId}
-                 onClose={() => setNowPlayingId(null)}
-                 isPinned={true}
-               />
-             );
-           })()}
+          {(() => {
+            const npItem = allData.find((d) => d.id === nowPlayingId);
+            if (!npItem) return null;
+            return (
+              <SgCard
+                key={`pinned-${npItem.id}`}
+                item={npItem}
+                isOpen={true}
+                viewMode="list"
+                isNowPlaying={true}
+                setNowPlayingId={setNowPlayingId}
+                onClose={() => setNowPlayingId(null)}
+                isPinned={true}
+              />
+            );
+          })()}
         </div>
       )}
 
@@ -933,15 +1006,15 @@ function Apologist({
             {data.map((item) => {
               if (item.id === nowPlayingId) return null; // Filter pinned item
               return item?.id ? (
-                 <SgCard
-                   key={String(item.id)}
-                   item={item}
-                   isOpen={openIds.has(item.id)}
-                   viewMode={viewMode}
-                   isNowPlaying={nowPlayingId === item.id}
-                   setNowPlayingId={setNowPlayingId}
-                 />
-               ) : null;
+                <SgCard
+                  key={String(item.id)}
+                  item={item}
+                  isOpen={openIds.has(item.id)}
+                  viewMode={viewMode}
+                  isNowPlaying={nowPlayingId === item.id}
+                  setNowPlayingId={setNowPlayingId}
+                />
+              ) : null;
             })}
             {hasMore && (
               <div className="sg-loadMore">
@@ -964,13 +1037,13 @@ function Apologist({
           </>
         ) : (
           !loading && (
-          <div className="sg-empty">
-            <div className="sg-emptyIcon">🔎</div>
-            <div className="sg-emptyTitle">No results</div>
-            <div className="sg-emptyHint">
-              Try a broader term or different keywords.
+            <div className="sg-empty">
+              <div className="sg-emptyIcon">🔎</div>
+              <div className="sg-emptyTitle">No results</div>
+              <div className="sg-emptyHint">
+                Try a broader term or different keywords.
+              </div>
             </div>
-          </div>
           )
         )}
 
