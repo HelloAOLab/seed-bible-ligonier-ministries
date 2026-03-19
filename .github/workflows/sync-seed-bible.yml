@@ -2,7 +2,7 @@ name: Sync Seed-Bible Develop
 
 on:
   schedule:
-    - cron: "0 4 * * *" # every minute (testing)
+    - cron: "0 4 * * *" # daily at 4:00 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -23,10 +23,48 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Sync Fork
+      - name: Sync Fork (no auto-merge)
+        id: sync
         run: |
           node ./script/sync-fork.mjs sync-fork \
           ${{ github.repository }} \
           HelloAOLab/seed-bible \
           -a ${{ secrets.GITHUB_TOKEN }} \
-          -s ${{ secrets.GITHUB_TOKEN }}
+          -s ${{ secrets.GITHUB_TOKEN }} \
+          --no-merge 2>&1 | tee sync-output.txt
+
+          # Extract PR number from output
+          PR_NUM=$(grep -oP 'Pull request #\K[0-9]+' sync-output.txt || echo "")
+          echo "pr_number=$PR_NUM" >> $GITHUB_OUTPUT
+
+          # Detect if there were no changes
+          if grep -q "No changes to sync" sync-output.txt; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Discord
+        if: steps.sync.outputs.has_changes == 'true' && steps.sync.outputs.pr_number != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PR_NUMBER: ${{ steps.sync.outputs.pr_number }}
+          REPO: ${{ github.repository }}
+        run: |
+          PR_URL="https://github.com/${REPO}/pull/${PR_NUMBER}"
+          curl -s -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"🔄 Upstream Sync PR Ready for Review\",
+                \"description\": \"A new sync PR has been created from **seed-bible** → **seed-bible-ligonier**.\\n\\nPlease review and merge manually to avoid conflicts with Ligonier-specific content.\",
+                \"url\": \"${PR_URL}\",
+                \"color\": 3447003,
+                \"fields\": [
+                  {\"name\": \"PR\", \"value\": \"[#${PR_NUMBER}](${PR_URL})\", \"inline\": true},
+                  {\"name\": \"Repo\", \"value\": \"${REPO}\", \"inline\": true}
+                ],
+                \"footer\": {\"text\": \"Seed Bible Sync Bot\"},
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }" \
+            "$DISCORD_WEBHOOK_URL"

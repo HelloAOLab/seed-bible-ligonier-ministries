@@ -368,7 +368,8 @@ export const SplitApp = ({
   });
 
   // Default overlap for 2 panels, or when explicitly enabled
-  const isOverlap = count >= 2 && screens.overlap !== false;
+  // Disabled: panels are now always side-by-side (no slide animation)
+  const isOverlap = false;
 
   useEffect(() => {
     if (isOverlap) {
