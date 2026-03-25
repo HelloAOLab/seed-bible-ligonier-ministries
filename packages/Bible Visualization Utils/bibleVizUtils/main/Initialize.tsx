@@ -369,3 +369,5 @@ if (PoolData && CustomTag) {
 }
 
 shout("OnBibleVizUtilsInitialized");
+
+thisBot.StartHistoryUpdate();

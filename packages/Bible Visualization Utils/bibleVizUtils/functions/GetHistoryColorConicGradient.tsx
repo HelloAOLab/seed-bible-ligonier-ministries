@@ -2,7 +2,7 @@ const colors = that;
 
 const fixedColors = [...colors, colors[0]];
 const step = 360 / colors.length;
-const diffuse = 0;
+const diffuse = 5;
 const offset = 45;
 const gradient = `conic-gradient(from ${offset}deg, ${fixedColors
   .map((color, index) => {
