@@ -45,7 +45,7 @@ import {
   CoffeBeanIcon,
 } from "app.components.phosphoricons";
 // import { CircleCounter } from 'app.components.circleCounter'
-// console.log(CircleCounter, 'CircleCounter')
+
 const Reciver = getBot("system", "app.reciver");
 const { useState, useRef, useEffect, useMemo } = os.appHooks;
 
@@ -97,7 +97,7 @@ const CircleCounter = ({ data, book, chapter }) => {
   const getUserVisual = (userId, value, index) => {
     try {
       const visual = globalThis?.GetOrSetVisualInTags(value[0]);
-      // console.log(value,'the get inside')
+
       if (visual) {
         const IconComponent = icons[visual.iconIndex];
         const color = colors[visual.colorIndex];
@@ -498,7 +498,6 @@ function Tab({
     }
     const checkEmpty = PanelsApps.find((e) => !e.tabData);
     if (el.data.type === "book" && checkEmpty) {
-      // console.log("canvas replacing");
       setActiveTab(el.id);
       const id = uuid();
       ReplaceApplication(LastClickedPanelUpdate || checkEmpty.id, {
@@ -846,11 +845,13 @@ function SideBar({ panelsNumber }) {
     selectedTabs,
     setSelectedTabs,
     sharedTab,
+    getAllTabsInSpace,
   } = useTabsContext();
   const hidePanels =
     tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
       ?.disablePanels;
   globalThis.AddTab = addTab;
+  globalThis.GetTabsInSpace = () => getAllTabsInSpace(activeSpace);
   const { screens, setScreens, fullScreen, setFullScreen, ReSeed, setReSeed } =
     useBibleContext();
   // globalThis.setScreens = setScreens
@@ -1469,8 +1470,8 @@ function SideBar({ panelsNumber }) {
                 book: "Genesis",
                 bookId: "GEN",
                 chapter: 1,
-                translation: "BSB",
-                shortName: "BSB",
+                translation: "NASB95",
+                shortName: "NASB95",
               },
             });
             closePopupSettings();
@@ -1607,8 +1608,8 @@ function SideBar({ panelsNumber }) {
           book: "Genesis",
           bookId: "GEN",
           chapter: 1,
-          translation: "BSB",
-          shortName: "BSB",
+          translation: "NASB95",
+          shortName: "NASB95",
         },
       };
       addTab(newTab);
@@ -2168,7 +2169,6 @@ function SideBar({ panelsNumber }) {
             </div>
           )}
 
-          {/* rename category modal */}
           {renamingCategory && (
             <div
               className="mobile-modal-overlay"
@@ -2532,8 +2532,8 @@ function SideBar({ panelsNumber }) {
                           book: "Genesis",
                           bookId: "GEN",
                           chapter: 1,
-                          translation: "BSB",
-                          shortName: "BSB",
+                          translation: "NASB95",
+                          shortName: "NASB95",
                         },
                       });
                     }
@@ -2543,7 +2543,7 @@ function SideBar({ panelsNumber }) {
                     clearTimeout(holdTimeout.current.time);
                     holdTimeout.current.clicked = false;
                   }}
-                  className="material-symbols-outlined addIcon"
+                  className="material-symbols-outlined  addIcon"
                 >
                   add
                 </span>
@@ -2663,6 +2663,14 @@ function SideBar({ panelsNumber }) {
               cursor: "pointer",
             }}
           >
+            {isSiteOfClient && (
+              <ClientLogo
+                handleOpenClientSite={handleOpenClientSite}
+                url={clientLogo}
+                alt={clientName}
+              />
+            )}
+            <div className="sidebarLine"></div>
             <div
               onClick={() => {
                 setSidebarWidth(280);
@@ -2843,8 +2851,8 @@ function SideBar({ panelsNumber }) {
                       book: "Genesis",
                       bookId: "GEN",
                       chapter: 1,
-                      translation: "BSB",
-                      shortName: "BSB",
+                      translation: "NASB95",
+                      shortName: "NASB95",
                     },
                   });
                 }
@@ -3006,7 +3014,6 @@ export const SpaceUI = () => {
                 <MobileSettingsIcon filter="var(--filter-mode)" />
               </span>
               <SettingsProfile />
-              <UserProfile />
             </>
           ) : (
             <>
@@ -3199,6 +3206,7 @@ export const UserProfile = ({ collapsed }) => {
     tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
       ?.removeAccountOptions;
   const Icon = icons[iconIndex];
+
   return (
     <div
       onClick={
@@ -3243,7 +3251,7 @@ export const UserProfile = ({ collapsed }) => {
           width: 30,
           height: 30,
           borderRadius: "50%",
-          // border: `2px solid ${!configBot.tags.staticInst ? colors[colorIndex] : "var(--pageTextColor)"}`,
+          border: `2px solid ${!configBot.tags.staticInst ? colors[colorIndex] : "var(--pageTextColor)"}`,
           padding: 2,
           display: "flex",
           backgroundColor: "var(--addButtonIcon)",
@@ -3262,7 +3270,7 @@ export const UserProfile = ({ collapsed }) => {
         ) : (
           <span
             className="material-symbols-outlined"
-            style={{ color: "var(--primaryColor)" }}
+            style={{ color: "var(--secondaryColor)" }}
           >
             person
           </span>

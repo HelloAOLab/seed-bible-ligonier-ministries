@@ -32,6 +32,188 @@ import {
 } from "app.components.icons";
 
 import { useSideBarContext } from "app.hooks.sideBar";
+
+const BOOK_ID_TO_ENGLISH = {
+  GEN: "Genesis",
+  EXO: "Exodus",
+  LEV: "Leviticus",
+  NUM: "Numbers",
+  DEU: "Deuteronomy",
+  JOS: "Joshua",
+  JDG: "Judges",
+  RUT: "Ruth",
+  "1SA": "1 Samuel",
+  "2SA": "2 Samuel",
+  "1KI": "1 Kings",
+  "2KI": "2 Kings",
+  "1CH": "1 Chronicles",
+  "2CH": "2 Chronicles",
+  EZR: "Ezra",
+  NEH: "Nehemiah",
+  EST: "Esther",
+  JOB: "Job",
+  PSA: "Psalms",
+  PRO: "Proverbs",
+  ECC: "Ecclesiastes",
+  SNG: "Song of Solomon",
+  ISA: "Isaiah",
+  JER: "Jeremiah",
+  LAM: "Lamentations",
+  EZK: "Ezekiel",
+  DAN: "Daniel",
+  HOS: "Hosea",
+  JOL: "Joel",
+  AMO: "Amos",
+  OBA: "Obadiah",
+  JON: "Jonah",
+  MIC: "Micah",
+  NAM: "Nahum",
+  HAB: "Habakkuk",
+  ZEP: "Zephaniah",
+  HAG: "Haggai",
+  ZEC: "Zechariah",
+  MAL: "Malachi",
+  MAT: "Matthew",
+  MRK: "Mark",
+  LUK: "Luke",
+  JHN: "John",
+  ACT: "Acts",
+  ROM: "Romans",
+  "1CO": "1 Corinthians",
+  "2CO": "2 Corinthians",
+  GAL: "Galatians",
+  EPH: "Ephesians",
+  PHP: "Philippians",
+  COL: "Colossians",
+  "1TH": "1 Thessalonians",
+  "2TH": "2 Thessalonians",
+  "1TI": "1 Timothy",
+  "2TI": "2 Timothy",
+  TIT: "Titus",
+  PHM: "Philemon",
+  HEB: "Hebrews",
+  JAS: "James",
+  "1PE": "1 Peter",
+  "2PE": "2 Peter",
+  "1JN": "1 John",
+  "2JN": "2 John",
+  "3JN": "3 John",
+  JUD: "Jude",
+  REV: "Revelation",
+};
+
+function prepareAISearchParamOnChapter(chapterData) {
+  const englishBookName =
+    BOOK_ID_TO_ENGLISH[chapterData.bookId] || chapterData.book;
+  const combinedText = englishBookName + " " + chapterData.chapter;
+
+  globalThis.GlobalSearch = combinedText.trim();
+  globalThis.GlobalSearchLevel = "chapter";
+  globalThis.StudyNoteParentSearch = combinedText.trim();
+  globalThis.GlobalSearchLabel = combinedText.trim();
+
+  console.log(
+    "[Chapter Search] Using English book name:",
+    englishBookName,
+    "for bookId:",
+    chapterData.bookId
+  );
+}
+
+function MoreResources() {
+  function openStudyNotes() {
+    const label = "Study Notes";
+    const panelKey = "STUDY_NOTES_PANEL_ID";
+
+    if (globalThis.makingApp === label && globalThis[panelKey]) {
+      RemoveApplicationByID(globalThis[panelKey]);
+      globalThis[panelKey] = null;
+      globalThis.makingApp = null;
+      globalThis.studyNotesPresent = false;
+      globalThis.STUDYNOTES_PANEL_ID = null;
+      return;
+    }
+
+    const StudyNotes = globalThis.GlobalStudyNotes;
+    if (!StudyNotes) {
+      os.toast("StudyNote extension not installed", 3);
+      return;
+    }
+
+    if (!globalThis.panelMode) {
+      const id = uuid();
+
+      globalThis.studyNotesPresent = true;
+      globalThis.makingApp = label;
+      globalThis[panelKey] = id;
+      globalThis.STUDYNOTES_PANEL_ID = id;
+
+      AddApplication({
+        id,
+        App: (
+          <StudyNotes
+            key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
+            id={id}
+            chapter={globalThis.GlobalChapter}
+          />
+        ),
+        to: "panel",
+        minWidth: "30rem",
+      });
+    }
+  }
+
+  return (
+    <div
+      className="more-resources"
+      onClick={openStudyNotes}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        cursor: "pointer",
+        color: "#859E3B",
+        fontSize: "14px",
+        fontWeight: "500",
+      }}
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M15.3235 1H2.67645C1.75056 1 1 1.7506 1 2.6765V15.3235C1 16.2494 1.75056 17 2.67645 17H15.3235C16.2494 17 17 16.2494 17 15.3235V2.6765C17 1.7506 16.2494 1 15.3235 1Z"
+          stroke="#859E3B"
+          strokeWidth="2"
+          strokeMiterlimit="10"
+        />
+        <path
+          d="M9.96308 12.6438H5.19916"
+          stroke="#859E3B"
+          strokeWidth="2"
+          strokeMiterlimit="10"
+        />
+        <path
+          d="M12.8018 9H5.19916"
+          stroke="#859E3B"
+          strokeWidth="2"
+          strokeMiterlimit="10"
+        />
+        <path
+          d="M11.3095 5.35718H5.19916"
+          stroke="#859E3B"
+          strokeWidth="2"
+          strokeMiterlimit="10"
+        />
+      </svg>
+      <span>More Resources</span>
+    </div>
+  );
+}
+
 function getUserSessionInfo(userId) {
   try {
     if (typeof tags === "undefined" || !tags.sessions) {
@@ -43,13 +225,11 @@ function getUserSessionInfo(userId) {
     let config = null;
     let hostId = null;
 
-    // 1️⃣ Check if user is a host
     if (sessions[userId]) {
       role = "host";
       config = sessions[userId].config || null;
       hostId = userId;
     } else {
-      // 2️⃣ Check if user is a co-host or follower in another session
       for (const [hId, sess] of Object.entries(sessions)) {
         if (sess.coHosts?.includes(userId)) {
           role = "coHost";
@@ -344,6 +524,50 @@ function ThePage({
     };
   };
 
+  async function globalLoadingDataFromSN(bookId, chapter) {
+    if (!tab) return;
+    const bible = new BibleDataManager({
+      tabId: tab?.id,
+      translation: tab.data.translation,
+      bookId: bookId,
+      chapter: chapter,
+    });
+    setBible(bible);
+
+    console.log("bible data: ", bible);
+
+    await bible.fetch();
+
+    globalThis.BookId = bible.bookId;
+
+    const { data, loading, error } = bible.getState();
+    console.log(data, tab, "the data loaded");
+    setData(data);
+
+    globalThis.GlobalChapter = bible.data.chapter - 1;
+
+    prepareAISearchParamOnChapter(bible.data);
+
+    if (globalThis.studyNotesPresent && globalThis.GlobalStudyNotes) {
+      const activeTab = globalThis.StudyNoteActiveTab || "notes";
+      if (activeTab === "notes" || activeTab === "discover") {
+        const StudyNotes = globalThis.GlobalStudyNotes;
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+          App: (
+            <StudyNotes
+              key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
+              id={globalThis.STUDYNOTES_PANEL_ID}
+              chapter={globalThis.GlobalChapter}
+            />
+          ),
+          to: "panel",
+        });
+      }
+    }
+  }
+
+  globalThis.GlobalLoadingDataFromSN = globalLoadingDataFromSN;
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") {
@@ -362,11 +586,6 @@ function ThePage({
   }, []);
   useEffect(() => {
     const onBookChange = (data) => {
-      // os.log("updated shared tab", "not approved");
-      // if (!globalThis.CurrentTab?.sharedTab) {
-      //   updateTab(masks["sharedTab"], data);
-      //   return;
-      // }
       console.log("remoteBookChange", data);
       globalThis.Open?.(data.bookId, data.chapter);
     };
@@ -682,7 +901,7 @@ function ThePage({
       await bible.open(
         configBot.tags.book.toUpperCase(),
         configBot.tags.chapter,
-        configBot.tags.translation || "BSB"
+        configBot.tags.translation || "NASB95"
       );
       setData(bible.data);
       configBot.tags.defaultChecked = true;
@@ -877,17 +1096,26 @@ function ThePage({
     setFootnotes(bible.footnotes);
 
     globalThis.GlobalChapter = bible.data.chapter - 1;
+    globalThis.BookId = bible.data.bookId;
 
-    if (globalThis.studyNotesPresent) {
-      UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
-        App: (
-          <StudyNotes
-            id={globalThis.STUDYNOTES_PANEL_ID}
-            chapter={globalThis.GlobalChapter}
-          />
-        ),
-        to: "panel",
-      });
+    prepareAISearchParamOnChapter(bible.data);
+
+    // Only update StudyNote if it's on the "notes" or "discover" tab (not devotion which doesn't depend on book/chapter)
+    if (globalThis.studyNotesPresent && globalThis.GlobalStudyNotes) {
+      const activeTab = globalThis.StudyNoteActiveTab || "notes";
+      if (activeTab === "notes" || activeTab === "discover") {
+        const StudyNotes = globalThis.GlobalStudyNotes;
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+          App: (
+            <StudyNotes
+              key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
+              id={globalThis.STUDYNOTES_PANEL_ID}
+              chapter={globalThis.GlobalChapter}
+            />
+          ),
+          to: "panel",
+        });
+      }
     }
   }
 
@@ -897,8 +1125,12 @@ function ThePage({
     setFootnotes(bible.footnotes);
 
     globalThis.GlobalChapter = bible.data.chapter - 1;
+    globalThis.BookId = bible.data.bookId;
 
-    if (globalThis.studyNotesPresent) {
+    prepareAISearchParamOnChapter(bible.data);
+
+    if (globalThis.studyNotesPresent && globalThis.GlobalStudyNotes) {
+      const StudyNotes = globalThis.GlobalStudyNotes;
       UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
         App: (
           <StudyNotes
@@ -927,12 +1159,36 @@ function ThePage({
           book: bookId,
           bookId: bookId,
           chapter: chapter,
-          translation: translation || "BSB",
+          translation: translation || "NASB95",
         },
       });
       setTab(newTab);
       console.log("newTab created for open error", newTab);
       return;
+    }
+
+    // Additions ------>
+    globalThis.GlobalChapter = bible.data.chapter - 1;
+    globalThis.BookId = bible.data.bookId;
+
+    prepareAISearchParamOnChapter(bible.data);
+
+    // Only update StudyNote if it's on the "notes" or "discover" tab (not devotion which doesn't depend on book/chapter)
+    if (globalThis.studyNotesPresent && globalThis.GlobalStudyNotes) {
+      const activeTab = globalThis.StudyNoteActiveTab || "notes";
+      if (activeTab === "notes" || activeTab === "discover") {
+        const StudyNotes = globalThis.GlobalStudyNotes;
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+          App: (
+            <StudyNotes
+              key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
+              id={globalThis.STUDYNOTES_PANEL_ID}
+              chapter={globalThis.GlobalChapter}
+            />
+          ),
+          to: "panel",
+        });
+      }
     }
   }
 
@@ -1096,16 +1352,22 @@ function ThePage({
 
     globalThis.GlobalChapter = (data?.chapter || 1) - 1;
 
-    if (globalThis.studyNotesPresent) {
-      UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
-        App: (
-          <StudyNotes
-            id={globalThis.STUDYNOTES_PANEL_ID}
-            chapter={globalThis.GlobalChapter}
-          />
-        ),
-        to: "panel",
-      });
+    // Only update StudyNote if it's on the "notes" or "discover" tab (not devotion which doesn't depend on book/chapter)
+    if (globalThis.studyNotesPresent && globalThis.GlobalStudyNotes) {
+      const activeTab = globalThis.StudyNoteActiveTab || "notes";
+      if (activeTab === "notes" || activeTab === "discover") {
+        const StudyNotes = globalThis.GlobalStudyNotes;
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+          App: (
+            <StudyNotes
+              key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
+              id={globalThis.STUDYNOTES_PANEL_ID}
+              chapter={globalThis.GlobalChapter}
+            />
+          ),
+          to: "panel",
+        });
+      }
     }
     globalThis.LastClickedPanelUpdate = panelId;
   }
@@ -1449,18 +1711,15 @@ function ThePage({
   useEffect(() => {
     function handleEsc(e) {
       if (e.key === "Escape") {
-        // Clear verse clicks
         setClickedVerses([]);
         setClickedVersesContext({});
         setShowVerseToolbar(false);
 
-        // Clear selection highlight
         setCommandHighlight([]);
         setLastSelectedVerse(null);
         setSelectedText("");
         setShowCommands(false);
 
-        // Remove browser selected text
         if (window.getSelection) {
           const sel = window.getSelection();
           if (sel.removeAllRanges) sel.removeAllRanges();
@@ -2192,33 +2451,48 @@ function ThePage({
                         globalThis.selectBookSelectorBook(data.bookId);
                     }
                   }}
-                  style={{ "pointer-events": isDragging ? "none" : null }}
+                  style={{
+                    "pointer-events": isDragging ? "none" : null,
+                    position: "relative",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "baseline",
+                    gap: "8px 16px",
+                  }}
                   className="bookTitle"
                 >
-                  {`${data?.book} ${data?.chapter}`}{" "}
-                  <span
-                    style={{
-                      fontSize: "24px",
-                      color:
-                        "color-mix(in srgb, var(--text1), transparent 40%)",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (globalThis.setOpenSidebar && globalThis.openSidebar) {
-                        globalThis.setOpenSidebar(false);
-                        globalThis.setSelectingTranslation &&
-                          globalThis.setSelectingTranslation(false);
-                        globalThis.selectBookSelectorBook &&
-                          globalThis.selectBookSelectorBook(null);
-                      } else {
-                        globalThis.setOpenSidebar(true);
-                        globalThis.setSelectingTranslation &&
-                          globalThis.setSelectingTranslation(true);
-                        globalThis.selectBookSelectorBook &&
-                          globalThis.selectBookSelectorBook(data.bookId);
-                      }
-                    }}
-                  >{` / ${data?.shortName}`}</span>
+                  <span>
+                    {`${data?.book} ${data?.chapter}`}{" "}
+                    <span
+                      style={{
+                        fontSize: "24px",
+                        color:
+                          "color-mix(in srgb, var(--text1), transparent 40%)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (globalThis.setOpenSidebar && globalThis.openSidebar) {
+                          globalThis.setOpenSidebar(false);
+                          globalThis.setSelectingTranslation &&
+                            globalThis.setSelectingTranslation(false);
+                          globalThis.selectBookSelectorBook &&
+                            globalThis.selectBookSelectorBook(null);
+                        } else {
+                          globalThis.setOpenSidebar(true);
+                          globalThis.setSelectingTranslation &&
+                            globalThis.setSelectingTranslation(true);
+                          globalThis.selectBookSelectorBook &&
+                            globalThis.selectBookSelectorBook(data.bookId);
+                        }
+                      }}
+                    >{` / ${data?.shortName}`}</span>
+                  </span>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ marginLeft: "auto" }}
+                  >
+                    <MoreResources />
+                  </div>
                 </div>
                 {showHeading[activeSpace] && (
                   <div style={{ height: "1rem" }}></div>
@@ -2393,7 +2667,6 @@ function ThePage({
         </div>
       </div>
 
-      {/* Verse toolbar rendered outside the carousel so position:fixed works relative to the viewport */}
       {showVerseToolbar &&
         !(role === "follower" && config.onlyHostHighlight) && (
           <div
@@ -2450,7 +2723,6 @@ function ThePage({
           </div>
         )}
 
-      {/* Compact scroll header - shows book/chapter info when scrolled down on mobile */}
       {globalThis.IsMobileNow && globalThis.IsMobileNow() && data && (
         <div className="mobile-compact-scroll-header">
           {showVerseToolbar && clickedVerses.length > 0 ? (
@@ -2473,7 +2745,6 @@ function ThePage({
         </div>
       )}
 
-      {/* Footnote Modal rendered outside the carousel so position:fixed works relative to the viewport */}
       {showFootnoteModal && activeFootnote && (
         <div
           className="footnote-modal-overlay"
@@ -2594,7 +2865,7 @@ function PageToolbar({ panelId, tab, path = "showInPageToolbar" }) {
 }
 
 function splitBySectionKeys(text, verseSectionMap) {
-  const stripRe = /[.,'"""'']/g;
+  const stripRe = /[.,'"“”‘’]/g;
 
   const subphraseMap = {};
   let maxLen = 1;
@@ -2654,6 +2925,45 @@ function splitBySectionKeys(text, verseSectionMap) {
   }
 
   return chunks;
+}
+
+function normalizeToSet(payload) {
+  const out = new Set();
+
+  if (payload == null) return out;
+
+  const addRange = (a, b) => {
+    const start = Math.min(+a, +b);
+    const end = Math.max(+a, +b);
+    for (let v = start; v <= end; v++) out.add(v);
+  };
+
+  if (typeof payload === "string") {
+    const t = payload.trim();
+    const m = t.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+    if (m) addRange(m[1], m[2]);
+    else if (/^\d+$/.test(t)) out.add(+t);
+    return out;
+  }
+
+  if (Array.isArray(payload)) {
+    if (payload.length && typeof payload[0] === "object") {
+      payload.forEach((r) => {
+        if (r && r.start != null && r.end != null) addRange(r.start, r.end);
+      });
+    } else {
+      payload.forEach((n) => /^\d+$/.test(String(n)) && out.add(+n));
+    }
+    return out;
+  }
+
+  if (typeof payload === "object") {
+    const { start, end } = payload;
+    if (start != null && end != null) addRange(start, end);
+    return out;
+  }
+
+  return out;
 }
 
 function splitByWordHighlights(
@@ -2738,6 +3048,7 @@ function Section({
   book,
   chapter,
   holded,
+  ShowSearch,
   blinker,
   selected,
   highlighted,
@@ -2815,6 +3126,12 @@ function Section({
     globalThis.HighlightedVerseNumber || ""
   );
 
+  const [activeVerses, setActiveVerses] = useState(() => new Set());
+
+  const [animating, setAnimating] = useState(false);
+  const [sectionMap, setSectionMap] = useState(null);
+  const [chunksMap, setChunksMap] = useState(null);
+
   const verseRefs = useMemo(() => {
     const m = {};
     verses.forEach((v) => {
@@ -2825,6 +3142,10 @@ function Section({
 
   useEffect(() => {
     const handler = () => {
+      console.log(
+        "highlightedSectionKeyChanged: ",
+        globalThis.HighlightedSectionKey
+      );
       setActiveKey(globalThis.HighlightedSectionKey || "");
     };
     window.addEventListener("highlightedSectionKeyChanged", handler);
@@ -2843,6 +3164,36 @@ function Section({
     window.addEventListener("highlightedVerseChanged", handler);
     return () => window.removeEventListener("highlightedVerseChanged", handler);
   }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      const payload =
+        globalThis.HighlightedVerses ??
+        globalThis.HighlightedVerseRange ??
+        null;
+
+      setActiveVerses(normalizeToSet(payload));
+    };
+    window.addEventListener("highlightedVersesChanged", handler);
+    return () =>
+      window.removeEventListener("highlightedVersesChanged", handler);
+  }, []);
+
+  useLayoutEffect(() => {
+    // prefer multi-verse; fall back to single-verse for backward compat
+    let target = null;
+    if (activeVerses && activeVerses.size) {
+      target = Math.min(...Array.from(activeVerses));
+    } else if (activeVerse) {
+      target = activeVerse;
+    }
+    if (!target) return;
+
+    const ref = verseRefs[target];
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [activeVerses, activeVerse, verseRefs]);
 
   useLayoutEffect(() => {
     if (!activeVerse) return;
@@ -2875,18 +3226,30 @@ function Section({
     },
   };
 
-  const chunksMap = useMemo(() => {
-    const result = {};
-    if (globalThis.studyNotesPresent) {
-      verses.forEach((v) => {
-        result[v.verseNumber] = splitBySectionKeys(
-          v.text,
-          globalThis.VerseSectionMap
-        );
-      });
+  useEffect(() => {
+    function onMapReady(e) {
+      const map = e.detail || null;
+      setSectionMap(map);
+      setAnimating(!!map);
     }
-    return result;
-  }, [verses, globalThis.studyNotesPresent, globalThis.VerseSectionMap]);
+    window.addEventListener("sectionMapReady", onMapReady);
+    return () => window.removeEventListener("sectionMapReady", onMapReady);
+  }, []);
+
+  useEffect(() => {
+    if (!globalThis.VerseSectionMap) {
+      setChunksMap(null);
+      return;
+    }
+    const result = {};
+    verses.forEach((v) => {
+      result[v.verseNumber] = splitBySectionKeys(
+        v.text,
+        globalThis.VerseSectionMap
+      );
+    });
+    setChunksMap(result);
+  }, [globalThis.VerseSectionMap, verses]);
 
   const wordChunksMap = useMemo(() => {
     const result = {};
@@ -2903,6 +3266,207 @@ function Section({
     });
     return result;
   }, [verses, wordHighlights, book, chapter]);
+
+  const sendSearchQueryToStudyNote = async (text, verseNumbers) => {
+    const rawText = (text ?? "").trim();
+    if (!rawText) return;
+
+    const resolveSearchType = globalThis.GetStudyNoteSearchType;
+    const searchHelper = globalThis.UpdateStudyNoteSearch;
+    const currentSearchType =
+      typeof resolveSearchType === "function" ? resolveSearchType() : null;
+
+    let label = `${book} ${chapter}`;
+    let verseReference = `${book} ${chapter}`;
+    if (verseNumbers != null) {
+      const verseArray = Array.isArray(verseNumbers)
+        ? verseNumbers
+        : [verseNumbers];
+      if (verseArray.length > 0) {
+        const first = verseArray[0];
+        const last = verseArray[verseArray.length - 1];
+        label += ` - ${first}${first !== last ? `-${last}` : ""}`;
+        verseReference += `:${first}${first !== last ? `-${last}` : ""}`;
+      }
+    }
+
+    let searchText = rawText;
+
+    const hasNonLatinChars = /[^\u0000-\u007F\u00A0-\u00FF]/.test(rawText);
+
+    const ENGLISH_TRANSLATIONS = [
+      "NASB95",
+      "WEB",
+      "ASVBT",
+      "AEB",
+      "ASV",
+      "BBP",
+      "BBE",
+      "UBES",
+      "BST",
+      "KJVCP",
+      "DBY",
+      "DRA",
+      "EMTV",
+      "TNTC",
+      "FBV",
+      "GLW",
+      "GNV",
+      "JPSTN",
+      "KJVA",
+      "KJAV",
+      "ILT",
+      "LSV",
+      "LXXSB",
+      "LXXSA",
+      "MSB",
+      "NETB",
+      "NEB",
+      "GNB",
+      "TOJB",
+      "TOE",
+      "OURB",
+      "PEV",
+      "RVA",
+      "T4T",
+      "TCENT",
+      "TNT",
+      "ULB",
+      "W88",
+      "NWB",
+      "WEBC",
+      "WEBBE",
+      "WEBU",
+      "WMB",
+      "WMBBE",
+      "WBMS",
+      "WBMSE",
+      "YLT",
+    ];
+    const currentTranslationCode = data?.translation || "";
+    const isEnglishTranslation = ENGLISH_TRANSLATIONS.includes(
+      currentTranslationCode
+    );
+
+    const needsEnglishFetch = hasNonLatinChars || !isEnglishTranslation;
+
+    console.log(
+      "[Multi-lang DEBUG] Translation:",
+      currentTranslationCode,
+      "isEnglish:",
+      isEnglishTranslation,
+      "needsEnglishFetch:",
+      needsEnglishFetch
+    );
+
+    if (needsEnglishFetch && verseNumbers != null) {
+      console.log(
+        "[Multi-lang] Non-English detected, fetching English verse..."
+      );
+      try {
+        const englishBible = new BibleDataManager({
+          translation: "NASB95",
+          bookId: data?.bookId || globalThis.BookId,
+          chapter: chapter,
+        });
+        console.log(
+          "[Multi-lang] Creating BibleDataManager with bookId:",
+          data?.bookId || globalThis.BookId,
+          "chapter:",
+          chapter
+        );
+        await englishBible.fetch();
+
+        const englishData = englishBible.getState().data;
+        console.log(
+          "[Multi-lang] englishData:",
+          englishData ? "loaded" : "null",
+          "content:",
+          englishData?.content ? "present" : "missing"
+        );
+
+        if (englishData?.content) {
+          const verseArray = Array.isArray(verseNumbers)
+            ? verseNumbers
+            : [verseNumbers];
+          const englishVerses = [];
+
+          englishData.content.forEach((section) => {
+            section.verses?.forEach((v) => {
+              if (verseArray.includes(v.verseNumber) && v.text) {
+                englishVerses.push(v.text);
+              }
+            });
+          });
+
+          console.log(
+            "[Multi-lang] Found",
+            englishVerses.length,
+            "matching verses, englishBook:",
+            englishData.book
+          );
+
+          if (englishVerses.length > 0) {
+            searchText = englishVerses.join(" ");
+
+            if (englishData.book) {
+              const first = verseArray[0];
+              const last = verseArray[verseArray.length - 1];
+              verseReference = `${englishData.book} ${chapter}:${first}${first !== last ? `-${last}` : ""}`;
+              console.log(
+                "[Multi-lang] Updated verseReference to:",
+                verseReference
+              );
+            }
+
+            console.log(
+              "[Multi-lang] Using English text for search:",
+              searchText.substring(0, 100) + "..."
+            );
+          }
+        }
+      } catch (err) {
+        console.warn(
+          "[Multi-lang] Failed to fetch English verse, using original text:",
+          err
+        );
+      }
+    }
+
+    const enrichedQuery = verseNumbers
+      ? `${verseReference} ${searchText}`
+      : searchText;
+
+    globalThis.GlobalSearchLevel = verseNumbers ? "verse" : "chapter";
+    globalThis.GlobalSearch = enrichedQuery;
+
+    if (typeof searchHelper === "function") {
+      globalThis.GlobalSearchLabel = label;
+
+      const options = {
+        forceRefresh: true,
+        level: verseNumbers ? "verse" : "chapter",
+        label,
+        meta: {
+          book,
+          chapter,
+          verses: verseNumbers,
+          translation: data?.translation,
+        },
+      };
+
+      if (currentSearchType) {
+        options.forceSearchType = currentSearchType;
+      }
+
+      searchHelper(enrichedQuery, options);
+    } else {
+      if (verseNumbers) {
+        globalThis.GlobalSearchLevel = "verse";
+      }
+      globalThis.GlobalSearchLabel = label;
+    }
+  };
 
   const getContextData = (verseNumber) => {
     const verse = verses.find((v) => v.verseNumber === verseNumber);
@@ -2983,78 +3547,82 @@ function Section({
     const hasFootnotes = verseFootnotes && verseFootnotes.length > 0;
 
     if (globalThis.studyNotesPresent) {
-      return (chunksMap[verse.verseNumber] || []).map((part, i) => {
-        if (!part.isSection) {
-          if (hasWordHighlights) {
-            const wordParts = splitByWordHighlights(
-              part.text,
-              wordHighlights,
-              book,
-              chapter,
-              verse.verseNumber
-            );
-            return wordParts.map((wordPart, wordIndex) => {
-              if (wordPart.isHighlighted) {
-                return (
-                  <span
-                    key={`${i}-word-${wordIndex}`}
-                    style={{
-                      color: wordHighlightsTC,
-                      backgroundColor: wordHighlightsBC,
-                      cursor: wordPart.highlightConfig.onClick
-                        ? "pointer"
-                        : "default",
-                      padding: "1px 2px",
-                      borderRadius: "2px",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (wordPart.highlightConfig.onClick) {
-                        wordPart.highlightConfig.onClick(
-                          wordPart.text,
-                          verse.verseNumber
-                        );
-                      }
-                    }}
-                  >
-                    {wordPart.text}
-                  </span>
-                );
-              }
-              return (
-                <span key={`${i}-word-${wordIndex}`}>{wordPart.text}</span>
+      if (chunksMap?.[verse.verseNumber]) {
+        return (chunksMap[verse.verseNumber] || []).map((part, i) => {
+          if (!part.isSection) {
+            if (hasWordHighlights) {
+              const wordParts = splitByWordHighlights(
+                part.text,
+                wordHighlights,
+                book,
+                chapter,
+                verse.verseNumber
               );
-            });
+              return wordParts.map((wordPart, wordIndex) => {
+                if (wordPart.isHighlighted) {
+                  return (
+                    <span
+                      key={`${i}-word-${wordIndex}`}
+                      style={{
+                        color: wordHighlightsTC,
+                        backgroundColor: wordHighlightsBC,
+                        cursor: wordPart.highlightConfig.onClick
+                          ? "pointer"
+                          : "default",
+                        padding: "1px 2px",
+                        borderRadius: "2px",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (wordPart.highlightConfig.onClick) {
+                          wordPart.highlightConfig.onClick(
+                            wordPart.text,
+                            verse.verseNumber
+                          );
+                        }
+                      }}
+                    >
+                      {wordPart.text}
+                    </span>
+                  );
+                }
+                return (
+                  <span key={`${i}-word-${wordIndex}`}>{wordPart.text}</span>
+                );
+              });
+            }
+            return <span key={i}>{part.text}</span>;
           }
-          return <span key={i}>{part.text}</span>;
-        }
 
-        const partNorm = normalize(part.key);
-        const activeNorm = (activeKey || "").toLowerCase();
-        const isActive = activeNorm.includes(partNorm);
+          const partNorm = normalize(part.key);
+          const activeNorm = (activeKey || "").toLowerCase();
+          const isActive = activeNorm.includes(partNorm);
 
-        return (
-          <span
-            key={i}
-            className={`clickableCursor highlightened ${
-              isActive ? "highlighted-word" : ""
-            }`}
-            style={{ animationDelay: `${i * 0.1}s` }}
-            onClick={() => {
-              console.log(part.key);
-              const raw = globalThis.VerseSectionMap[part.key].original;
-              console.log(raw);
-              const m = /:(\d+)$/.exec(raw);
-              console.log(m);
-              const sec = m ? m[1] : part.key;
-              console.log(sec);
-              globalThis.HighlightStudyNoteSection(raw);
-            }}
-          >
-            {part.text}
-          </span>
-        );
-      });
+          return (
+            <span
+              key={i}
+              className={`clickableCursor highlightened ${
+                isActive ? "highlighted-word" : ""
+              }`}
+              style={{ animationDelay: `${i * 0.1}s` }}
+              onClick={() => {
+                console.log(part.key);
+                const raw = globalThis.VerseSectionMap[part.key].original;
+                console.log(raw);
+                const m = /:(\d+)$/.exec(raw);
+                console.log(m);
+                const sec = m ? m[1] : part.key;
+                console.log(sec);
+                globalThis.HighlightStudyNoteSection(raw);
+              }}
+            >
+              {part.text}
+            </span>
+          );
+        });
+      } else {
+        return verse.text;
+      }
     } else {
       if (hasWordHighlights) {
         const wordParts = wordChunksMap[verse.verseNumber] || [
@@ -3098,7 +3666,7 @@ function Section({
           className="sectionTitle"
           {...eventHandlers}
           onClick={(e) => {
-            if (shouldSuppressClick()) return; // Prevent normal click if hold already triggered
+            if (shouldSuppressClick()) return;
 
             shout("onHeadingClick", { heading });
           }}
@@ -3127,7 +3695,9 @@ function Section({
             }
 
             const [c, setC] = useState(false);
-            const isActive = verse.verseNumber.toString() === activeVerse;
+            const isVerseActive =
+              activeVerses.has(verse.verseNumber) ||
+              verse?.verseNumber.toString() === String(activeVerse);
             const maxClicked = clickedVerses?.length
               ? Math.max(...clickedVerses)
               : null;
@@ -3142,6 +3712,7 @@ function Section({
               selected[verse.verseNumber] ||
               blinker[verse.verseNumber];
             const isClicked = clickedVerses.includes(verse.verseNumber);
+
             return (
               <span key={verse.verseNumber}>
                 <span
@@ -3151,15 +3722,14 @@ function Section({
                     e.preventDefault();
                     handleVerseClick(verse.verseNumber);
                     SetShowCommands(false);
-                    // setInHold(verse.verseNumber);
-                    // setLastSelectedVerse(verse.verseNumber);
 
                     setContextData({
                       verse: verse.text,
                       reference: `${book} ${chapter}:${verse.verseNumber}`,
                       book,
                       chapter,
-                      verses: [verse.verseNumber],
+                      book,
+                      highlighted: highlighted?.[verse.verseNumber],
                     });
                     // shout("onVeresRightClick", {
                     //   verseNumber: verse.verseNumber,
@@ -3201,6 +3771,7 @@ function Section({
                     };
                     EmitData("onVerseClick", verseClickData);
                     shout("onVerseClick", verseClickData);
+                    sendSearchQueryToStudyNote(verse.text, verse.verseNumber);
                   }}
                   style={{
                     "background-color":
@@ -3249,9 +3820,7 @@ function Section({
                       : "none",
                   }}
                   className={`sectionText ${
-                    verse?.verseNumber.toString() === activeVerse.toString()
-                      ? "highlighted"
-                      : ""
+                    isVerseActive ? "highlighted" : ""
                   } ${
                     highlighted?.[`${book}-${chapter}-${verse.verseNumber}`]
                       ? "verse-highlighted"
