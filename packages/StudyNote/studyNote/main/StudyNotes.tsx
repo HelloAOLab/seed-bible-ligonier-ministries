@@ -253,11 +253,35 @@ function splitWithCitations(text, currentBookId = null, currentChapter = null) {
       );
 
       if (allValid) {
-        // Keep as one citation with all refs, use comma separator in display
-        result.push({
-          text: `(${semiChunks.join(", ")})`,
-          type: "citation",
-          contextBook: groupBookContext,
+        // Split into individual per-book citations so each is independently clickable
+        let currentGroupBookContext = groupBookContext;
+        semiChunks.forEach((ch) => {
+          // Check if this chunk has a book prefix to update context
+          const chunkBookMatch = ch.match(
+            /^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i
+          );
+          if (chunkBookMatch) {
+            const bookPart = chunkBookMatch[1].trim();
+            const normBook = bookPart.toUpperCase().replace(/\.$/, "").trim();
+            const foundBook = bibleBooks.find(
+              (b) =>
+                b.id === normBook ||
+                b.name.startsWith(normBook) ||
+                b.name.includes(normBook)
+            );
+            if (foundBook) {
+              currentGroupBookContext = foundBook.id;
+            }
+          }
+
+          // Numeric-only refs (e.g., "43:10") inherit the most recent book context
+          const isNumericOnly = /^\d+:\d+/.test(ch);
+
+          result.push({
+            text: `(${ch})`,
+            type: "citation",
+            contextBook: isNumericOnly ? currentGroupBookContext : null,
+          });
         });
         continue; // Skip to next group
       }
@@ -1616,6 +1640,53 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     }
   }
 
+  // Helper: apply underline to verse elements in thePage by verse number(s)
+  let _snUnderlineTimer = null;
+  function applyVerseUnderline(verseNumbers) {
+    // clear any previous underlines
+    document.querySelectorAll('.sn-verse-underline').forEach(el => el.classList.remove('sn-verse-underline'));
+    if (_snUnderlineTimer) { clearTimeout(_snUnderlineTimer); _snUnderlineTimer = null; }
+
+    const nums = Array.isArray(verseNumbers) ? verseNumbers : [verseNumbers];
+    let firstEl = null;
+
+    nums.forEach(vn => {
+      const el = document.getElementById(`v-${vn}`);
+      if (el) {
+        el.classList.add('sn-verse-underline');
+        if (!firstEl) firstEl = el;
+      }
+    });
+
+    // scroll to the first highlighted verse
+    if (firstEl) {
+      firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // auto-clear after 8s
+    _snUnderlineTimer = setTimeout(() => {
+      document.querySelectorAll('.sn-verse-underline').forEach(el => el.classList.remove('sn-verse-underline'));
+    }, 8000);
+  }
+
+  // Helper: wait for verse DOM element to appear after navigation, then underline
+  function waitForVerseAndUnderline(verseNumbers, maxWait = 5000) {
+    const nums = Array.isArray(verseNumbers) ? verseNumbers : [verseNumbers];
+    const firstNum = nums[0];
+    const startTime = Date.now();
+
+    function poll() {
+      const el = document.getElementById(`v-${firstNum}`);
+      if (el) {
+        applyVerseUnderline(nums);
+      } else if (Date.now() - startTime < maxWait) {
+        setTimeout(poll, 200);
+      }
+    }
+    // Start polling after a small initial delay
+    setTimeout(poll, 300);
+  }
+
   function highlightSectionNumber(rawNumber) {
     // cancel any pending clear
     if (verseTimeout) clearTimeout(verseTimeout);
@@ -1625,13 +1696,17 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
     console.log("called verse: ", numStr);
 
-    // 1) store globally
+    // 1) store globally (for study note panel underline)
     globalThis.HighlightedVerseNumber = numStr;
-
-    // 2) let React listeners know
     window.dispatchEvent(new CustomEvent("highlightedVerseChanged"));
 
-    // 4) clear after 3s
+    // 2) Apply underline in thePage via DOM (delay to run after React re-render)
+    const verseNum = parseInt(numStr, 10);
+    if (!isNaN(verseNum)) {
+      setTimeout(() => applyVerseUnderline(verseNum), 50);
+    }
+
+    // 3) clear study note highlight after 8s
     verseTimeout = setTimeout(() => {
       globalThis.HighlightedVerseNumber = "";
       window.dispatchEvent(new CustomEvent("highlightedVerseChanged"));
@@ -1643,8 +1718,22 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     if (verseTimeout) clearHighlights("verse");
     if (versesTimeout) clearTimeout(verseTimeout);
 
-    globalThis.HighlightedVerses = payload; // e.g. "5-9", [3,4,8], {start:2,end:6}, [{start:1,end:3},{start:10,end:11}]
+    globalThis.HighlightedVerses = payload;
     window.dispatchEvent(new CustomEvent("highlightedVersesChanged"));
+
+    // Build array of verse numbers for DOM underline
+    let verseNums = [];
+    if (typeof payload === 'object' && payload.start != null && payload.end != null) {
+      for (let v = payload.start; v <= payload.end; v++) verseNums.push(v);
+    } else if (Array.isArray(payload)) {
+      verseNums = payload.map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+    } else if (typeof payload === 'string') {
+      const m = payload.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (m) { for (let v = +m[1]; v <= +m[2]; v++) verseNums.push(v); }
+      else { const n = parseInt(payload, 10); if (!isNaN(n)) verseNums.push(n); }
+    }
+
+    if (verseNums.length) setTimeout(() => applyVerseUnderline(verseNums), 300);
 
     versesTimeout = setTimeout(() => {
       globalThis.HighlightedVerses = "";
@@ -1668,7 +1757,32 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
     if (globalThis.BookId === internalBookId && currentChapter === chapter) {
       setTagMask(mainBot, "shouldHighlight", true);
-      // Empty for now :D
+    } else if (globalThis.BookId === internalBookId) {
+      // Same book, different chapter: navigate in current tab
+      HandleClosePopup();
+
+      const currentTabId = ActiveTab;
+      setTagMask(mainBot, "previousTab", {
+        tabId: currentTabId,
+        bookId: globalThis.BookId,
+        chapter: currentChapter,
+        tabData: {
+          use: "thePage",
+          type: "book",
+          book: getBookNameById(globalThis.BookId),
+          bookId: globalThis.BookId,
+          chapter: currentChapter,
+          translation: "NASB95",
+        },
+      });
+
+      // Use thePage's native open to navigate within the same tab
+      await globalThis.Open(internalBookId, chapter);
+
+      // Underline the cited verses after the new chapter loads
+      const versesToHighlight = [];
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++) versesToHighlight.push(v);
+      waitForVerseAndUnderline(versesToHighlight);
     } else {
       // GlobalLoadingDataFromSN(bookId, chapter);
       HandleClosePopup();
@@ -1729,6 +1843,11 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
       await loadTabsData(internalBookId, chapter, newTabId, newTabData);
 
+      // Underline the cited verses after the new tab loads
+      const versesToHighlight = [];
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++) versesToHighlight.push(v);
+      waitForVerseAndUnderline(versesToHighlight);
+
       // const allTabsInSpace = GetTabsInSpace();
 
       // console.log("allTabsInSpace: ", allTabsInSpace.length);
@@ -1764,6 +1883,38 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
         highlightSection(String(verseNumber));
       } else {
         console.log("is bible");
+        highlightSectionNumber(String(verseNumber));
+      }
+    } else if (globalThis.BookId === internalBookId) {
+      // Same book, different chapter: navigate in current tab
+      HandleClosePopup();
+
+      const currentTabId = ActiveTab;
+      setTagMask(mainBot, "previousTab", {
+        tabId: currentTabId,
+        bookId: globalThis.BookId,
+        chapter: currentChapter,
+        tabData: {
+          use: "thePage",
+          type: "book",
+          book: getBookNameById(globalThis.BookId),
+          bookId: globalThis.BookId,
+          chapter: currentChapter,
+          translation: "NASB95",
+        },
+      });
+
+      // Use thePage's native open to navigate within the same tab
+      await globalThis.Open(internalBookId, chapter);
+
+      // Underline the cited verse(s) after the new chapter loads
+      const verseNumsToHighlight = [];
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++) verseNumsToHighlight.push(v);
+      waitForVerseAndUnderline(verseNumsToHighlight);
+
+      if (source === "study-note") {
+        scheduleStudyNoteHighlight(String(verseStart));
+      } else {
         highlightSectionNumber(String(verseNumber));
       }
     } else {
@@ -1839,6 +1990,11 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
       SetActiveTab(newTabId);
 
       await loadTabsData(internalBookId, chapter, newTabId, newTabData);
+
+      // Underline the cited verse(s) after the new tab loads
+      const verseNumsToHighlight = [];
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++) verseNumsToHighlight.push(v);
+      waitForVerseAndUnderline(verseNumsToHighlight);
 
       if (source === "study-note") {
         console.log("is study note");
@@ -1993,13 +2149,16 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     }
 
     if (mainBot?.tags.previousTab?.tabId) {
-      SetActiveTab(mainBot.tags.previousTab.tabId);
-      await loadTabsData(
-        mainBot.tags.previousTab.bookId,
-        mainBot.tags.previousTab.chapter,
-        mainBot.tags.previousTab.tabId,
-        mainBot.tags.previousTab.tabData
-      );
+      const prev = mainBot.tags.previousTab;
+
+      if (prev.bookId === globalThis.BookId) {
+        // Same book, different chapter: use thePage's native open to go back
+        await globalThis.Open(prev.bookId, prev.chapter);
+      } else {
+        // Different book: switch tab and reload
+        SetActiveTab(prev.tabId);
+        await loadTabsData(prev.bookId, prev.chapter, prev.tabId, prev.tabData);
+      }
     }
 
     removeStudyNoteBackButton();
@@ -2208,6 +2367,11 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                             ? firstVerseMatch[1]
                             : verseRef;
 
+                          // Extract the end verse number for range highlighting (e.g., "5" from "4:1-5" or "4:1–5")
+                          const rangeMatch = verseRef.match(/:(\d+)[-–](\d+)/);
+                          const startVerse = parseInt(firstVerseNum, 10);
+                          const endVerse = rangeMatch ? parseInt(rangeMatch[2], 10) : startVerse;
+
                           // Get the book name prefix (e.g., "GENESIS " from "GENESIS 1:1-2:3")
                           const before = sec.slice(0, m.index).trim() || "";
 
@@ -2215,9 +2379,13 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                             <>
                               <span
                                 className="clickableCursor"
-                                onClick={() =>
-                                  highlightSectionNumber(firstVerseNum)
-                                }
+                                onClick={() => {
+                                  if (endVerse > startVerse) {
+                                    highlightVerses({ start: startVerse, end: endVerse });
+                                  } else {
+                                    highlightSectionNumber(firstVerseNum);
+                                  }
+                                }}
                               >
                                 {before} {verseRef}
                               </span>

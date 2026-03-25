@@ -214,6 +214,15 @@
   border-bottom-color: #4F645B;
 }
 
+/* Underline applied from Study Note verse header clicks */
+.sn-verse-underline {
+  text-decoration: underline !important;
+  text-decoration-color: #4F645B !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 4px !important;
+  transition: text-decoration-color 0.3s ease-in-out;
+}
+
 .clickableCursor {
   cursor: pointer;
 }

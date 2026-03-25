@@ -2454,36 +2454,42 @@ function ThePage({
                   style={{
                     "pointer-events": isDragging ? "none" : null,
                     position: "relative",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "baseline",
+                    gap: "8px 16px",
                   }}
                   className="bookTitle"
                 >
-                  {`${data?.book} ${data?.chapter}`}{" "}
-                  <span
-                    style={{
-                      fontSize: "24px",
-                      color:
-                        "color-mix(in srgb, var(--text1), transparent 40%)",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (globalThis.setOpenSidebar && globalThis.openSidebar) {
-                        globalThis.setOpenSidebar(false);
-                        globalThis.setSelectingTranslation &&
-                          globalThis.setSelectingTranslation(false);
-                        globalThis.selectBookSelectorBook &&
-                          globalThis.selectBookSelectorBook(null);
-                      } else {
-                        globalThis.setOpenSidebar(true);
-                        globalThis.setSelectingTranslation &&
-                          globalThis.setSelectingTranslation(true);
-                        globalThis.selectBookSelectorBook &&
-                          globalThis.selectBookSelectorBook(data.bookId);
-                      }
-                    }}
-                  >{` / ${data?.shortName}`}</span>
+                  <span>
+                    {`${data?.book} ${data?.chapter}`}{" "}
+                    <span
+                      style={{
+                        fontSize: "24px",
+                        color:
+                          "color-mix(in srgb, var(--text1), transparent 40%)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (globalThis.setOpenSidebar && globalThis.openSidebar) {
+                          globalThis.setOpenSidebar(false);
+                          globalThis.setSelectingTranslation &&
+                            globalThis.setSelectingTranslation(false);
+                          globalThis.selectBookSelectorBook &&
+                            globalThis.selectBookSelectorBook(null);
+                        } else {
+                          globalThis.setOpenSidebar(true);
+                          globalThis.setSelectingTranslation &&
+                            globalThis.setSelectingTranslation(true);
+                          globalThis.selectBookSelectorBook &&
+                            globalThis.selectBookSelectorBook(data.bookId);
+                        }
+                      }}
+                    >{` / ${data?.shortName}`}</span>
+                  </span>
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    style={{ position: "absolute", right: 0, top: 0 }}
+                    style={{ marginLeft: "auto" }}
                   >
                     <MoreResources />
                   </div>

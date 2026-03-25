@@ -845,11 +845,13 @@ function SideBar({ panelsNumber }) {
     selectedTabs,
     setSelectedTabs,
     sharedTab,
+    getAllTabsInSpace,
   } = useTabsContext();
   const hidePanels =
     tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
       ?.disablePanels;
   globalThis.AddTab = addTab;
+  globalThis.GetTabsInSpace = () => getAllTabsInSpace(activeSpace);
   const { screens, setScreens, fullScreen, setFullScreen, ReSeed, setReSeed } =
     useBibleContext();
   // globalThis.setScreens = setScreens
