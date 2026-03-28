@@ -525,13 +525,13 @@ const LanguageComponent = (props: {
                     } else {
                       web
                         .get(
-                          `https://vmfnri.helloao.org/api/${value.id}/books.json`
+                          `https://ligonier.helloao.org/api/${value.id}/books.json`
                         )
                         .then((e) => {
                           ChangeTranslation(
                             value.id,
                             e.data.books,
-                            "https://vmfnri.helloao.org"
+                            "https://ligonier.helloao.org"
                           );
                           setOpenSidebar(false);
                           // if (translationMap[value.language]) {

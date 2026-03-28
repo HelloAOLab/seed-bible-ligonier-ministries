@@ -257,9 +257,7 @@ function splitWithCitations(text, currentBookId = null, currentChapter = null) {
         let currentGroupBookContext = groupBookContext;
         semiChunks.forEach((ch) => {
           // Check if this chunk has a book prefix to update context
-          const chunkBookMatch = ch.match(
-            /^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i
-          );
+          const chunkBookMatch = ch.match(/^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i);
           if (chunkBookMatch) {
             const bookPart = chunkBookMatch[1].trim();
             const normBook = bookPart.toUpperCase().replace(/\.$/, "").trim();
@@ -976,7 +974,7 @@ async function loadTabsData(bookId, chapter, tabId, tabData) {
   // ---------- Preflight: fetch chapter 1 to know total chapters ----------
   const preflight = new BibleDataManager({
     tabId: `preflight-${tabId}`,
-    translation: "NASB95",
+    translation: "ESV",
     bookId,
     chapter: 1,
   });
@@ -1021,7 +1019,7 @@ async function loadTabsData(bookId, chapter, tabId, tabData) {
       ? preflight
       : new BibleDataManager({
           tabId,
-          translation: "NASB95",
+          translation: "ESV",
           bookId,
           chapter,
         });
@@ -1366,7 +1364,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
           const mgr = new BibleDataManager({
             tabId: null,
-            translation: "NASB95",
+            translation: "ESV",
             bookId, // Use original bookId for BibleDataManager (1SA, 2SA, etc.)
             chapter,
           });
@@ -1644,28 +1642,35 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
   let _snUnderlineTimer = null;
   function applyVerseUnderline(verseNumbers) {
     // clear any previous underlines
-    document.querySelectorAll('.sn-verse-underline').forEach(el => el.classList.remove('sn-verse-underline'));
-    if (_snUnderlineTimer) { clearTimeout(_snUnderlineTimer); _snUnderlineTimer = null; }
+    document
+      .querySelectorAll(".sn-verse-underline")
+      .forEach((el) => el.classList.remove("sn-verse-underline"));
+    if (_snUnderlineTimer) {
+      clearTimeout(_snUnderlineTimer);
+      _snUnderlineTimer = null;
+    }
 
     const nums = Array.isArray(verseNumbers) ? verseNumbers : [verseNumbers];
     let firstEl = null;
 
-    nums.forEach(vn => {
+    nums.forEach((vn) => {
       const el = document.getElementById(`v-${vn}`);
       if (el) {
-        el.classList.add('sn-verse-underline');
+        el.classList.add("sn-verse-underline");
         if (!firstEl) firstEl = el;
       }
     });
 
     // scroll to the first highlighted verse
     if (firstEl) {
-      firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstEl.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     // auto-clear after 8s
     _snUnderlineTimer = setTimeout(() => {
-      document.querySelectorAll('.sn-verse-underline').forEach(el => el.classList.remove('sn-verse-underline'));
+      document
+        .querySelectorAll(".sn-verse-underline")
+        .forEach((el) => el.classList.remove("sn-verse-underline"));
     }, 8000);
   }
 
@@ -1723,14 +1728,22 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
     // Build array of verse numbers for DOM underline
     let verseNums = [];
-    if (typeof payload === 'object' && payload.start != null && payload.end != null) {
+    if (
+      typeof payload === "object" &&
+      payload.start != null &&
+      payload.end != null
+    ) {
       for (let v = payload.start; v <= payload.end; v++) verseNums.push(v);
     } else if (Array.isArray(payload)) {
-      verseNums = payload.map(n => parseInt(n, 10)).filter(n => !isNaN(n));
-    } else if (typeof payload === 'string') {
+      verseNums = payload.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
+    } else if (typeof payload === "string") {
       const m = payload.match(/^(\d+)\s*[-–]\s*(\d+)$/);
-      if (m) { for (let v = +m[1]; v <= +m[2]; v++) verseNums.push(v); }
-      else { const n = parseInt(payload, 10); if (!isNaN(n)) verseNums.push(n); }
+      if (m) {
+        for (let v = +m[1]; v <= +m[2]; v++) verseNums.push(v);
+      } else {
+        const n = parseInt(payload, 10);
+        if (!isNaN(n)) verseNums.push(n);
+      }
     }
 
     if (verseNums.length) setTimeout(() => applyVerseUnderline(verseNums), 300);
@@ -1772,7 +1785,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           book: getBookNameById(globalThis.BookId),
           bookId: globalThis.BookId,
           chapter: currentChapter,
-          translation: "NASB95",
+          translation: "ESV",
         },
       });
 
@@ -1781,7 +1794,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
       // Underline the cited verses after the new chapter loads
       const versesToHighlight = [];
-      for (let v = verseStart; v <= (verseEnd || verseStart); v++) versesToHighlight.push(v);
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++)
+        versesToHighlight.push(v);
       waitForVerseAndUnderline(versesToHighlight);
     } else {
       // GlobalLoadingDataFromSN(bookId, chapter);
@@ -1798,7 +1812,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           book: getBookNameById(globalThis.BookId),
           bookId: globalThis.BookId,
           chapter: currentChapter,
-          translation: "NASB95",
+          translation: "ESV",
         },
       });
 
@@ -1829,7 +1843,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           book: getBookNameById(internalBookId),
           bookId: internalBookId,
           chapter: chapter,
-          translation: "NASB95",
+          translation: "ESV",
         };
 
         AddTab({
@@ -1845,7 +1859,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
       // Underline the cited verses after the new tab loads
       const versesToHighlight = [];
-      for (let v = verseStart; v <= (verseEnd || verseStart); v++) versesToHighlight.push(v);
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++)
+        versesToHighlight.push(v);
       waitForVerseAndUnderline(versesToHighlight);
 
       // const allTabsInSpace = GetTabsInSpace();
@@ -1900,7 +1915,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           book: getBookNameById(globalThis.BookId),
           bookId: globalThis.BookId,
           chapter: currentChapter,
-          translation: "NASB95",
+          translation: "ESV",
         },
       });
 
@@ -1909,7 +1924,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
       // Underline the cited verse(s) after the new chapter loads
       const verseNumsToHighlight = [];
-      for (let v = verseStart; v <= (verseEnd || verseStart); v++) verseNumsToHighlight.push(v);
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++)
+        verseNumsToHighlight.push(v);
       waitForVerseAndUnderline(verseNumsToHighlight);
 
       if (source === "study-note") {
@@ -1943,7 +1959,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           book: getBookNameById(globalThis.BookId),
           bookId: globalThis.BookId,
           chapter: currentChapter,
-          translation: "NASB95",
+          translation: "ESV",
         },
       });
 
@@ -1977,7 +1993,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           book: getBookNameById(internalBookId),
           bookId: internalBookId,
           chapter: chapter,
-          translation: "NASB95",
+          translation: "ESV",
         };
 
         AddTab({
@@ -1993,7 +2009,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
       // Underline the cited verse(s) after the new tab loads
       const verseNumsToHighlight = [];
-      for (let v = verseStart; v <= (verseEnd || verseStart); v++) verseNumsToHighlight.push(v);
+      for (let v = verseStart; v <= (verseEnd || verseStart); v++)
+        verseNumsToHighlight.push(v);
       waitForVerseAndUnderline(verseNumsToHighlight);
 
       if (source === "study-note") {
@@ -2370,7 +2387,9 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                           // Extract the end verse number for range highlighting (e.g., "5" from "4:1-5" or "4:1–5")
                           const rangeMatch = verseRef.match(/:(\d+)[-–](\d+)/);
                           const startVerse = parseInt(firstVerseNum, 10);
-                          const endVerse = rangeMatch ? parseInt(rangeMatch[2], 10) : startVerse;
+                          const endVerse = rangeMatch
+                            ? parseInt(rangeMatch[2], 10)
+                            : startVerse;
 
                           // Get the book name prefix (e.g., "GENESIS " from "GENESIS 1:1-2:3")
                           const before = sec.slice(0, m.index).trim() || "";
@@ -2381,7 +2400,10 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                 className="clickableCursor"
                                 onClick={() => {
                                   if (endVerse > startVerse) {
-                                    highlightVerses({ start: startVerse, end: endVerse });
+                                    highlightVerses({
+                                      start: startVerse,
+                                      end: endVerse,
+                                    });
                                   } else {
                                     highlightSectionNumber(firstVerseNum);
                                   }
@@ -2893,7 +2915,7 @@ function StudyNotes({ id, chapter: propChapter }) {
       book: bookName,
       bookId: currentBookId,
       chapter: currentChapter,
-      translation: "NASB95",
+      translation: "ESV",
     };
   }, [chapter, bookId]);
 

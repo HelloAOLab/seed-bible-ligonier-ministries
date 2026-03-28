@@ -348,7 +348,7 @@ function ThePage({
       configBot.tags.translationId ||
       configBot.tags.translation ||
       tab.data.translation;
-    let baseUrl = "https://vmfnri.helloao.org";
+    let baseUrl = "https://ligonier.helloao.org";
     let bookId = tab.data.bookId || "GEN";
     let bookTranslationId = tab.data.translation;
     let firstBookData;
@@ -356,7 +356,7 @@ function ThePage({
     let books = [];
     if (translationId) {
       const available_translations_req = await web.get(
-        "https://vmfnri.helloao.org/api/available_translations.json"
+        "https://ligonier.helloao.org/api/available_translations.json"
       );
       let allTranslations = [];
       const translations = {};
@@ -396,7 +396,7 @@ function ThePage({
 
         if (trValue.pass && !urlId) {
           const bookData = await web.get(
-            `https://vmfnri.helloao.org/api/${trValue.value.id}/books.json`
+            `https://ligonier.helloao.org/api/${trValue.value.id}/books.json`
           );
           books = bookData.data.books;
           const book0 = bookData.data.books[0];
@@ -621,7 +621,7 @@ function ThePage({
         translation: tab.data.translation,
         bookId: tab.data.bookId,
         chapter: tab.data.chapter,
-        baseUrl: tab.data?.baseUrl || "https://vmfnri.helloao.org",
+        baseUrl: tab.data?.baseUrl || "https://ligonier.helloao.org",
       });
       setBible(bible);
 
@@ -901,7 +901,7 @@ function ThePage({
       await bible.open(
         configBot.tags.book.toUpperCase(),
         configBot.tags.chapter,
-        configBot.tags.translation || "NASB95"
+        configBot.tags.translation || "ESV"
       );
       setData(bible.data);
       configBot.tags.defaultChecked = true;
@@ -1082,7 +1082,7 @@ function ThePage({
       Update(Element.data);
       if (globalThis.GetBooksDataForMenu)
         globalThis.GetBooksDataForMenu(
-          `https://vmfnri.helloao.org/api/${Element.data.data.translation}/books.json`,
+          `https://ligonier.helloao.org/api/${Element.data.data.translation}/books.json`,
           Element.data.data.translation
         );
     }
@@ -1159,7 +1159,7 @@ function ThePage({
           book: bookId,
           bookId: bookId,
           chapter: chapter,
-          translation: translation || "NASB95",
+          translation: translation || "ESV",
         },
       });
       setTab(newTab);
@@ -1853,7 +1853,7 @@ function ThePage({
   // Preload adjacent chapters whenever the current chapter changes
   useEffect(() => {
     if (!data) return;
-    const baseUrl = data.baseUrl || "https://vmfnri.helloao.org";
+    const baseUrl = data.baseUrl || "https://ligonier.helloao.org";
 
     const preload = async (
       url: string | null | undefined,
@@ -2471,7 +2471,10 @@ function ThePage({
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (globalThis.setOpenSidebar && globalThis.openSidebar) {
+                        if (
+                          globalThis.setOpenSidebar &&
+                          globalThis.openSidebar
+                        ) {
                           globalThis.setOpenSidebar(false);
                           globalThis.setSelectingTranslation &&
                             globalThis.setSelectingTranslation(false);
@@ -3295,7 +3298,7 @@ function Section({
     const hasNonLatinChars = /[^\u0000-\u007F\u00A0-\u00FF]/.test(rawText);
 
     const ENGLISH_TRANSLATIONS = [
-      "NASB95",
+      "ESV",
       "WEB",
       "ASVBT",
       "AEB",
@@ -3365,7 +3368,7 @@ function Section({
       );
       try {
         const englishBible = new BibleDataManager({
-          translation: "NASB95",
+          translation: "ESV",
           bookId: data?.bookId || globalThis.BookId,
           chapter: chapter,
         });
