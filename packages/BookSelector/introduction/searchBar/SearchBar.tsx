@@ -29,68 +29,68 @@ const {
 const PsalmsData: BookInterface[] = [
   {
     id: "PSA",
-    translationId: "NASB95",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "1 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 41,
     firstChapterNumber: 1,
-    firstChapterApiLink: "/api/NASB95/PSA/1.json",
+    firstChapterApiLink: "/api/ESV/PSA/1.json",
     lastChapterNumber: 41,
-    lastChapterApiLink: "/api/NASB95/PSA/41.json",
+    lastChapterApiLink: "/api/ESV/PSA/41.json",
   },
   {
     id: "PSA",
-    translationId: "NASB95",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "2 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 31,
     firstChapterNumber: 42,
-    firstChapterApiLink: "/api/NASB95/PSA/42.json",
+    firstChapterApiLink: "/api/ESV/PSA/42.json",
     lastChapterNumber: 72,
-    lastChapterApiLink: "/api/NASB95/PSA/72.json",
+    lastChapterApiLink: "/api/ESV/PSA/72.json",
   },
   {
     id: "PSA",
-    translationId: "NASB95",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "3 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 17,
     firstChapterNumber: 73,
-    firstChapterApiLink: "/api/NASB95/PSA/73.json",
+    firstChapterApiLink: "/api/ESV/PSA/73.json",
     lastChapterNumber: 89,
-    lastChapterApiLink: "/api/NASB95/PSA/89.json",
+    lastChapterApiLink: "/api/ESV/PSA/89.json",
   },
   {
     id: "PSA",
-    translationId: "NASB95",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "4 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 16,
     firstChapterNumber: 90,
-    firstChapterApiLink: "/api/NASB95/PSA/90.json",
+    firstChapterApiLink: "/api/ESV/PSA/90.json",
     lastChapterNumber: 106,
-    lastChapterApiLink: "/api/NASB95/PSA/106.json",
+    lastChapterApiLink: "/api/ESV/PSA/106.json",
   },
   {
     id: "PSA",
-    translationId: "NASB95",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "5 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 20,
     firstChapterNumber: 107,
-    firstChapterApiLink: "/api/NASB95/PSA/107.json",
+    firstChapterApiLink: "/api/ESV/PSA/107.json",
     lastChapterNumber: 150,
-    lastChapterApiLink: "/api/NASB95/PSA/150.json",
+    lastChapterApiLink: "/api/ESV/PSA/150.json",
   },
 ];
 
@@ -149,8 +149,8 @@ const SearchBar = (props: { openSidebar: boolean }) => {
   const [selectedTranslation, setSelectedTranslation] = useState(
     thePage.masks?.selectedTranslation || {
       languageEnglishName: "English",
-      id: "NASB95",
-      shortName: "NASB95",
+      id: "ESV",
+      shortName: "ESV",
     }
   );
   const [showCustomTranslation, setShowCustomTranslation] = useState(false);
@@ -296,7 +296,7 @@ const SearchBar = (props: { openSidebar: boolean }) => {
     setInputValue?: (s: string) => void;
   }) => {
     const available_translations_req = await web.get(
-      "https://vmfnri.helloao.org/api/available_translations.json"
+      "https://ligonier.helloao.org/api/available_translations.json"
     );
     const { type, value, setInputValue } = props;
     if (type === "id") {
@@ -676,16 +676,16 @@ const SearchBar = (props: { openSidebar: boolean }) => {
     } else {
       web
         .get(
-          `https://vmfnri.helloao.org/api/${selectedTranslation.id}/books.json`
+          `https://ligonier.helloao.org/api/${selectedTranslation.id}/books.json`
         )
         .then((e) => {
           !thePage.masks?.translationInitiated &&
             ChangeTranslation(
               selectedTranslation.id,
               e.data.books,
-              "https://vmfnri.helloao.org"
+              "https://ligonier.helloao.org"
             );
-          // ChangeTranslation(selectedTranslation.id, book0, "https://vmfnri.helloao.org");
+          // ChangeTranslation(selectedTranslation.id, book0, "https://ligonier.helloao.org");
           setBooksData([...e.data.books]);
         })
         .catch((e) => {
@@ -728,7 +728,7 @@ const SearchBar = (props: { openSidebar: boolean }) => {
     let allTranslations = [];
     if (!thePage.masks?.allTranslations) {
       web
-        .get("https://vmfnri.helloao.org/api/available_translations.json")
+        .get("https://ligonier.helloao.org/api/available_translations.json")
         .then((request) => {
           if (request.status === 200) {
             allTranslations = request.data.translations;

@@ -11,7 +11,7 @@ interface SharePopupProps {
 const SharePopup = ({
   shareTitle,
   shareReference,
-  translation = "NASB95",
+  translation = "ESV",
   popupTitle = "Share",
   closePopupSettings,
 }) => {

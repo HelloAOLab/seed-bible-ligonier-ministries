@@ -81,10 +81,10 @@ function parseContent(content) {
 export class BibleDataManager {
   constructor({
     tabId = null,
-    translation = "NASB95",
+    translation = "ESV",
     bookId = "GEN",
     chapter = 1,
-    baseUrl = "https://vmfnri.helloao.org",
+    baseUrl = "https://ligonier.helloao.org",
   } = {}) {
     this.tabId = tabId;
     this.translation = translation;

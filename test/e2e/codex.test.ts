@@ -48,7 +48,7 @@ describe("codex tests", () => {
     await delay(1000);
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / NASB95");
+    ).toBe("Genesis 1 / ESV More Resources");
   });
 
   test("check loaded translation", async () => {
@@ -61,7 +61,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1");
+    ).toBe("Genesis 1 / su1 More Resources");
 
     const v1 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text = await v1?.evaluate((el) => el.textContent);
@@ -80,7 +80,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1");
+    ).toBe("Genesis 1 / su1 More Resources");
 
     const v1 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text = await v1?.evaluate((el) => el.textContent);
@@ -105,7 +105,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle2?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su2");
+    ).toBe("Genesis 1 / su2 More Resources");
     const v1_2 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text2 = await v1_2?.evaluate((el) => el.textContent);
     expect(mergeWhitespace(v1Text2)).toMatch(
@@ -137,7 +137,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle3?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1");
+    ).toBe("Genesis 1 / su1 More Resources");
 
     const v1_3 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text3 = await v1_3?.evaluate((el) => el.textContent);

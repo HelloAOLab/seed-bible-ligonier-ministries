@@ -240,7 +240,7 @@ describe("bookSelector tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1");
+    ).toBe("Genesis 1 / su1 More Resources");
 
     const v1 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text = await v1?.evaluate((el) => el.textContent);
