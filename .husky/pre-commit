@@ -1,1 +1,8 @@
+# Scrub study note URLs from bot.aux before committing
+BOT_AUX="packages/StudyNote/studyNote/main/studyNote.main.bot.aux"
+if git diff --cached --name-only | grep -q "$BOT_AUX"; then
+  sed -i '' 's|"https://[^"]*"|"***REMOVED***"|g' "$BOT_AUX"
+  git add "$BOT_AUX"
+fi
+
 pnpm pretty-quick --staged

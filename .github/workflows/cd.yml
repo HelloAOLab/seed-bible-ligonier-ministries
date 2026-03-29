@@ -28,6 +28,11 @@ jobs:
         run: |
           corepack enable
           pnpm install
+      - name: Inject Study Note Tags
+        run: |
+          pnpm inject-study-note-tags
+        env:
+          LIGONIER_STUDY_NOTE_TAGS: ${{ secrets.LIGONIER_STUDY_NOTE_TAGS }}
       - name: Package
         run: |
           pnpm package
