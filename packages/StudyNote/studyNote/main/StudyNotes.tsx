@@ -2148,18 +2148,25 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     // fade out right after click, then clear
     clearBackTimers();
     setBackFabFading(true);
+    setBackFabHovering(false);
+    // Immediately mark as "close" so the hotspot is removed right away
+    // (prevents the ghost hotspot from re-triggering during the fade)
+    setLastDismissReason("close");
     backCleanupTimerRef.current = setTimeout(() => {
       setTagMask(mainBot, "previousTab", {});
       setTagMask(mainBot, "_prevTabCache", {});
       setShowBackFab(false);
       setBackFabFading(false);
-      setLastDismissReason("close");
     }, 400);
   };
 
   globalThis.RemoveStudyNoteBackButton = removeStudyNoteBackButton;
 
   async function handleBackFabClick() {
+    // Reset hover state immediately — mouseLeave won't fire because the
+    // button is about to be removed from the DOM.
+    setBackFabHovering(false);
+
     if (mainBot?.tags._prevTabCache && !mainBot?.tags.previousTab?.tabId) {
       // ignore cache when user explicitly clicks: treat as normal back using cache if needed
       setTagMask(mainBot, "previousTab", mainBot.tags._prevTabCache);
