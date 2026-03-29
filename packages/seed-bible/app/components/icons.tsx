@@ -244,6 +244,7 @@ export const ClientLogo = ({ handleOpenClientSite, url, alt }) => {
         width: "36px",
         height: "36px",
         cursor: "pointer",
+        mixBlendMode: "multiply",
       }}
     />
   );

@@ -261,7 +261,7 @@
         "enabled": true,
         "clientName": "ligonier2",
         "clientLogo": "https://res.cloudinary.com/dfbtwwa8p/image/upload/v1771444059/6mlAajOWLeNAAAAAElFTkSuQmCC_ruqkxe.png",
-        "clientSite": "https://www.canadahelps.org/en/charities/ligonier-ministries-canada/"
+        "clientSite": "https://ligonier.org"
       },
       "mobileBookLogo": "https://res.cloudinary.com/dpudrufae/image/upload/v1773678582/book_gkk9bt.svg",
       "titlesAndIcon": {
@@ -443,7 +443,7 @@
             "yourAccount": { "enabled": true }
           }
         },
-         "accountOptions": {
+        "accountOptions": {
           "enabled": true,
           "showDivider": false,
           "items": {
