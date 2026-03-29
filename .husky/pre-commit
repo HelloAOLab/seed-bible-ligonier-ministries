@@ -1,3 +1,7 @@
+# Load nvm so pnpm is available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
 # Scrub study note URLs from bot.aux before committing
 BOT_AUX="packages/StudyNote/studyNote/main/studyNote.main.bot.aux"
 if git diff --cached --name-only | grep -q "$BOT_AUX"; then
