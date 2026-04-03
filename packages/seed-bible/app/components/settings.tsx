@@ -34,7 +34,8 @@ import {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SETTINGS CONTEXT - Shared state for all setting components
 // ═══════════════════════════════════════════════════════════════════════════════
-const SettingsContext = createContext(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SettingsContext = createContext<any>(null);
 
 export const useSettingsContext = () => {
   const ctx = useContext(SettingsContext);
@@ -70,7 +71,7 @@ const SettingItemWrapper = ({
               e.stopPropagation();
               toggleVisibility(fullKey);
             }}
-            title={isHidden ? "Show item" : "Hide item"}
+            title={isHidden ? t("showItem") : t("hideItem")}
           >
             <span className="material-symbols-outlined">
               {isHidden ? "visibility" : "visibility_off"}
@@ -400,12 +401,12 @@ const BookOrderSetting = () => {
     {
       value: "tanak",
       title: "TaNak order",
-      desc: "The original, unified, three-part ordering of the Hebrew Bible",
+      desc: t("tanakOrderDesc"),
     },
     {
       value: "traditional",
       title: "Traditional order",
-      desc: "The ordering found in most modern Christian Bibles",
+      desc: t("traditionalOrderDesc"),
     },
   ];
 
@@ -708,9 +709,7 @@ export const SpaceDescriptionSetting = ({ itemKey = "spaceDescription" }) => {
     startEditingLabel,
     finishEditingLabel,
   } = useSettingsContext();
-  const [description, setDescription] = useState(
-    "Settings for your space. Customise toolbar, theme and add extensions."
-  );
+  const [description, setDescription] = useState(t("settingsForYourSpace"));
   const isHidden = visibility[itemKey] === false;
 
   if (isHidden && !editMode) return null;
@@ -878,7 +877,7 @@ export const AccountSetting = ({
                 marginBottom: "2px",
               }}
             >
-              Anonymous
+              {t("anonymous")}
             </div>
             <div style={{ fontSize: "12px", color: "#9ca3af" }}>
               ID:{configBot.id.slice(0, 12)}
@@ -914,7 +913,7 @@ export const AccountSetting = ({
             }}
             className="create-profile-btn"
           >
-            {userData ? "Open account settings" : " + Create profile"}
+            {userData ? t("openAccountSettings") : t("createProfileBtn")}
           </button>
         </div>
       )}
@@ -989,7 +988,7 @@ export const NotificationsSetting = ({
 // ---------- Keep Screen Awake ----------
 export const KeepScreenAwakeSetting = ({
   itemKey = "keepScreenAwake",
-  labelKey = "keepScreenAwake",
+  labelKey = "keepDeviceAwaken",
 }) => {
   const { t, editMode, labels, visibility } = useSettingsContext();
   const label = labels[itemKey] || t(labelKey);
@@ -1037,6 +1036,107 @@ export const KeepScreenAwakeSetting = ({
         </div>
         <div className={`settings-toggle ${isActive ? "active" : ""}`}>
           <div className="settings-toggle-knob" />
+        </div>
+      </div>
+    </SettingItemWrapper>
+  );
+};
+
+// ---------- UI Text Size ----------
+const UI_TEXT_SIZES = [
+  { label: "S", value: 0.85 },
+  { label: "M", value: 1 },
+  { label: "L", value: 1.15 },
+  { label: "XL", value: 1.3 },
+];
+
+export const UITextSizeSetting = ({
+  itemKey = "uiTextSize",
+  labelKey = "uiTextSize",
+}) => {
+  const { t, editMode, labels, visibility } = useSettingsContext();
+  const label = labels[itemKey] || t(labelKey);
+  const isHidden = visibility[itemKey] === false;
+
+  const saved = globalThis.changes?.uiTextSize || 1;
+  const [sizeIndex, setSizeIndex] = useState(() =>
+    Math.max(
+      UI_TEXT_SIZES.findIndex((s) => s.value === saved),
+      0
+    )
+  );
+
+  const applyZoom = (zoom) => {
+    document
+      .querySelectorAll(
+        ".settings-content, .themeSettings-container, .profileSection"
+      )
+      .forEach((el) => {
+        (el as HTMLElement).style.zoom = String(zoom);
+      });
+    document.querySelectorAll(".settings-sidebar").forEach((el) => {
+      (el as HTMLElement).style.width = `${Math.round(280 * zoom)}px`;
+    });
+  };
+
+  // Restore saved size on mount
+  useEffect(() => {
+    if (saved !== 1) applyZoom(saved);
+  }, []);
+
+  const apply = (index) => {
+    setSizeIndex(index);
+    const zoom = UI_TEXT_SIZES[index].value;
+    if (!globalThis.changes) globalThis.changes = {};
+    globalThis.changes.uiTextSize = zoom;
+    applyZoom(zoom);
+  };
+
+  if (isHidden && !editMode) return null;
+
+  return (
+    <SettingItemWrapper itemKey={itemKey}>
+      <div
+        className="settings-item"
+        style={{ justifyContent: "space-between" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="item-icon">
+            <span className="material-symbols-outlined">format_size</span>
+          </div>
+          <div className="item-text">{label}</div>
+        </div>
+        <div style={{ display: "flex", gap: "4px" }}>
+          {UI_TEXT_SIZES.map((size, i) => (
+            <button
+              key={size.label}
+              onClick={() => apply(i)}
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "6px",
+                border:
+                  sizeIndex === i
+                    ? "2px solid var(--spaceSelection)"
+                    : "1px solid #ccc",
+                backgroundColor:
+                  sizeIndex === i
+                    ? "var(--spaceSelection)"
+                    : "var(--pageBackground, #fff)",
+                color: sizeIndex === i ? "#fff" : "var(--pageTextColor)",
+                cursor: "pointer",
+                fontSize: `${size.value - 2}px`,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                fontFamily: "inherit",
+              }}
+            >
+              {size.label}
+            </button>
+          ))}
         </div>
       </div>
     </SettingItemWrapper>
@@ -1178,7 +1278,10 @@ export const SubscriptionsSetting = ({
             className="softText"
             style={{ marginBottom: "8px", textAlign: "center" }}
           >
-            {`You have ${subscribedUsers.length} subscription${subscribedUsers.length > 1 ? "s" : ""}`}
+            {t("youHaveNSubscriptions").replace(
+              "{{count}}",
+              String(subscribedUsers.length)
+            )}
           </div>
           {subscribedUsers.map((user) => (
             <div
@@ -1210,7 +1313,7 @@ export const SubscriptionsSetting = ({
                 )}
                 <div>
                   <div style={{ fontWeight: "500", fontSize: "14px" }}>
-                    {user.name || "Unknown User"}
+                    {user.name || t("unknownUser")}
                   </div>
                   <div className="softText" style={{ fontSize: "11px" }}>
                     {user.id.slice(0, 16)}...
@@ -1245,7 +1348,7 @@ export const SubscriptionsSetting = ({
         </div>
       ) : (
         <div style={{ justifyContent: "center" }} className="activeAccount">
-          <div className="softText">You haven't subscribed to anyone yet.</div>
+          <div className="softText">{t("noSubscriptionsYet")}</div>
         </div>
       )}
 
@@ -1258,17 +1361,17 @@ export const SubscriptionsSetting = ({
             onClick={() => setSubscribe(true)}
             className="create-profile-btn"
           >
-            + Add Subscription
+            {t("addSubscription")}
           </button>
         ) : (
           <div style={{ width: "100%" }}>
             <div style={{ marginBottom: "8px" }} className="blackText">
-              Enter User ID
+              {t("enterUserID")}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <input
                 style={{ height: "32px", flex: 1 }}
-                placeholder="Enter user ID..."
+                placeholder={t("enterUserId")}
                 className="selectInput"
                 value={searchFor}
                 disabled={subscribing}
@@ -1532,6 +1635,7 @@ const COMPONENT_REGISTRY = {
   permissions: PermissionsSetting,
   notifications: NotificationsSetting,
   keepScreenAwake: KeepScreenAwakeSetting,
+  uiTextSize: UITextSizeSetting,
   subscriptions: SubscriptionsSetting,
   language: LanguageSetting,
   reseedToggle: ReSeedToggleSetting,
@@ -1613,6 +1717,23 @@ const SettingsSidebar = ({ config }) => {
   useEffect(() => {
     setEditMode(ReSeed);
   }, [ReSeed]);
+
+  // Apply saved UI zoom on mount so it works regardless of which tab is active
+  useEffect(() => {
+    const savedZoom = globalThis.changes?.uiTextSize || 1;
+    if (savedZoom !== 1) {
+      document
+        .querySelectorAll(
+          ".settings-content, .themeSettings-container, .profileSection"
+        )
+        .forEach((el) => {
+          (el as HTMLElement).style.zoom = String(savedZoom);
+        });
+      document.querySelectorAll(".settings-sidebar").forEach((el) => {
+        (el as HTMLElement).style.width = `${Math.round(280 * savedZoom)}px`;
+      });
+    }
+  }, []);
 
   // Initialize visibility from config
   useEffect(() => {

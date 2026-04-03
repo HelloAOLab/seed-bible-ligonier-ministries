@@ -3,7 +3,6 @@
   width: 280px;
   /* height: 100dvh; */
   position: relative;
-
   /* transition: width 0.3s ease; */
   /* background-color: transparent; */
   font-family: "Satoshi", sans-serif;
@@ -188,17 +187,12 @@
 .material-symbols-outlined.addIconCollapsed {
   width: 50px;
   background: var(--whitegray-color);
-  background-color: #ffffff !important;
   border-radius: 5px;
   cursor: pointer;
   height: 45px;
   align-items: center;
   justify-content: center;
   display: flex;
-}
-.addIcon.material-symbols-outlined {
-  color: var(--primary-color) !important;
-  filter: none !important;
 }
 
 .tabs-collapsed {
@@ -273,7 +267,7 @@
   height: 45px;
   padding: 0;
   padding-top: 3px;
-  background: #d9d9d9;
+  background: transparent;
   border: var(--simpleTabText, black) 1px solid;
   color: var(--simpleTabText, black);
 }
@@ -293,8 +287,8 @@
 }
 
 .addIcon {
-  background-color: var(--addButtonBackground, var(--primaryButton)) !important;
-  color: var(--addButtonIcon, var(--primaryButtonColor)) !important;
+  background-color: var(--addButtonIcon) !important;
+  color: var(--primaryColor) !important;
   border-radius: 5px;
   cursor: pointer;
 }
@@ -302,12 +296,11 @@
 .profileSection {
   position: absolute;
   left: 0;
-  padding: 15px;
   bottom: 0px;
   display: flex;
   flex-direction: row;
   gap: 10px;
-  justify-content: flex-start;
+  justify-content: space-around;
   width: 280px !important;
   background: var(--panelBackground, --panelBackground) !important;
   align-items: center;

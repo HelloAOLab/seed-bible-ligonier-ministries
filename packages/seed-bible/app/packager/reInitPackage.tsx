@@ -155,7 +155,7 @@ async function SetUpApplication(applicationFunction, bot, toolbarConfig) {
 
   // Optional: sanity render without shadowing the variable
   try {
-    const _testEl = <App />; // if this throws, it's not a valid JSX component
+    const _testEl = <App />; // if this throws, it’s not a valid JSX component
   } catch (err) {
     os.log("Component render test failed", err);
     errorInstall = true;
@@ -188,18 +188,14 @@ async function SetUpApplicationWithoutApp(toolbarConfig, bot) {
   };
 
   const toolbarOption = {
-    icon: toolbarConfig.isCurrentIcon
-      ? toolbarConfig.icon
-      : !toolbarConfig?.iconUrl
-        ? toolbarConfig.icon
-        : toolbarConfig.iconUrl,
+    icon: !toolbarConfig?.iconUrl ? toolbarConfig.icon : toolbarConfig.iconUrl,
     label: toolbarConfig.label,
     hasToggle: toolbarConfig.hasToggle,
     active:
       typeof toolbarConfig?.active === "boolean" ? toolbarConfig.active : true,
-    isCurrentIcon: toolbarConfig.isCurrentIcon,
     showInPageToolbar: toolbarConfig.showInPageToolbar,
     showInStarterToolbar: toolbarConfig.showInStarterToolbar,
+
     onHold: runFn,
     onClick: runFn,
     isImg: !!toolbarConfig?.iconUrl,
