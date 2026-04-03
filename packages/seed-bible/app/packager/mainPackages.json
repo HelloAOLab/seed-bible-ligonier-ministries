@@ -1,7 +1,1 @@
-[
-    "BookSelector",
-    "StudyNote",
-    "Playlist",
-    "Location",
-    "Bible Stack"
-]
+["BookSelector", "Playlist", "StudyNote"]

@@ -7,7 +7,12 @@ import { useMouseMove } from "app.hooks.mouseMove";
 import SurroundingDivs from "app.components.surroundingDivs";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
-import { BurgerMenuIcon, MoreIcon, TabsIcon } from "app.components.icons";
+import {
+  BurgerMenuIcon,
+  MoreIcon,
+  TabsIcon,
+  LigonierSeedBibleIcon,
+} from "app.components.icons";
 
 const G = globalThis as any;
 
@@ -301,14 +306,29 @@ export function Toolbar() {
               className="mobile-center-logo"
             >
               <div className="logo-container">
-                <img
-                  src={
-                    mobileBookLogo ||
-                    "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
-                  }
-                  alt="Seed Bible"
-                  className="seed-bible-logo"
-                />
+                {getSettingsPreset() === "ligonier" ||
+                mobileBookLogo === "LigonierSeedBibleIcon" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "32px",
+                      height: "32px",
+                    }}
+                  >
+                    <LigonierSeedBibleIcon />
+                  </div>
+                ) : (
+                  <img
+                    src={
+                      mobileBookLogo ||
+                      "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
+                    }
+                    alt="Seed Bible"
+                    className="seed-bible-logo"
+                  />
+                )}
               </div>
             </div>
 
@@ -326,7 +346,20 @@ export function Toolbar() {
                           setActiveMoreApp(tool.label);
                         }}
                       >
-                        {tool?.isImg ? (
+                        {tool?.icon === "LigonierSeedBibleIcon" ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "20px",
+                              height: "20px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <LigonierSeedBibleIcon />
+                          </div>
+                        ) : tool?.isImg ? (
                           <img
                             src={tool.icon}
                             style={{ width: "20px" }}
@@ -344,7 +377,7 @@ export function Toolbar() {
                     ))}
                   </div>
                 )}
-                {/* <button
+                <button
                   className="mobile-navbar-btn more-btn"
                   title={activeMoreApp ? "Close" : "More"}
                   aria-label={activeMoreApp ? "Close" : "More"}
@@ -366,11 +399,16 @@ export function Toolbar() {
                     ) : (
                       <MoreIcon color="var(--text1)" />
                     )}
-                    <span className="mobile-btn-label" style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}>
+                    <span
+                      className="mobile-btn-label"
+                      style={{
+                        zoom: (globalThis as any).changes?.uiTextSize || 1,
+                      }}
+                    >
                       {activeMoreApp ? "Close" : "More"}
                     </span>
                   </div>
-                </button> */}
+                </button>
               </div>
             ) : (
               <div className="more-btn-wrapper">
@@ -511,7 +549,19 @@ export function Toolbar() {
                       }}
                       onMouseLeave={() => clearTimeout(holdTimeoutRef.current)}
                     >
-                      {tool.isImg ? (
+                      {tool.icon === "LigonierSeedBibleIcon" ? (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "25px",
+                            height: "25px",
+                          }}
+                        >
+                          <LigonierSeedBibleIcon />
+                        </div>
+                      ) : tool.isImg ? (
                         <img
                           src={tool.icon}
                           style={{ width: "25px" }}

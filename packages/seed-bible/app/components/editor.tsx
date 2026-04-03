@@ -196,14 +196,17 @@ function splitTextWithCitations(text) {
 
   for (let i = 0; i < parts.length; i++) {
     if (parts[i]) {
-      result.push({ text: parts[i], type: 'plain' });
+      result.push({ text: parts[i], type: "plain" });
     }
     if (matches[i]) {
       // Simple heuristic: if it contains numbers and looks like a citation, mark it
       const inner = matches[i].slice(1, -1).trim();
       const hasNumbers = /\d/.test(inner);
       const looksLikeCitation = hasNumbers && /[\d:]/.test(inner);
-      result.push({ text: matches[i], type: looksLikeCitation ? 'citation' : 'plain' });
+      result.push({
+        text: matches[i],
+        type: looksLikeCitation ? "citation" : "plain",
+      });
     }
   }
 
@@ -220,7 +223,7 @@ function renderStudyNotesToHTML(studyNote) {
   let html = `<div class="judeTextPage">`;
   studyNote.forEach((book, bookIdx) => {
     html += `<div class="studyTextContainer">`;
-    html += `<h2 class="mainHeader"></h2>`;
+    html += `<h2 class="mainHeader">${book.header}</h2>`;
     if (book && book.sections) {
       book.sections.forEach((verse, vIdx) => {
         html += `<div class="verse">`;
@@ -234,8 +237,8 @@ function renderStudyNotesToHTML(studyNote) {
         } else {
           const bookNum = m[1];
           const verseNum = m[2];
-          const tail = m[3] || '';
-          const before = sec.slice(0, m.index).trim() || '';
+          const tail = m[3] || "";
+          const before = sec.slice(0, m.index).trim() || "";
 
           // Before text + chapter:verse as clickable span
           if (before) {
@@ -252,21 +255,22 @@ function renderStudyNotesToHTML(studyNote) {
         html += `</h3>`;
 
         // Split content with citations and render properly
-        const contentText = Array.isArray(verse.content) ? verse.content.join(' ') : String(verse.content || '');
+        const contentText = Array.isArray(verse.content)
+          ? verse.content.join(" ")
+          : String(verse.content || "");
         const chunks = splitTextWithCitations(contentText);
 
         chunks.forEach((chunk) => {
-          if (chunk.type === 'plain') {
+          if (chunk.type === "plain") {
             html += `<span class="verseText">${chunk.text}</span>`;
           } else {
             html += `<span class="studyCitation clickableCursor">${chunk.text}</span>`;
           }
         });
-
         html += `</div>`;
       });
+      html += `</div>`;
     }
-    html += `</div>`;
   });
   html += `</div>`;
   return html;
@@ -860,7 +864,7 @@ export function ResponsiveToolbar({ editor }) {
           key="bold"
           onClick={() => globalThis.EditorFns?.bold()}
           style={iconButtonStyle}
-          title="Bold"
+          title={t("bold")}
         >
           <span className="material-symbols-outlined">format_bold</span>
         </button>
@@ -873,7 +877,7 @@ export function ResponsiveToolbar({ editor }) {
           key="italic"
           onClick={() => globalThis.EditorFns?.italic()}
           style={iconButtonStyle}
-          title="Italic"
+          title={t("italic")}
         >
           <span className="material-symbols-outlined">format_italic</span>
         </button>
@@ -886,7 +890,7 @@ export function ResponsiveToolbar({ editor }) {
           key="underline"
           onClick={() => globalThis.EditorFns?.underline()}
           style={iconButtonStyle}
-          title="Underline"
+          title={t("underline")}
         >
           <span className="material-symbols-outlined">format_underlined</span>
         </button>
@@ -899,7 +903,7 @@ export function ResponsiveToolbar({ editor }) {
           key="strikethrough"
           onClick={() => globalThis.EditorFns?.strikethrough()}
           style={iconButtonStyle}
-          title="Strikethrough"
+          title={t("strikethrough")}
         >
           <span className="material-symbols-outlined">
             format_strikethrough
@@ -914,7 +918,7 @@ export function ResponsiveToolbar({ editor }) {
           key="superscript"
           onClick={() => globalThis.EditorFns?.superscript()}
           style={iconButtonStyle}
-          title="Superscript"
+          title={t("superscript")}
         >
           <span className="material-symbols-outlined">superscript</span>
         </button>
@@ -927,7 +931,7 @@ export function ResponsiveToolbar({ editor }) {
           key="subscript"
           onClick={() => globalThis.EditorFns?.subscript()}
           style={iconButtonStyle}
-          title="Subscript"
+          title={t("subscript")}
         >
           <span className="material-symbols-outlined">subscript</span>
         </button>
@@ -976,7 +980,7 @@ export function ResponsiveToolbar({ editor }) {
           key="attach"
           onClick={() => uploadAttachmentAndInsert()}
           style={iconButtonStyle}
-          title="Attach File"
+          title={t("attachFile")}
         >
           <span className="material-symbols-outlined">attach_file</span>
         </button>
@@ -989,7 +993,7 @@ export function ResponsiveToolbar({ editor }) {
           key="image"
           onClick={() => uploadImageAndInsert()}
           style={iconButtonStyle}
-          title="Insert Image"
+          title={t("insertImage")}
         >
           <span className="material-symbols-outlined">image</span>
         </button>
@@ -1008,7 +1012,7 @@ export function ResponsiveToolbar({ editor }) {
             value={textColor}
             onChange={(e) => handleTextColorChange(e.target.value)}
             style={colorInputStyle}
-            title="Text Color"
+            title={t("textColor")}
           />
         </div>
       ),
@@ -1026,7 +1030,7 @@ export function ResponsiveToolbar({ editor }) {
             value={bgColor}
             onChange={(e) => handleBgColorChange(e.target.value)}
             style={colorInputStyle}
-            title="Highlight Color"
+            title={t("highlightColor")}
           />
         </div>
       ),
@@ -1075,7 +1079,7 @@ export function ResponsiveToolbar({ editor }) {
           key="undo"
           onClick={() => globalThis.EditorFns?.undo()}
           style={iconButtonStyle}
-          title="Undo"
+          title={t("undo")}
         >
           <span className="material-symbols-outlined">undo</span>
         </button>
@@ -1088,7 +1092,7 @@ export function ResponsiveToolbar({ editor }) {
           key="redo"
           onClick={() => globalThis.EditorFns?.redo()}
           style={iconButtonStyle}
-          title="Redo"
+          title={t("redo")}
         >
           <span className="material-symbols-outlined">redo</span>
         </button>
@@ -1101,7 +1105,7 @@ export function ResponsiveToolbar({ editor }) {
           key="clear"
           onClick={() => globalThis.EditorFns?.clear()}
           style={iconButtonStyle}
-          title="Clear Formatting"
+          title={t("clearFormatting")}
         >
           <span className="material-symbols-outlined">format_clear</span>
         </button>
@@ -1114,7 +1118,7 @@ export function ResponsiveToolbar({ editor }) {
           key="print"
           onClick={() => window.print()}
           style={iconButtonStyle}
-          title="Print"
+          title={t("print")}
         >
           <span className="material-symbols-outlined">print</span>
         </button>
@@ -1133,7 +1137,7 @@ export function ResponsiveToolbar({ editor }) {
             el.style.paddingTop = `${val}px`;
             el.style.paddingBottom = `${val}px`;
           }}
-          placeholder="Vertical"
+          placeholder={t("vertical")}
         />
       ),
     },
@@ -1150,7 +1154,7 @@ export function ResponsiveToolbar({ editor }) {
             el.style.paddingLeft = `${val}px`;
             el.style.paddingRight = `${val}px`;
           }}
-          placeholder="Horizontal"
+          placeholder={t("horizontal")}
         />
       ),
     },
@@ -1165,7 +1169,7 @@ export function ResponsiveToolbar({ editor }) {
           key="download"
           onClick={() => globalThis.EditorFns?.exportJson()}
           style={iconButtonStyle}
-          title="Download"
+          title={t("download")}
         >
           <span className="material-symbols-outlined">file_download</span>
         </button>
@@ -1178,7 +1182,7 @@ export function ResponsiveToolbar({ editor }) {
           key="upload"
           onClick={() => uploadFile()}
           style={iconButtonStyle}
-          title="Upload"
+          title={t("upload")}
         >
           <span className="material-symbols-outlined">upload_file</span>
         </button>
@@ -1194,7 +1198,7 @@ export function ResponsiveToolbar({ editor }) {
             setDraftOrder(priority);
             setShowTuning(true);
           }}
-          title="Customize toolbar"
+          title={t("customizeToolbar")}
           style={iconButtonStyle}
         >
           <span className="material-symbols-outlined">tune</span>
@@ -1304,7 +1308,7 @@ export function ResponsiveToolbar({ editor }) {
           <button
             className="overflow-button"
             onClick={() => setShowOverflow((v) => !v)}
-            title="More"
+            title={t("more")}
           >
             <span className="material-symbols-outlined">more_vert</span>
           </button>
@@ -1341,12 +1345,18 @@ export function ResponsiveToolbar({ editor }) {
                 <div key={`draft-${id}`} className="tuning-row">
                   <div className="tuning-id">{id}</div>
                   <div className="tuning-arrows">
-                    <button onClick={() => moveInDraft(idx, -1)} title="Up">
+                    <button
+                      onClick={() => moveInDraft(idx, -1)}
+                      title={t("moveUp")}
+                    >
                       <span className="material-symbols-outlined">
                         keyboard_arrow_up
                       </span>
                     </button>
-                    <button onClick={() => moveInDraft(idx, 1)} title="Down">
+                    <button
+                      onClick={() => moveInDraft(idx, 1)}
+                      title={t("moveDown")}
+                    >
                       <span className="material-symbols-outlined">
                         keyboard_arrow_down
                       </span>
@@ -1392,7 +1402,7 @@ function TextSelect({ selectedText, onTextSelect }) {
       }}
     >
       <option value="all">All text</option>
-      <option value="headings">Headings</option>
+      <option value="headings">{t("headings")}</option>
       <option value="verses">Verse</option>
     </select>
   );
@@ -1462,10 +1472,10 @@ function FontStyleSelect({ onFontStyleChange }) {
         fontSize: "12px",
       }}
     >
-      <option value="normal">Normal</option>
-      <option value="bold">Bold</option>
-      <option value="italic">Italic</option>
-      <option value="light">Light</option>
+      <option value="normal">{t("normal")}</option>
+      <option value="bold">{t("bold")}</option>
+      <option value="italic">{t("italic")}</option>
+      <option value="light">{t("light")}</option>
     </select>
   );
 }
