@@ -4,7 +4,7 @@ import { Space } from "app.components.icons";
 // const tabsData = localStorage.masks.tabsData
 // if (!tabsData) {
 //     localStorage.masks.tabsData = [
-//         { id: uuid(), taken: false, data: { use: 'thePage', type: 'book', book: 'Genesis', bookId: 'GEN', chapter: 10, translation: 'ESV' } },
+//         { id: uuid(), taken: false, data: { use: 'thePage', type: 'book', book: 'Genesis', bookId: 'GEN', chapter: 10, translation: 'AAB' } },
 //     ]
 // }
 import { useBibleContext } from "app.hooks.bibleVariables";
@@ -16,7 +16,10 @@ export function TabsProvider({ children }) {
   const [spaces, setSpaces] = useState([
     {
       id: "1",
-      name: "(Optional) Add space name",
+      name:
+        typeof t !== "undefined"
+          ? t("optionalAddSpaceName")
+          : "(Optional) Add space name",
       settings: {
         theme: {},
         toolbar: {
@@ -25,7 +28,7 @@ export function TabsProvider({ children }) {
         text: {},
       },
       folders: [
-        // { id: uuid(), name: 'Folder 1', tabs: [{ id: uuid(), taken: false, data: { use: 'thePage', first: true, type: 'book', book: 'Genesis', bookId: 'GEN', chapter: 1, translation: 'ESV' } }] }
+        // { id: uuid(), name: 'Folder 1', tabs: [{ id: uuid(), taken: false, data: { use: 'thePage', first: true, type: 'book', book: 'Genesis', bookId: 'GEN', chapter: 1, translation: 'AAB' } }] }
       ],
       tabs: [
         {
@@ -46,7 +49,10 @@ export function TabsProvider({ children }) {
     },
     {
       id: "2",
-      name: "(Optional) Add space name",
+      name:
+        typeof t !== "undefined"
+          ? t("optionalAddSpaceName")
+          : "(Optional) Add space name",
       settings: {
         theme: {},
         toolbar: {
@@ -74,7 +80,10 @@ export function TabsProvider({ children }) {
     },
     {
       id: "3",
-      name: "(Optional) Add space name",
+      name:
+        typeof t !== "undefined"
+          ? t("optionalAddSpaceName")
+          : "(Optional) Add space name",
       settings: {
         theme: {},
         toolbar: {
@@ -119,6 +128,7 @@ export function TabsProvider({ children }) {
     const activeTabData = tabs.find((ele) => ele.id === activeTab)?.data;
 
     globalThis.CurrentActiveTabData = activeTabData;
+    shout("oncurrentActiveTabDataUpdated");
 
     if (globalThis.SetCurrentBook && !!activeTabData) {
       globalThis.SetCurrentBook(activeTabData);

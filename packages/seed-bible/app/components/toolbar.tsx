@@ -8,10 +8,10 @@ import SurroundingDivs from "app.components.surroundingDivs";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
 import {
-  getIcon,
   BurgerMenuIcon,
   MoreIcon,
   TabsIcon,
+  LigonierSeedBibleIcon,
 } from "app.components.icons";
 
 const G = globalThis as any;
@@ -40,12 +40,14 @@ export function Toolbar() {
   const {
     sidebarMode,
     openOnMobile,
-    isMobile,
     setSidebarWidth,
     setOpenOnMobile,
     setCollapsed,
     setSideBarMode,
   }: any = useSideBarContext();
+
+  // Hide nav arrows when a non-default sidebar panel (e.g. settings) is open
+  const sidebarPanelOpen = sidebarMode !== "default";
 
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const moreMenuRef = useRef<any>(null);
@@ -67,6 +69,8 @@ export function Toolbar() {
   }, [showMoreMenu]);
 
   const [activeMoreApp, setActiveMoreApp] = useState(G.ActiveMoreApp || null);
+  globalThis.setActiveMoreApp = setActiveMoreApp;
+  globalThis.ActiveMoreApp = activeMoreApp;
   const [activeApp, setActiveApp] = useState(G.makingApp || null);
 
   // Watch globalThis.makingApp so arrows hide for ANY open app, not just More-button apps
@@ -231,23 +235,28 @@ export function Toolbar() {
           {/* Mobile Bottom Navbar */}
           <div className="mobile-bottom-navbar">
             <button
-              style={{ display: showNavArrows && !activeApp ? "" : "none" }}
+              style={{
+                display:
+                  showNavArrows && !activeApp && !sidebarPanelOpen
+                    ? ""
+                    : "none",
+              }}
               className="mobile-navbar-arrow left-arrow"
               onClick={() =>
                 isRTL
                   ? navFunctions?.openNextChapter()
                   : navFunctions?.openPrevChapter()
               }
-              title="Previous"
-              aria-label="Previous chapter"
+              title={t("previous")}
+              aria-label={t("previousChapter")}
             >
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
 
             <button
               className="mobile-navbar-btn today-btn"
-              title="Today"
-              aria-label="Today"
+              title={t("today")}
+              aria-label={t("today")}
             >
               <div
                 onClick={(e) => {
@@ -268,7 +277,12 @@ export function Toolbar() {
                 className="mobile-btn-content"
               >
                 <TabsIcon color="var(--text1)" />
-                <span className="mobile-btn-label">Tabs</span>
+                <span
+                  className="mobile-btn-label"
+                  style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+                >
+                  {t("tabs")}
+                </span>
               </div>
             </button>
 
@@ -276,28 +290,45 @@ export function Toolbar() {
               onClick={() => {
                 if (activeMoreApp || activeApp) {
                   if (activeMoreApp) {
-                    G.RemoveApplicationByLabel(activeMoreApp);
-                    setActiveMoreApp(null);
-                    G.setOpenSidebar(true);
+                    if (G.openSidebar) {
+                      G.RemoveApplicationByLabel(activeMoreApp);
+                      setActiveMoreApp(null);
+                    }
+                    G.setOpenSidebar(!G.openSidebar);
                   }
                   G.makingApp = null;
                 } else {
                   G.setOpenSidebar(!G.openSidebar);
                 }
                 G.setSelectingTranslation(false);
-                setShowMoreMenu(false);
+                // setShowMoreMenu(false);
               }}
               className="mobile-center-logo"
             >
               <div className="logo-container">
-                <img
-                  src={
-                    mobileBookLogo ||
-                    "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
-                  }
-                  alt="Seed Bible"
-                  className="seed-bible-logo"
-                />
+                {getSettingsPreset() === "ligonier" ||
+                mobileBookLogo === "LigonierSeedBibleIcon" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "32px",
+                      height: "32px",
+                    }}
+                  >
+                    <LigonierSeedBibleIcon />
+                  </div>
+                ) : (
+                  <img
+                    src={
+                      mobileBookLogo ||
+                      "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
+                    }
+                    alt="Seed Bible"
+                    className="seed-bible-logo"
+                  />
+                )}
               </div>
             </div>
 
@@ -305,34 +336,45 @@ export function Toolbar() {
               <div className="more-btn-wrapper" ref={moreMenuRef}>
                 {showMoreMenu && (
                   <div className="more-menu-popup">
-                    {moreTools
-                      .filter((tool: any) => tool.label !== "Books")
-                      .map((tool: any, i: any) => (
-                        <button
-                          key={i}
-                          className="more-menu-item"
-                          onClick={() => {
-                            tool?.onClick?.();
-                            setShowMoreMenu(false);
-                            setActiveMoreApp(tool.label);
-                          }}
-                        >
-                          {tool?.isImg ? (
-                            <img
-                              src={tool.icon}
-                              style={{ width: "20px" }}
-                              alt={tool.label}
-                            />
-                          ) : (
-                            <span className="material-symbols-outlined">
-                              {tool?.icon}
-                            </span>
-                          )}
-                          <span className="more-menu-item-label">
-                            {tool?.label}
+                    {moreTools.map((tool: any, i: any) => (
+                      <button
+                        key={i}
+                        className="more-menu-item"
+                        onClick={() => {
+                          tool?.onClick?.();
+                          setShowMoreMenu(false);
+                          setActiveMoreApp(tool.label);
+                        }}
+                      >
+                        {tool?.icon === "LigonierSeedBibleIcon" ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "20px",
+                              height: "20px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <LigonierSeedBibleIcon />
+                          </div>
+                        ) : tool?.isImg ? (
+                          <img
+                            src={tool.icon}
+                            style={{ width: "20px" }}
+                            alt={tool.label}
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined">
+                            {tool?.icon}
                           </span>
-                        </button>
-                      ))}
+                        )}
+                        <span className="more-menu-item-label">
+                          {tool?.label}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 )}
                 <button
@@ -357,7 +399,12 @@ export function Toolbar() {
                     ) : (
                       <MoreIcon color="var(--text1)" />
                     )}
-                    <span className="mobile-btn-label">
+                    <span
+                      className="mobile-btn-label"
+                      style={{
+                        zoom: (globalThis as any).changes?.uiTextSize || 1,
+                      }}
+                    >
                       {activeMoreApp ? "Close" : "More"}
                     </span>
                   </div>
@@ -393,8 +440,13 @@ export function Toolbar() {
                         {presetToolBarIcon}
                       </span>
                     )}
-                    <span className="mobile-btn-label">
-                      {activeMoreApp ? "close" : presetToolBarTitle}
+                    <span
+                      className="mobile-btn-label"
+                      style={{
+                        zoom: (globalThis as any).changes?.uiTextSize || 1,
+                      }}
+                    >
+                      {activeMoreApp ? t("close") : presetToolBarTitle}
                     </span>
                   </div>
                 </button>
@@ -402,15 +454,20 @@ export function Toolbar() {
             )}
 
             <button
-              style={{ display: showNavArrows && !activeApp ? "" : "none" }}
+              style={{
+                display:
+                  showNavArrows && !activeApp && !sidebarPanelOpen
+                    ? ""
+                    : "none",
+              }}
               className="mobile-navbar-arrow right-arrow"
               onClick={() =>
                 isRTL
                   ? navFunctions?.openPrevChapter()
                   : navFunctions?.openNextChapter()
               }
-              title="Next"
-              aria-label="Next chapter"
+              title={t("next")}
+              aria-label={t("nextChapter")}
             >
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
@@ -449,7 +506,7 @@ export function Toolbar() {
             >
               <button
                 className={`toolbar-button firstToolbarbutton`}
-                title="Open menu"
+                title={t("settings")}
                 aria-label="Open menu"
               >
                 <BurgerMenuIcon size={24} color="var(--text1)" />
@@ -492,17 +549,18 @@ export function Toolbar() {
                       }}
                       onMouseLeave={() => clearTimeout(holdTimeoutRef.current)}
                     >
-                      {tool.isCurrentIcon ? (
-                        (() => {
-                          const IconComponent = getIcon(tool.icon);
-                          return IconComponent ? (
-                            <IconComponent size={22} />
-                          ) : (
-                            <span className="material-symbols-outlined">
-                              {tool.icon}
-                            </span>
-                          );
-                        })()
+                      {tool.icon === "LigonierSeedBibleIcon" ? (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "25px",
+                            height: "25px",
+                          }}
+                        >
+                          <LigonierSeedBibleIcon />
+                        </div>
                       ) : tool.isImg ? (
                         <img
                           src={tool.icon}
@@ -515,7 +573,14 @@ export function Toolbar() {
                         </span>
                       )}
                       {tool.label && (
-                        <span className="toolbar-btn-label">{tool.label}</span>
+                        <span
+                          className="toolbar-btn-label"
+                          style={{
+                            zoom: (globalThis as any).changes?.uiTextSize || 1,
+                          }}
+                        >
+                          {tool.label}
+                        </span>
                       )}
                     </button>
                   )}

@@ -33,7 +33,6 @@ export interface ExtensionMeta {
       label: string;
       icon: string;
       hasToggle: string;
-      isCurrentIcon: boolean;
     };
   };
   createdAt: string;

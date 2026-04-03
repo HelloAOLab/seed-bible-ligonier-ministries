@@ -8,11 +8,13 @@
   border-radius: 12px;
   user-select: text;
 }
+
 @media (max-width: 480px) {
   .pageContainer {
     padding: 0;
   }
 }
+
 .no-select .ProseMirror,
 .no-select .ProseMirror *,
 .no-select,
@@ -51,14 +53,15 @@
   justify-content: center;
   align-items: center;
   flex-direction: row;
-
 }
+
 .mobile-header-bookmark {
   position: absolute;
   left: calc(100% - 48px);
   top: 64px;
   /* display: none; */
 }
+
 .scroller > div:first-child {
   /* min-height: 100px; */
   /* height: 100px !important;  */
@@ -92,8 +95,6 @@
   background: #555;
 }
 
-
-
 @keyframes backgroundFlash {
   0% {
     background-color: #f0f0f0;
@@ -108,35 +109,14 @@
   100% {
     background-color: #f0f0f0;
   }
-
 }
 
 .tabHighlightBg {
   animation: backgroundFlash 1s ease-out;
 }
 
-
 ::-webkit-scrollbar {
   display: none;
-}
-
-.chapter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-.bookTitleContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-right: var(--text-bookchapter-margin-right);
-  margin-left: var(--text-bookchapter-margin-left);
-  margin-top: var(--text-bookchapter-margin-top);
-  margin-bottom: var(--text-bookchapter-margin-bottom);
 }
 
 .bookTitle {
@@ -152,8 +132,6 @@
   text-decoration: var(--text-bookchapter-text-decoration);
   margin-top: var(--text-bookchapter-margin-top);
   margin-bottom: var(--text-bookchapter-margin-bottom);
-  margin-left: var(--text-bookchapter-margin-left);
-  margin-right: var(--text-bookchapter-margin-right);
   color: var(--pageTextColor);
 }
 
@@ -162,10 +140,16 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: #859E3B;
+  color: #859e3b;
   font-size: 14px;
   font-weight: 500;
   transition: opacity 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .more-resources {
+    display: none !important;
+  }
 }
 
 .sectionTitle {
@@ -184,7 +168,6 @@
   margin-left: var(--text-heading-margin-left);
   margin-right: var(--text-heading-margin-right);
 }
-
 
 .sectionText {
   font-family: var(
@@ -211,13 +194,13 @@
 /* Additions ------> */
 
 .sectionText.highlighted {
-  border-bottom-color: #4F645B;
+  border-bottom-color: #4f645b;
 }
 
 /* Underline applied from Study Note verse header clicks */
 .sn-verse-underline {
   text-decoration: underline !important;
-  text-decoration-color: #4F645B !important;
+  text-decoration-color: #4f645b !important;
   text-decoration-thickness: 2px !important;
   text-underline-offset: 4px !important;
   transition: text-decoration-color 0.3s ease-in-out;
@@ -237,12 +220,12 @@
 }
 
 .highlightened:hover {
-  color: #859E3B;
+  color: #859e3b;
 }
 
 /* for the word spans when that word is active */
 .highlightened.highlighted-word {
-  color: #859E3B;
+  color: #859e3b;
 }
 
 @keyframes flashHighlight {
@@ -253,7 +236,7 @@
   30%,
   50%,
   70% {
-    color: #859E3B;
+    color: #859e3b;
   }
 
   100% {
@@ -301,7 +284,6 @@
   background: var(--pageBackground) !important;
   border-radius: 12px;
   /* height: 100vh !important; */
-
 }
 
 .tabEntered {
@@ -313,7 +295,6 @@
   background: rgb(190, 187, 187);
   border-radius: 12px;
 }
-
 
 .editVerseTitle {
   border-radius: 6px 6px 0px 0px;

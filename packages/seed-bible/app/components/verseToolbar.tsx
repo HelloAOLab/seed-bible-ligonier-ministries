@@ -11,6 +11,7 @@ import {
 } from "app.components.icons";
 import { getStyleOf } from "app.styles.styler";
 import { getSettingsPreset } from "app.components.types";
+import { globalAPI } from "app.controller.controllerBuilder";
 
 export function VerseToolbar({
   clickedVersesContext,
@@ -124,7 +125,7 @@ export function VerseToolbar({
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    background: "var(--panelBackground)",
+    background: "var(--pageBackground)",
   };
 
   const headerStyle = {
@@ -239,22 +240,27 @@ export function VerseToolbar({
   };
 
   const handleClearHighlights = () => {
-    clickedVerses.forEach((verseNum) => {
-      if (globalThis.UnHighlightVerse) {
-        globalThis.UnHighlightVerse(verseNum);
-      }
-    });
+    // clickedVerses.forEach((verseNum) => {
+    //   if (globalThis.UnHighlightVerse) {
+    //     globalThis.UnHighlightVerse(verseNum);
+    //   }
+    // });
+    if (globalThis.UnHighlightVerse) {
+      globalThis.UnHighlightVerse(clickedVerses);
+    }
     onClose();
   };
 
   const handleClearAllHighlights = () => {
+    const verseNums = [];
     Object.keys(highlighted).forEach((key) => {
       const parts = key.split("-");
       const verseNum = parseInt(parts[parts.length - 1] ?? "0");
-      if (globalThis.UnHighlightVerse) {
-        globalThis.UnHighlightVerse(verseNum);
-      }
+      verseNums.push(verseNum);
     });
+    if (globalThis.UnHighlightVerse) {
+      globalThis.UnHighlightVerse(verseNums);
+    }
     onClose();
   };
 
@@ -588,7 +594,7 @@ export function VerseToolbar({
                     >
                       ink_eraser
                     </span>
-                    <span>Clear</span>
+                    <span>{t("clear")}</span>
                   </button>
 
                   <button
@@ -611,7 +617,7 @@ export function VerseToolbar({
                       fontWeight: "500",
                       flexShrink: 0,
                     }}
-                    aria-label="Clear all highlights"
+                    aria-label={t("clearAll")}
                   >
                     <span
                       className="material-symbols-outlined"
@@ -619,7 +625,7 @@ export function VerseToolbar({
                     >
                       ink_eraser
                     </span>
-                    <span>Clear All</span>
+                    <span>{t("clearAll")}</span>
                   </button>
                 </div>
               </>
@@ -629,7 +635,7 @@ export function VerseToolbar({
                 {!removeBookMark && (
                   <button className="mobile-action-btn">
                     <BookMarkIcon style={{ color: "var(--pageTextColor)" }} />
-                    <span>Bookmark</span>
+                    <span>{t("bookmark")}</span>
                   </button>
                 )}
                 {selectionSettings.showHighlightColors &&
@@ -641,11 +647,17 @@ export function VerseToolbar({
                       <HighlightIcon
                         style={{ color: "var(--pageTextColor)" }}
                       />
-                      <span>Highlight</span>
+                      <span>{t("highlight")}</span>
                     </button>
                   )}
                 {menuOptions
-                  .filter((o) => o?.type !== "line")
+                  .filter((o: any) => {
+                    const title =
+                      typeof o.title === "function"
+                        ? o.title(clickedVersesContext)
+                        : o.title;
+                    return !!title && o?.type !== "line";
+                  })
                   .map((option, i) => (
                     <button
                       key={i}
@@ -666,7 +678,7 @@ export function VerseToolbar({
                   style={{ marginLeft: "auto" }}
                 >
                   <span className="material-symbols-outlined">close</span>
-                  <span>Cancel</span>
+                  <span>{t("cancel")}</span>
                 </button>
               </>
             )}
@@ -702,7 +714,7 @@ function getMenuActions(that, onClose, activeSpace, spaces) {
       }
       groups.push(start === end ? `${start}` : `${start}-${end}`);
     }
-    return `${that.book} ${that.chapter}:${groups.join(",")}`;
+    return `${that.book} ${that.chapter}:${groups.join(",")} ${that.translation || ""}`;
   };
   const removeAiAgent =
     tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.pageSettings
@@ -727,7 +739,7 @@ function getMenuActions(that, onClose, activeSpace, spaces) {
           SetInHold(null);
           onClose();
         },
-        title: "Copy",
+        title: t("copy"),
       },
 
       ...(!removeAiAgent
@@ -739,7 +751,7 @@ function getMenuActions(that, onClose, activeSpace, spaces) {
                 SetShowCommands(true);
                 SetInHold(null);
               },
-              title: "Ask",
+              title: t("ask"),
             },
           ]
         : []),
@@ -772,7 +784,7 @@ function getMenuActions(that, onClose, activeSpace, spaces) {
               }
               groups.push(start === end ? `${start}` : `${start}-${end}`);
             }
-            const reference = `${that.book} ${that.chapter}:${groups.join(",")}`;
+            const reference = `${that.book} ${that.chapter}:${groups.join(",")} ${that.translation || ""}`;
             openPopupSettings(
               <SharePopup
                 shareTitle={`${that.text}`}
@@ -784,7 +796,7 @@ function getMenuActions(that, onClose, activeSpace, spaces) {
             SetInHold(null);
           }, 50);
         },
-        title: "Share",
+        title: t("share"),
       },
     ],
   };
@@ -902,7 +914,8 @@ const SubOptions = ({ items }) => {
         scrollbarWidth: "none",
       }}
     >
-      <style>{globalThis.ThemeCSS}</style>
+      <style>{globalAPI._mainThemeCSS}</style>
+
       <style>
         {`
 .popupSettings2 {
@@ -947,8 +960,10 @@ const SubOptions = ({ items }) => {
 }
         `}
       </style>
-      {items.map((item) => {
-        if (item.active === false) return;
+      {items.map((item: any) => {
+        const title =
+          typeof item.title === "function" ? item.title() : item.title;
+        if (!title || item.active === false) return;
         if (item?.type === "line")
           return (
             <div
@@ -972,9 +987,7 @@ const SubOptions = ({ items }) => {
               }}
             >
               <div>{item.icon}</div>
-              <div>
-                {typeof item.title === "function" ? item.title() : item.title}
-              </div>
+              <div>{title}</div>
             </div>
           );
       })}

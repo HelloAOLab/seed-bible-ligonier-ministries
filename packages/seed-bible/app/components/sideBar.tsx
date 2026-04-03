@@ -45,7 +45,7 @@ import {
   CoffeBeanIcon,
 } from "app.components.phosphoricons";
 // import { CircleCounter } from 'app.components.circleCounter'
-
+// console.log(CircleCounter, 'CircleCounter')
 const Reciver = getBot("system", "app.reciver");
 const { useState, useRef, useEffect, useMemo } = os.appHooks;
 
@@ -97,7 +97,7 @@ const CircleCounter = ({ data, book, chapter }) => {
   const getUserVisual = (userId, value, index) => {
     try {
       const visual = globalThis?.GetOrSetVisualInTags(value[0]);
-
+      // console.log(value,'the get inside')
       if (visual) {
         const IconComponent = icons[visual.iconIndex];
         const color = colors[visual.colorIndex];
@@ -498,6 +498,7 @@ function Tab({
     }
     const checkEmpty = PanelsApps.find((e) => !e.tabData);
     if (el.data.type === "book" && checkEmpty) {
+      // console.log("canvas replacing");
       setActiveTab(el.id);
       const id = uuid();
       ReplaceApplication(LastClickedPanelUpdate || checkEmpty.id, {
@@ -621,7 +622,10 @@ function Tab({
     `}</style>
       {!collapsed ? (
         <>
-          <div className="tabInfo">
+          <div
+            className="tabInfo"
+            style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+          >
             {multiSelectMode && (
               <input
                 type="checkbox"
@@ -1620,8 +1624,11 @@ function SideBar({ panelsNumber }) {
     return (
       <>
         <div className="mobile-sidebar-overlay">
-          <div className="mobile-sidebar-header">
-            <h2>Tabs</h2>
+          <div
+            className="mobile-sidebar-header"
+            style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+          >
+            <h2>{t("tabs")}</h2>
             <div className="mobile-header-actions">
               {/* <span
                 className="mobile-header-icon"
@@ -1632,7 +1639,7 @@ function SideBar({ panelsNumber }) {
               >
                 {<MenuIcon name={"person_add"} />}
               </span> */}
-              <button
+              {/* <button
                 className="mobile-icon-button"
                 style={{ background: "transparent" }}
                 onClick={(e) => {
@@ -1646,7 +1653,7 @@ function SideBar({ panelsNumber }) {
                 title="Settings"
               >
                 <MobileSettingsIcon />
-              </button>
+              </button> */}
               <span
                 className="mobile-header-icon"
                 onClick={() => {
@@ -1728,7 +1735,14 @@ function SideBar({ panelsNumber }) {
                                 onClick={() => handleMobileTabClick(tab)}
                               >
                                 <div className="mobile-tab-left">
-                                  <div className="mobile-tab-title">
+                                  <div
+                                    className="mobile-tab-title"
+                                    style={{
+                                      zoom:
+                                        (globalThis as any).changes
+                                          ?.uiTextSize || 1,
+                                    }}
+                                  >
                                     {`${tab.data?.book || tab.data?.title || ""} – ${tab.data?.chapter || ""}`}{" "}
                                     <div className="mobile-tab-sub">
                                       • {tab.data?.shortName || ""}
@@ -1796,7 +1810,12 @@ function SideBar({ panelsNumber }) {
                 onClick={() => handleMobileTabClick(el)}
               >
                 <div className="mobile-tab-left">
-                  <div className="mobile-tab-title">
+                  <div
+                    className="mobile-tab-title"
+                    style={{
+                      zoom: (globalThis as any).changes?.uiTextSize || 1,
+                    }}
+                  >
                     {`${el.data?.book || el.data?.title || ""} – ${el.data?.chapter || ""}`}{" "}
                     <div className="mobile-tab-sub">
                       • {el.data?.shortName || ""}
@@ -1852,7 +1871,12 @@ function SideBar({ panelsNumber }) {
                 }}
               >
                 <MenuIcon name={"person_add"} />
-                <div className="mobile-nav-label">Sessions</div>
+                <div
+                  className="mobile-nav-label"
+                  style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+                >
+                  {t("sessions")}
+                </div>
               </button>
             )}
 
@@ -1878,7 +1902,12 @@ function SideBar({ panelsNumber }) {
                     fill={showBookmarks ? "var(--selectedSpaceColor)" : "none"}
                   />
                 </span>
-                <div className="mobile-nav-label">Bookmarks</div>
+                <div
+                  className="mobile-nav-label"
+                  style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+                >
+                  Bookmarks
+                </div>
               </button>
             )}
           </div>
@@ -2169,6 +2198,7 @@ function SideBar({ panelsNumber }) {
             </div>
           )}
 
+          {/* rename category modal */}
           {renamingCategory && (
             <div
               className="mobile-modal-overlay"
@@ -2311,7 +2341,7 @@ function SideBar({ panelsNumber }) {
       <div
         onMouseUp={() => setIsDragging(false)}
         style={{
-          width: `${sidebarWidth}px`,
+          width: `${Math.round(sidebarWidth * ((globalThis as any).changes?.uiTextSize || 1))}px`,
           display: sidebarWidth === 0 ? "none" : null,
         }}
         ref={sidebarRef}
@@ -2336,7 +2366,10 @@ function SideBar({ panelsNumber }) {
           }}
         ></div>
 
-        <div className="headbar">
+        <div
+          className="headbar"
+          style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+        >
           {!collapsed ? (
             <>
               <div className="menuOptions">
@@ -2478,7 +2511,10 @@ function SideBar({ panelsNumber }) {
                 setCollapsed={setCollapsed}
               />
             )}
-            <div className="tabsContainer">
+            <div
+              className="tabsContainer"
+              style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}
+            >
               <span style={{ color: "var(--pageTextColor)" }}>
                 {showBookmarksFilter ? `${t("tabs")} & Folders` : t("tabs")}
               </span>
@@ -2543,7 +2579,7 @@ function SideBar({ panelsNumber }) {
                     clearTimeout(holdTimeout.current.time);
                     holdTimeout.current.clicked = false;
                   }}
-                  className="material-symbols-outlined  addIcon"
+                  className="material-symbols-outlined addIcon"
                 >
                   add
                 </span>
@@ -2663,14 +2699,6 @@ function SideBar({ panelsNumber }) {
               cursor: "pointer",
             }}
           >
-            {isSiteOfClient && (
-              <ClientLogo
-                handleOpenClientSite={handleOpenClientSite}
-                url={clientLogo}
-                alt={clientName}
-              />
-            )}
-            <div className="sidebarLine"></div>
             <div
               onClick={() => {
                 setSidebarWidth(280);
@@ -3014,6 +3042,7 @@ export const SpaceUI = () => {
                 <MobileSettingsIcon filter="var(--filter-mode)" />
               </span>
               <SettingsProfile />
+              <UserProfile />
             </>
           ) : (
             <>
@@ -3205,8 +3234,11 @@ export const UserProfile = ({ collapsed }) => {
   const removeAccountOptions =
     tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
       ?.removeAccountOptions;
+  const removeUserIcon =
+    tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
+      ?.removeUserIcon;
   const Icon = icons[iconIndex];
-
+  if (removeUserIcon) return <div style={{ width: 40 }} />;
   return (
     <div
       onClick={
@@ -3251,10 +3283,11 @@ export const UserProfile = ({ collapsed }) => {
           width: 30,
           height: 30,
           borderRadius: "50%",
-          border: `2px solid ${!configBot.tags.staticInst ? colors[colorIndex] : "var(--pageTextColor)"}`,
+          // border: `2px solid ${!configBot.tags.staticInst ? colors[colorIndex] : "var(--pageTextColor)"}`,
           padding: 2,
           display: "flex",
-          backgroundColor: "var(--addButtonIcon)",
+          backgroundColor:
+            "var(--profileAvatar, var(--spaceSelection, #859E3B))",
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
@@ -3270,7 +3303,7 @@ export const UserProfile = ({ collapsed }) => {
         ) : (
           <span
             className="material-symbols-outlined"
-            style={{ color: "var(--secondaryColor)" }}
+            style={{ color: "var(--primaryColor)" }}
           >
             person
           </span>
