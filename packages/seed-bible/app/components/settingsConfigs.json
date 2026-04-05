@@ -280,6 +280,11 @@
       },
 
       "mobileBookLogo": "https://res.cloudinary.com/dpudrufae/image/upload/v1771785855/book-open_mnbvoe.svg",
+      "titlesAndIcon": {
+        "icon": "splitscreen_right",
+        "title": "Study Notes",
+        "toolName": "Study Notes"
+      },
 
       "useTabs": false,
 
