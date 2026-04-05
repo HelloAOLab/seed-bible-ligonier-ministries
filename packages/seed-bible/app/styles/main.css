@@ -105,8 +105,8 @@ svg path {
   .bookTitle,
   .sectionTitle,
   .sectionCover {
-    margin-left: 15px;
-    margin-right: 15px;
+    margin-left: var(--text-heading-margin-left, 5px);
+    margin-right: var(--text-heading-margin-right, 5px);
   }
 
   .floatsidebar {
@@ -302,8 +302,8 @@ svg path {
 .selectInput {
   border-radius: 8px;
   border: 1px solid #e1e3ea;
-  background: #e6e6e6;
-  color: #5f5e5c;
+  background: var(--activeTabFill);
+  color: var(--pageTextColor);
   font-family: "Satoshi", system-ui, sans-serif;
   font-size: 15px;
   font-style: normal;

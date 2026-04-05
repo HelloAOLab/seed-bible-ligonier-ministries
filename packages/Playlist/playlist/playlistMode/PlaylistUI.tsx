@@ -2,6 +2,7 @@ os.unregisterApp("playlist-cont-ui");
 os.registerApp("playlist-cont-ui", thisBot);
 import { getAnnotationRecord, loadAnnotations } from "db.annotations.library";
 import { ProjectProvider } from "playlist.playlistMode.useProjectContext";
+import { PlusIcon } from "app.components.icons";
 
 const RenderIcon = await thisBot.RenderIcon();
 const { useState, useLayoutEffect, useMemo, useRef, useCallback } = os.appHooks;
@@ -9,7 +10,7 @@ const { useState, useLayoutEffect, useMemo, useRef, useCallback } = os.appHooks;
 const G = globalThis as any;
 const { Modal, Button, ButtonsCover } = G.Components;
 
-const ShowPersonVideoOverlay = await thisBot.ShowPersonVideoOverlay();
+// const ShowPersonVideoOverlay = await thisBot.ShowPersonVideoOverlay();
 
 const Discover = await thisBot.Discover();
 const CreatePlaylistUI = await thisBot.CreatePlaylistUI();
@@ -40,9 +41,13 @@ const Playlist = () => {
   );
 
   const [editAnnoData, setEditAnnoData] = useState({
-    address: "",
-    title: "",
+    address: G.EditAnnoDataRestorePlaylist?.address || "",
+    title: G.EditAnnoDataRestorePlaylist?.title || "",
   });
+
+  useLayoutEffect(() => {
+    G.EditAnnoDataRestorePlaylist = { ...editAnnoData };
+  }, [editAnnoData]);
 
   const [stopPlaylistModal, setStopPlaylistModal] = useState(false);
 
@@ -74,13 +79,20 @@ const Playlist = () => {
   // Hide / Show
   const [hide, setHide] = useState(false);
 
-  const [editData, setEditData] = useState({
-    color: null,
-    id: null,
-    name: null,
-    description: null,
-    icon: null,
-  });
+  const [editData, setEditData] = useState(
+    G.EditDataRestorePlaylist || {
+      color: null,
+      id: null,
+      name: null,
+      description: null,
+      icon: null,
+    }
+  );
+
+  // Restore edit data
+  useLayoutEffect(() => {
+    G.EditDataRestorePlaylist = { ...editData };
+  }, [editData]);
 
   const isCustomIcon = (editData.icon || (null as any))?.startsWith("https");
 
@@ -339,21 +351,33 @@ const Playlist = () => {
   const isLayers = tab === "discover";
 
   const [editRichText, setEditRichText] = useState({
-    id: null,
-    text: null,
-    parentID: null,
+    id: G.EditRichText?.id,
+    text: G.EditRichText?.text,
+    parentID: G.EditRichText?.parentID,
   });
 
-  const [editAttachmentItem, setEditAttachmentItem] = useState({
-    id: null,
-    parentID: null,
-    selectedType: "",
-    name: "",
-    data: "",
-    link: "",
-    mediaType: "",
-    text: null,
-  });
+  // Restore edit rich text data
+  useLayoutEffect(() => {
+    G.EditRichText = { ...editRichText };
+  }, [editRichText]);
+
+  const [editAttachmentItem, setEditAttachmentItem] = useState(
+    G.EditAttachmentItem || {
+      id: null,
+      parentID: null,
+      selectedType: "",
+      name: "",
+      data: "",
+      link: "",
+      mediaType: "",
+      text: null,
+    }
+  );
+
+  // Restore edit attachment item data
+  useLayoutEffect(() => {
+    G.EditAttachmentItem = { ...editAttachmentItem };
+  }, [editAttachmentItem]);
 
   const onCloseEditRichText = () => {
     setEditRichText({
@@ -402,8 +426,8 @@ const Playlist = () => {
     }
     G.makingPlaylist = true;
     G.setOpenSidebar && G.setOpenSidebar(false);
-    G.OpenVideoOverlay = () => setShowVideoOverlay(true);
-    G.CloseVideoOverlay = () => setShowVideoOverlay(false);
+    // G.OpenVideoOverlay = () => setShowVideoOverlay(true);
+    // G.CloseVideoOverlay = () => setShowVideoOverlay(false);
     G.SetEditAnnoData = setEditAnnoData;
     G.SetAnnotationData = setAnnotationData;
     G.SetShowAddToPlaylist = setShowAddToPlaylist;
@@ -423,14 +447,15 @@ const Playlist = () => {
       os.removeBotListener(thisBot, "onKeyDown", onKeyDown);
       os.removeBotListener(thisBot, "onKeyUp", onKeyUp);
       G.SetTab = null;
-      G.isRecording = false;
       G.SelectedItemIDForAttachments = null;
-      G.Playlist.RemoveScreenRecordingControls();
-      (async () => {
-        try {
-          await experiment.endRecording();
-        } catch (err) {}
-      })();
+      // To Show controls while playlist is not open
+      // G.isRecording = false;
+      // G.Playlist.RemoveScreenRecordingControls();
+      // (async () => {
+      //   try {
+      //     await experiment.endRecording();
+      //   } catch (err) {}
+      // })();
       G.StopVideoRecording = false;
       G.RemoveApplicationByID && G.RemoveApplicationByID(G.PLAYLIST_PANEL_ID);
       G.PLAYLIST_PANEL_ID = null;
@@ -490,7 +515,7 @@ const Playlist = () => {
       )}
       {!!editAttachmentItem.id && (
         <EditAttachment
-          parentID={editAttachmentItem.parentID}
+          parentID={editAttachmentItem.parentId}
           onClose={onCloseEditAttachmentItem}
           contentId={editAttachmentItem.id}
           selectedType={editAttachmentItem.selectedType}
@@ -508,11 +533,11 @@ const Playlist = () => {
           </h2>
           <p>{t("playlistCurrentlyPlayingConfirm")}</p>
           <ButtonsCover>
-            <Button secondaryAlt onClick={closeConfirmStopPlaylist}>
+            <Button secondary onClick={closeConfirmStopPlaylist}>
               {t("no")}
             </Button>
             <Button
-              secondary
+              secondaryAlt
               onClick={() => {
                 G.IsPlaylistPlaying = false;
                 G.IsQueuePresent = false;
@@ -544,7 +569,7 @@ const Playlist = () => {
               left: "none",
               right: isMobile ? "-9rem" : "-12rem",
               padding: "0.5rem",
-              top: !isMobile ? "3rem" : "none",
+              top: !isMobile ? "0rem" : "none",
               bottom: !isMobile ? "none" : "11rem",
               marginTop: 45,
             }}
@@ -571,36 +596,38 @@ const Playlist = () => {
                 </span>
               </div>
             </div>
-            <div
-              className="more-menu-items"
-              onClick={(e) => {
-                // if not login show notification
-                if (!authBot?.id) {
-                  ShowNotification({
-                    message: t("pleaseLoginToUseFeature"),
-                    severity: "error",
-                  });
-                  shout("tryUserLogin");
-                  return;
-                }
-                e.stopPropagation();
-                if (SplitAppPanel2) {
-                  G.PendingAction = () => gotoCreate(true);
-                  G.StopPlayingPlaylistModal(true);
-                  return;
-                }
-                gotoCreate(true);
-              }}
-            >
-              <div className="align-center" style={{ gap: "0.5rem" }}>
-                <AnnotationIconT />
-                <span
-                  style={{ fontFamily: `"Satoshi", system-ui, sans-serif` }}
-                >
-                  {t("annotation")}
-                </span>
+            {DEV_ENV && (
+              <div
+                className="more-menu-items"
+                onClick={(e) => {
+                  // if not login show notification
+                  if (!authBot?.id) {
+                    ShowNotification({
+                      message: t("pleaseLoginToUseFeature"),
+                      severity: "error",
+                    });
+                    shout("tryUserLogin");
+                    return;
+                  }
+                  e.stopPropagation();
+                  if (SplitAppPanel2) {
+                    G.PendingAction = () => gotoCreate(true);
+                    G.StopPlayingPlaylistModal(true);
+                    return;
+                  }
+                  gotoCreate(true);
+                }}
+              >
+                <div className="align-center" style={{ gap: "0.5rem" }}>
+                  <AnnotationIconT />
+                  <span
+                    style={{ fontFamily: `"Satoshi", system-ui, sans-serif` }}
+                  >
+                    {t("annotation")}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </>
       )}
@@ -612,7 +639,7 @@ const Playlist = () => {
           containerType: "inline-size" /* Enables container query */,
         }}
       >
-        {showVideoOverlay && <ShowPersonVideoOverlay />}
+        {/* {showVideoOverlay && <ShowPersonVideoOverlay />} */}
         <ProjectProvider>
           <div
             style={{
@@ -689,6 +716,7 @@ const Playlist = () => {
                         }}
                         onClick={() => {
                           G[`setOpenAttachLink`](false);
+                          thisBot.resetPlaylistGlobalStateVars();
                           thisBot.resetEditingState({ id: editData.id });
                         }}
                       >
@@ -752,7 +780,7 @@ const Playlist = () => {
                           secondary
                           exClass="create-button show-on-desktop"
                         >
-                          <span class="material-symbols-outlined">add</span>
+                          <PlusIcon width={22} height={22} />
                           {t("create")}
                         </Button>
                         <span
@@ -801,40 +829,6 @@ const Playlist = () => {
                           </p>
                         </h4>
                       </div>
-                    )}
-                    {false && !editData.id && (
-                      <span
-                        class="material-symbols-outlined unfollow"
-                        style={{
-                          ...G.ButtonStyle,
-                          fontSize: "24px",
-                          padding: "0",
-                          border: "none",
-                          marginLeft: "auto",
-                        }}
-                        onClick={() => {
-                          // setHide(p => !p);
-                          // globalThis.SetScreens(1);
-                          thisBot.CloseFloatingApp();
-                          G.DataManager.cancelCurrentPlayingSound();
-                          // globalThis.SetPlayingPlaylist && globalThis.SetPlayingPlaylist(false);
-                          G[`defaultToggleGreyCheckPLayingPlaylist`] &&
-                            G[`defaultToggleGreyCheckPLayingPlaylist`](null);
-                          G.IsQueuePresent = false;
-                          // os.unregisterApp("playing-playlist");
-
-                          G.IS_PLAYLIST_ACTIVE = false;
-                          G.SET_SHOW_CHECK && G.SET_SHOW_CHECK(false);
-                          setSplitAppPanel2(null);
-                          G.RemoveApplicationByID &&
-                            G.RemoveApplicationByID(G.PLAYLIST_PANEL_ID);
-                          G.PLAYLIST_PANEL_ID = null;
-                          G.makingPlaylist = false;
-                          return;
-                        }}
-                      >
-                        {t("close")}
-                      </span>
                     )}
                   </div>
                 </div>

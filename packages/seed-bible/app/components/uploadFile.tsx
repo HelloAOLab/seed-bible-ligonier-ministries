@@ -20,7 +20,7 @@ files.forEach((file: any) => {
 });
 
 try {
-  let failCount = 0;
+  const failCount = 0;
   const fileSave = await Promise.all(filesPromises);
   const filesResult = [];
 

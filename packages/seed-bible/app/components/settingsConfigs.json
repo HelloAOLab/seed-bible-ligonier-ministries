@@ -25,8 +25,14 @@
           "enabled": true,
           "showDivider": false,
           "items": {
-            "generalHeader": { "enabled": true, "labelKey": "generalSettings" },
-            "generalDesc": { "enabled": true, "labelKey": "manageAccountDesc" },
+            "generalHeader": {
+              "enabled": false,
+              "labelKey": "generalSettings"
+            },
+            "generalDesc": {
+              "enabled": false,
+              "labelKey": "manageAccountDesc"
+            },
             "yourAccount": { "enabled": true }
           }
         },
@@ -231,8 +237,14 @@
           "enabled": true,
           "showDivider": false,
           "items": {
-            "generalHeader": { "enabled": true, "labelKey": "generalSettings" },
-            "generalDesc": { "enabled": true, "labelKey": "manageAccountDesc" },
+            "generalHeader": {
+              "enabled": false,
+              "labelKey": "generalSettings"
+            },
+            "generalDesc": {
+              "enabled": false,
+              "labelKey": "manageAccountDesc"
+            },
             "yourAccount": { "enabled": true }
           }
         },
@@ -457,7 +469,8 @@
           "showDivider": false,
           "items": {
             "language": { "enabled": true },
-            "reportBug": { "enabled": true }
+            "reportBug": { "enabled": true },
+            "help": { "enabled": true }
           }
         }
       }

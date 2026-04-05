@@ -48,7 +48,7 @@ describe("codex tests", () => {
     await delay(1000);
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / ESV More Resources");
+    ).toBe("Genesis 1 / AAB");
   });
 
   test("check loaded translation", async () => {
@@ -61,7 +61,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1 More Resources");
+    ).toBe("Genesis 1 / su1");
 
     const v1 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text = await v1?.evaluate((el) => el.textContent);
@@ -80,7 +80,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1 More Resources");
+    ).toBe("Genesis 1 / su1");
 
     const v1 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text = await v1?.evaluate((el) => el.textContent);
@@ -105,7 +105,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle2?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su2 More Resources");
+    ).toBe("Genesis 1 / su2");
     const v1_2 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text2 = await v1_2?.evaluate((el) => el.textContent);
     expect(mergeWhitespace(v1Text2)).toMatch(
@@ -120,15 +120,15 @@ describe("codex tests", () => {
     await seedBibleFrame
       .locator('div.toolbar-item-wrapper[title="Books"] > button')
       .click({});
-    await page.locator(".sidebar-translation-selector").click();
+    await seedBibleFrame.locator(".sidebar-translation-selector").click();
 
-    await page.waitForSelector("#translation-search-input");
+    await seedBibleFrame.waitForSelector("#translation-search-input");
 
-    await page.type("#translation-search-input", "su1");
+    await seedBibleFrame.type("#translation-search-input", "su1");
 
     await delay(150);
 
-    await page.locator(".translation-option").click();
+    await seedBibleFrame.locator(".translation-option").click();
 
     await delay(2000);
 
@@ -137,7 +137,7 @@ describe("codex tests", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle3?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / su1 More Resources");
+    ).toBe("Genesis 1 / su1");
 
     const v1_3 = await seedBibleFrame.locator("#v-1").waitHandle();
     const v1Text3 = await v1_3?.evaluate((el) => el.textContent);
