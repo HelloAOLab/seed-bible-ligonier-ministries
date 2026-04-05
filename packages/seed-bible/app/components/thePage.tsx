@@ -421,7 +421,7 @@ function ThePage({
           bookId = book0.id;
           bookTranslationId = trValue.value.id;
           firstChapterApiLink = book0.firstChapterApiLink;
-        } else {
+        } else if (urlId) {
           const result = await web.get(translationId);
           if (result.status === 200) {
             const url = new URL(translationId);
