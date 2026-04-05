@@ -143,6 +143,9 @@
   .more-resources {
     display: none;
   }
+  .bookTitle {
+    display: none !important;
+  }
 }
 
 .sectionTitle {
