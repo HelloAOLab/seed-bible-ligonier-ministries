@@ -116,6 +116,8 @@
 }
 
 .bookTitle {
+  display: flex;
+  align-items: center;
   font-size: var(--scripture-bookHeading-size, 32px);
   margin-bottom: 60px;
   font-weight: 500;
@@ -131,6 +133,16 @@
   margin-left: var(--text-bookchapter-margin-left);
   margin-right: var(--text-bookchapter-margin-right);
   color: var(--pageTextColor);
+}
+
+.more-resources {
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .more-resources {
+    display: none;
+  }
 }
 
 .sectionTitle {

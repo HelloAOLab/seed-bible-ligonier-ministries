@@ -2592,7 +2592,7 @@ function ThePage({
                   style={{ "pointer-events": isDragging ? "none" : null }}
                   className="bookTitle"
                 >
-                  <span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
                     {`${data?.book} ${data?.chapter}`}{" "}
                     <span
                       style={{
