@@ -3042,7 +3042,6 @@ export const SpaceUI = () => {
                 <MobileSettingsIcon filter="var(--filter-mode)" />
               </span>
               <SettingsProfile />
-              <UserProfile />
             </>
           ) : (
             <>
