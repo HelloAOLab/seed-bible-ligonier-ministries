@@ -332,7 +332,7 @@
   gap: 10px;
   justify-content: flex-start;
   width: 280px !important;
-  background: var(--panelBackground, #f0ede8) !important;
+  background: var(--panelBackground, --panelBackground) !important;
   align-items: center;
   height: 70px;
 }
