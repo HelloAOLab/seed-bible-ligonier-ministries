@@ -362,8 +362,8 @@ export const SplitApp = ({
     startWidth: 0,
   });
 
-  // Default overlap for 2 panels, or when explicitly enabled
-  const isOverlap = count >= 2 && screens.overlap !== false;
+  // Overlap only on mobile — desktop always uses side-by-side layout
+  const isOverlap = count >= 2 && screens.overlap !== false && isMobile;
 
   useEffect(() => {
     if (isOverlap) {
@@ -456,7 +456,6 @@ export const SplitApp = ({
             width: globalThis.IsMobileNow() ? "100dvw" : overlapWidth,
             height: "100%",
             transform: overlapVisible ? "" : "translateX(100%)",
-            transition: "transform 0.3s ease",
             zIndex: 10,
             display: "flex",
             maxWidth: "100dvw",
