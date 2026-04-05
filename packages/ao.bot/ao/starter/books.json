@@ -1,7 +1,7 @@
 [
   {
     "id": "GEN",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Genesis",
     "commonName": "Genesis",
     "title": "Genesis",
@@ -16,7 +16,7 @@
   },
   {
     "id": "EXO",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Exodus",
     "commonName": "Exodus",
     "title": "Exodus",
@@ -31,7 +31,7 @@
   },
   {
     "id": "LEV",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Leviticus",
     "commonName": "Leviticus",
     "title": "Leviticus",
@@ -46,7 +46,7 @@
   },
   {
     "id": "NUM",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Numbers",
     "commonName": "Numbers",
     "title": "Numbers",
@@ -61,7 +61,7 @@
   },
   {
     "id": "DEU",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Deuteronomy",
     "commonName": "Deuteronomy",
     "title": "Deuteronomy",
@@ -76,7 +76,7 @@
   },
   {
     "id": "JOS",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Joshua",
     "commonName": "Joshua",
     "title": "Joshua",
@@ -91,7 +91,7 @@
   },
   {
     "id": "JDG",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Judges",
     "commonName": "Judges",
     "title": "Judges",
@@ -106,7 +106,7 @@
   },
   {
     "id": "RUT",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Ruth",
     "commonName": "Ruth",
     "title": "Ruth",
@@ -121,7 +121,7 @@
   },
   {
     "id": "1SA",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Samuel",
     "commonName": "1 Samuel",
     "title": "1 Samuel",
@@ -136,7 +136,7 @@
   },
   {
     "id": "2SA",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Samuel",
     "commonName": "2 Samuel",
     "title": "2 Samuel",
@@ -151,7 +151,7 @@
   },
   {
     "id": "1KI",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Kings",
     "commonName": "1 Kings",
     "title": "1 Kings",
@@ -166,7 +166,7 @@
   },
   {
     "id": "2KI",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Kings",
     "commonName": "2 Kings",
     "title": "2 Kings",
@@ -181,7 +181,7 @@
   },
   {
     "id": "1CH",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Chronicles",
     "commonName": "1 Chronicles",
     "title": "1 Chronicles",
@@ -196,7 +196,7 @@
   },
   {
     "id": "2CH",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Chronicles",
     "commonName": "2 Chronicles",
     "title": "2 Chronicles",
@@ -211,7 +211,7 @@
   },
   {
     "id": "EZR",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Ezra",
     "commonName": "Ezra",
     "title": "Ezra",
@@ -226,7 +226,7 @@
   },
   {
     "id": "NEH",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Nehemiah",
     "commonName": "Nehemiah",
     "title": "Nehemiah",
@@ -241,7 +241,7 @@
   },
   {
     "id": "EST",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Esther",
     "commonName": "Esther",
     "title": "Esther",
@@ -256,7 +256,7 @@
   },
   {
     "id": "JOB",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Job",
     "commonName": "Job",
     "title": "Job",
@@ -271,7 +271,7 @@
   },
   {
     "id": "PSA",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Psalms",
     "commonName": "Psalms",
     "title": "Psalms",
@@ -286,7 +286,7 @@
   },
   {
     "id": "PRO",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Proverbs",
     "commonName": "Proverbs",
     "title": "Proverbs",
@@ -301,7 +301,7 @@
   },
   {
     "id": "ECC",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Ecclesiastes",
     "commonName": "Ecclesiastes",
     "title": "Ecclesiastes",
@@ -316,7 +316,7 @@
   },
   {
     "id": "SNG",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Song",
     "commonName": "Song of Songs",
     "title": "Song",
@@ -331,7 +331,7 @@
   },
   {
     "id": "ISA",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Isaiah",
     "commonName": "Isaiah",
     "title": "Isaiah",
@@ -346,7 +346,7 @@
   },
   {
     "id": "JER",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Jeremiah",
     "commonName": "Jeremiah",
     "title": "Jeremiah",
@@ -361,7 +361,7 @@
   },
   {
     "id": "LAM",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Lamentations",
     "commonName": "Lamentations",
     "title": "Lamentations",
@@ -376,7 +376,7 @@
   },
   {
     "id": "EZK",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Ezekiel",
     "commonName": "Ezekiel",
     "title": "Ezekiel",
@@ -391,7 +391,7 @@
   },
   {
     "id": "DAN",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Daniel",
     "commonName": "Daniel",
     "title": "Daniel",
@@ -406,7 +406,7 @@
   },
   {
     "id": "HOS",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Hosea",
     "commonName": "Hosea",
     "title": "Hosea",
@@ -421,7 +421,7 @@
   },
   {
     "id": "JOL",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Joel",
     "commonName": "Joel",
     "title": "Joel",
@@ -436,7 +436,7 @@
   },
   {
     "id": "AMO",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Amos",
     "commonName": "Amos",
     "title": "Amos",
@@ -451,7 +451,7 @@
   },
   {
     "id": "OBA",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Obadiah",
     "commonName": "Obadiah",
     "title": "Obadiah",
@@ -466,7 +466,7 @@
   },
   {
     "id": "JON",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Jonah",
     "commonName": "Jonah",
     "title": "Jonah",
@@ -481,7 +481,7 @@
   },
   {
     "id": "MIC",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Micah",
     "commonName": "Micah",
     "title": "Micah",
@@ -496,7 +496,7 @@
   },
   {
     "id": "NAM",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Nahum",
     "commonName": "Nahum",
     "title": "Nahum",
@@ -511,7 +511,7 @@
   },
   {
     "id": "HAB",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Habakkuk",
     "commonName": "Habakkuk",
     "title": "Habakkuk",
@@ -526,7 +526,7 @@
   },
   {
     "id": "ZEP",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Zephaniah",
     "commonName": "Zephaniah",
     "title": "Zephaniah",
@@ -541,7 +541,7 @@
   },
   {
     "id": "HAG",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Haggai",
     "commonName": "Haggai",
     "title": "Haggai",
@@ -556,7 +556,7 @@
   },
   {
     "id": "ZEC",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Zechariah",
     "commonName": "Zechariah",
     "title": "Zechariah",
@@ -571,7 +571,7 @@
   },
   {
     "id": "MAL",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Malachi",
     "commonName": "Malachi",
     "title": "Malachi",
@@ -586,7 +586,7 @@
   },
   {
     "id": "MAT",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Matthew",
     "commonName": "Matthew",
     "title": "Matthew",
@@ -601,7 +601,7 @@
   },
   {
     "id": "MRK",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Mark",
     "commonName": "Mark",
     "title": "Mark",
@@ -616,7 +616,7 @@
   },
   {
     "id": "LUK",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Luke",
     "commonName": "Luke",
     "title": "Luke",
@@ -631,7 +631,7 @@
   },
   {
     "id": "JHN",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "John",
     "commonName": "John",
     "title": "John",
@@ -646,7 +646,7 @@
   },
   {
     "id": "ACT",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Acts",
     "commonName": "Acts",
     "title": "Acts",
@@ -661,7 +661,7 @@
   },
   {
     "id": "ROM",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Romans",
     "commonName": "Romans",
     "title": "Romans",
@@ -676,7 +676,7 @@
   },
   {
     "id": "1CO",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Corinthians",
     "commonName": "1 Corinthians",
     "title": "1 Corinthians",
@@ -691,7 +691,7 @@
   },
   {
     "id": "2CO",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Corinthians",
     "commonName": "2 Corinthians",
     "title": "2 Corinthians",
@@ -706,7 +706,7 @@
   },
   {
     "id": "GAL",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Galatians",
     "commonName": "Galatians",
     "title": "Galatians",
@@ -721,7 +721,7 @@
   },
   {
     "id": "EPH",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Ephesians",
     "commonName": "Ephesians",
     "title": "Ephesians",
@@ -736,7 +736,7 @@
   },
   {
     "id": "PHP",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Philippians",
     "commonName": "Philippians",
     "title": "Philippians",
@@ -751,7 +751,7 @@
   },
   {
     "id": "COL",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Colossians",
     "commonName": "Colossians",
     "title": "Colossians",
@@ -766,7 +766,7 @@
   },
   {
     "id": "1TH",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Thessalonians",
     "commonName": "1 Thessalonians",
     "title": "1 Thessalonians",
@@ -781,7 +781,7 @@
   },
   {
     "id": "2TH",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Thessalonians",
     "commonName": "2 Thessalonians",
     "title": "2 Thessalonians",
@@ -796,7 +796,7 @@
   },
   {
     "id": "1TI",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Timothy",
     "commonName": "1 Timothy",
     "title": "1 Timothy",
@@ -811,7 +811,7 @@
   },
   {
     "id": "2TI",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Timothy",
     "commonName": "2 Timothy",
     "title": "2 Timothy",
@@ -826,7 +826,7 @@
   },
   {
     "id": "TIT",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Titus",
     "commonName": "Titus",
     "title": "Titus",
@@ -841,7 +841,7 @@
   },
   {
     "id": "PHM",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Philemon",
     "commonName": "Philemon",
     "title": "Philemon",
@@ -856,7 +856,7 @@
   },
   {
     "id": "HEB",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Hebrews",
     "commonName": "Hebrews",
     "title": "Hebrews",
@@ -871,7 +871,7 @@
   },
   {
     "id": "JAS",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "James",
     "commonName": "James",
     "title": "James",
@@ -886,7 +886,7 @@
   },
   {
     "id": "1PE",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 Peter",
     "commonName": "1 Peter",
     "title": "1 Peter",
@@ -901,7 +901,7 @@
   },
   {
     "id": "2PE",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 Peter",
     "commonName": "2 Peter",
     "title": "2 Peter",
@@ -916,7 +916,7 @@
   },
   {
     "id": "1JN",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "1 John",
     "commonName": "1 John",
     "title": "1 John",
@@ -931,7 +931,7 @@
   },
   {
     "id": "2JN",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "2 John",
     "commonName": "2 John",
     "title": "2 John",
@@ -946,7 +946,7 @@
   },
   {
     "id": "3JN",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "3 John",
     "commonName": "3 John",
     "title": "3 John",
@@ -961,7 +961,7 @@
   },
   {
     "id": "JUD",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Jude",
     "commonName": "Jude",
     "title": "Jude",
@@ -976,7 +976,7 @@
   },
   {
     "id": "REV",
-    "translationId": "AAB",
+    "translationId": "ESV",
     "name": "Revelation",
     "commonName": "Revelation",
     "title": "Revelation",

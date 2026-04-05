@@ -196,7 +196,7 @@ export function AOBotInterface() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Build with Seed Bible form state
-  const [translationID, setTranslationID] = useState("AAB");
+  const [translationID, setTranslationID] = useState("ESV");
   const [book, setBook] = useState("");
   const [chapter, setChapter] = useState("");
   const [enableCollaboration, setEnableCollaboration] = useState(false);
@@ -1529,7 +1529,7 @@ export function AOBotInterface() {
                 url.searchParams.set("bios", "local inst");
               }
 
-              if (translationID && translationID !== "AAB") {
+              if (translationID && translationID !== "ESV") {
                 url.searchParams.set("translation", translationID);
               }
 
