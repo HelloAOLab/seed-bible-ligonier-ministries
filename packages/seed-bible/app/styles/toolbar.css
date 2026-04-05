@@ -157,8 +157,8 @@
 .mobile-center-logo {
   flex: 1;
   display: flex;
-  justify-content: end;
-  align-items: flex-end;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
 }
 
