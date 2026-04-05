@@ -2623,7 +2623,7 @@ function ThePage({
                   </span>
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    style={{ marginLeft: "auto" }}
+                    style={{ marginTop: "6px" }}
                   >
                     <MoreResources />
                   </div>
