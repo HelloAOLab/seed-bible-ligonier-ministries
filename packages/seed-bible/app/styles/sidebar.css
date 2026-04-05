@@ -326,10 +326,11 @@
   position: absolute;
   left: 0;
   bottom: 0px;
+  padding: 15px;
   display: flex;
   flex-direction: row;
   gap: 10px;
-  justify-content: space-around;
+  justify-content: flex-start;
   width: 280px !important;
   background: var(--panelBackground, #f0ede8) !important;
   align-items: center;

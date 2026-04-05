@@ -425,19 +425,29 @@
         "disablePanels": true,
         "removeSpaces": true,
         "removeEditMode": true,
-        "removeBookMark": false
+        "removeAccountOptions": true,
+        "removeBibleStack": true,
+        "removeJoinSession": true,
+        "removeBookMark": true,
+        "removeAddSession": true
       },
-      "onlineUsers": {
-        "enabled": true,
-        "anonymous": true
+      "pageSettings": {
+        "disableHighlighting": true,
+        "removeAiAgent": true
       },
       "sections": {
         "accountHeader": {
           "enabled": true,
           "showDivider": false,
           "items": {
-            "generalHeader": { "enabled": true, "labelKey": "generalSettings" },
-            "generalDesc": { "enabled": true, "labelKey": "manageAccountDesc" },
+            "generalHeader": {
+              "enabled": false,
+              "labelKey": "generalSettings"
+            },
+            "generalDesc": {
+              "enabled": false,
+              "labelKey": "manageAccountDesc"
+            },
             "yourAccount": { "enabled": true }
           }
         },
@@ -455,9 +465,7 @@
           "showDivider": false,
           "items": {
             "language": { "enabled": true },
-            "uiTextSize": { "enabled": true },
-            "reportBug": { "enabled": true },
-            "help": { "enabled": true }
+            "reportBug": { "enabled": true }
           }
         }
       }
