@@ -192,7 +192,7 @@
 
 .sectionText.highlighted {
   text-decoration: underline;
-  text-decoration-color: var(--secondaryColor, #859e3b);
+  text-decoration-color: black;
   text-decoration-thickness: 2px;
   background-color: transparent;
   border-color: transparent;
@@ -201,7 +201,7 @@
 /* Applied via DOM by applyVerseUnderline() in StudyNotes */
 .sn-verse-underline {
   text-decoration: underline;
-  text-decoration-color: var(--secondaryColor, #859e3b);
+  text-decoration-color: black;
   text-decoration-thickness: 2px;
 }
 
