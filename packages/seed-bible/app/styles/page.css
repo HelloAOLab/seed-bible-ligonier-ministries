@@ -191,8 +191,18 @@
 /* Additions ------> */
 
 .sectionText.highlighted {
-  border-color: #4f645b;
-  background-color: #639498;
+  text-decoration: underline;
+  text-decoration-color: var(--secondaryColor, #859e3b);
+  text-decoration-thickness: 2px;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+/* Applied via DOM by applyVerseUnderline() in StudyNotes */
+.sn-verse-underline {
+  text-decoration: underline;
+  text-decoration-color: var(--secondaryColor, #859e3b);
+  text-decoration-thickness: 2px;
 }
 
 .clickableCursor {
