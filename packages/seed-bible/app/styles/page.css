@@ -117,7 +117,7 @@
 
 .bookTitle {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
   font-size: var(--scripture-bookHeading-size, 32px);
   margin-bottom: 60px;
