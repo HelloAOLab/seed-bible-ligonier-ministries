@@ -1339,7 +1339,7 @@ export function AOBotInterface() {
             </label>
             <input
               type="text"
-              placeholder="e.g., AAB, ENGWEBP, etc."
+              placeholder="e.g., ESV, ENGWEBP, etc."
               value={translationID}
               onChange={(e) => setTranslationID(e.target.value)}
               style={{

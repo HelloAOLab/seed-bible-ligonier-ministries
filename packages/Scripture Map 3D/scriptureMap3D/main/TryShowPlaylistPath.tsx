@@ -1,11 +1,6 @@
-import type { LayoutBibleData } from "@packages/Bible Visualization Utils/bibleVizUtils/models/entities/LayoutBibleData";
+const {layoutData} = that;
 
-const {
-  layoutData,
-}: {
-  layoutData: LayoutBibleData;
-} = that;
-
-if (layoutData.currentPlaylistShownId && layoutData.isPlaylistPathEnabled) {
-  thisBot.ShowPlaylistPath({ layoutData });
+if(layoutData.currentPlaylistShownId && layoutData.isPlaylistPathEnabled)
+{
+    thisBot.ShowPlaylistPath({layoutData})
 }

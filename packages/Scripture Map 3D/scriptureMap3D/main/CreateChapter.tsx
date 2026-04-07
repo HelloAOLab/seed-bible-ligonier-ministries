@@ -1,24 +1,16 @@
-import type { ChapterInfo } from "bibleVizUtils.data.BibleVizDataRepository";
-import { LayoutChapterData } from "bibleVizUtils.models.entities.LayoutChapterData";
+import {ParentDataIds} from "bibleVizUtils.classes.ParentDataIds"
+import {LayoutChapterData} from "bibleVizUtils.classes.LayoutChapterData"
 
-const {
-  chapterInfo,
-  layoutDataId,
-  layoutBookId,
-}: {
-  chapterInfo: ChapterInfo;
-  layoutDataId: string | undefined;
-  layoutBookId: string | undefined;
-} = that;
-const parentDataIds = {
-  layoutId: layoutDataId,
-  layoutBookId,
-};
-const chapterData = new LayoutChapterData({
-  id: uuid(),
-  pieceInfo: chapterInfo,
-  parentDataIds,
-  originalLayoutId: layoutDataId,
+const {chapterInfo, layoutData, layoutBookData} = that;
+const parentDataIds = new ParentDataIds({
+    layoutId: layoutData?.id, 
+    layoutBookId: layoutBookData?.id
 });
+const chapterData = new LayoutChapterData({
+    id: uuid(), 
+    pieceInfo: chapterInfo, 
+    parentDataIds, 
+    originalLayoutId: layoutData?.id
+})
 thisBot.vars.layoutChaptersData.push(chapterData);
 return chapterData;

@@ -1,32 +1,17 @@
-import type { LayoutChapterData } from "bibleVizUtils.models.entities.LayoutChapterData";
-import { tryHideIndicators } from "bibleVizUtils.controllers.userPresence.activityIndicatorsController";
-import type { LayoutBibleData } from "bibleVizUtils.models.entities.LayoutBibleData";
-const {
-  chapterData,
-  layoutData,
-}: {
-  chapterData: LayoutChapterData;
-  layoutData: LayoutBibleData;
-} = that;
+const {chapterData, layoutData} = that;
 
-if (!chapterData.piece) {
-  throw new Error("chapterData.piece not defined at DeselectChapter");
-}
-
-chapterData.deselect();
-tryHideIndicators(chapterData.piece);
+chapterData.isSelected = false;
+BibleVizUtils.Functions.TryHideUsersColorOnPiece({piece: chapterData.piece});
 const previousLinkedChapter = getBot("lineTo", chapterData.piece.id);
-if (layoutData.currentSelectedChapterData?.id === chapterData.id) {
-  if (previousLinkedChapter) {
-    const previousChapterData = await thisBot.GetPieceData({
-      piece: previousLinkedChapter,
-    });
-    if (!previousChapterData) {
-      throw new Error("previousChapterData not found at DeselectChapter");
+if(layoutData.currentSelectedChapterData?.id == chapterData.id)
+{
+    if(previousLinkedChapter) 
+    {
+        const previousChapterData = thisBot.GetPieceData({piece: previousLinkedChapter})
+        layoutData.currentSelectedChapterData = previousChapterData;
     }
-    layoutData.selectChapterData(previousChapterData);
-  } else layoutData.clearSelectedChapterData();
+    else layoutData.currentSelectedChapterData = null;
 }
-if (previousLinkedChapter) previousLinkedChapter.tags.lineTo = null;
+if(previousLinkedChapter) previousLinkedChapter.tags.lineTo = null;
 chapterData.piece.tags.lineTo = null;
 return chapterData.piece.Deselect();

@@ -2473,8 +2473,12 @@ function ThePage({
         }
 
         @keyframes slideUpSheet {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
         }
 
         body.mobile-settings-open .mobile-bottom-navbar {
@@ -2577,20 +2581,16 @@ function ThePage({
                   </div>
                 )}
                 <div
-                  onClick={(e) => {
-                    if (globalThis.setOpenSidebar && globalThis.openSidebar) {
-                      globalThis.setOpenSidebar(false);
-                      globalThis.selectBookSelectorBook &&
-                        globalThis.selectBookSelectorBook(null);
-                    } else {
-                      globalThis.setOpenSidebar &&
-                        globalThis.setOpenSidebar(true);
-                      globalThis.selectBookSelectorBook &&
-                        globalThis.selectBookSelectorBook(data.bookId);
-                    }
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "60px",
+                    flexWrap: "wrap",
+                    gap: "24px",
+                    paddingRight: "var(--text-verse-margin-right, 0px)",
+                    marginLeft: "var(--text-bookchapter-margin-left)",
                   }}
-                  style={{ "pointer-events": isDragging ? "none" : null }}
-                  className="bookTitle"
                 >
                   <span style={{ flex: 1, minWidth: 0 }}>
                     {`${data?.book} ${data?.chapter}`}{" "}

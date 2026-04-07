@@ -306,14 +306,29 @@ export function Toolbar() {
               className="mobile-center-logo"
             >
               <div className="logo-container">
-                <img
-                  src={
-                    mobileBookLogo ||
-                    "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
-                  }
-                  alt="Seed Bible"
-                  className="seed-bible-logo"
-                />
+                {getSettingsPreset() === "ligonier" ||
+                mobileBookLogo === "LigonierSeedBibleIcon" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "32px",
+                      height: "32px",
+                    }}
+                  >
+                    <LigonierSeedBibleIcon />
+                  </div>
+                ) : (
+                  <img
+                    src={
+                      mobileBookLogo ||
+                      "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
+                    }
+                    alt="Seed Bible"
+                    className="seed-bible-logo"
+                  />
+                )}
               </div>
             </div>
 
@@ -358,7 +373,7 @@ export function Toolbar() {
                     ))}
                   </div>
                 )}
-                {/* <button
+                <button
                   className="mobile-navbar-btn more-btn"
                   title={activeMoreApp ? "Close" : "More"}
                   aria-label={activeMoreApp ? "Close" : "More"}
@@ -380,11 +395,16 @@ export function Toolbar() {
                     ) : (
                       <MoreIcon color="var(--text1)" />
                     )}
-                    <span className="mobile-btn-label" style={{ zoom: (globalThis as any).changes?.uiTextSize || 1 }}>
+                    <span
+                      className="mobile-btn-label"
+                      style={{
+                        zoom: (globalThis as any).changes?.uiTextSize || 1,
+                      }}
+                    >
                       {activeMoreApp ? "Close" : "More"}
                     </span>
                   </div>
-                </button> */}
+                </button>
               </div>
             ) : (
               <div className="more-btn-wrapper">

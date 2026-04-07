@@ -542,13 +542,6 @@ const LanguageComponent = (props: {
                           console.log(e);
                         });
                     }
-                    if (globalThis?.ActiveMoreApp) {
-                      (globalThis as any).RemoveApplicationByLabel(
-                        ActiveMoreApp
-                      );
-                      (globalThis as any).makingApp = null;
-                      globalThis?.SetActiveMoreApp(null);
-                    }
                   }}
                   style={{
                     background:
@@ -655,7 +648,7 @@ const CustomTranslation = (props: {
               value="id"
             />
           </label>
-          <span style={{ color: "var(--pageTextColor)" }}>From ID</span>
+          <span>From ID</span>
         </div>
         <div>
           <label>
@@ -669,7 +662,7 @@ const CustomTranslation = (props: {
               value="url"
             />
           </label>
-          <span style={{ color: "var(--pageTextColor)" }}>From URL</span>
+          <span>From URL</span>
         </div>
       </div>
       <div class="custom-tr-api">
@@ -721,7 +714,7 @@ const TranslationSettings = (props: {
           style={{
             color:
               showAllLanguages === "complete"
-                ? "var(--addButtonIcon)"
+                ? "var(--secondaryColor)"
                 : "var(--text3)",
           }}
         >
@@ -750,7 +743,7 @@ const TranslationSettings = (props: {
           style={{
             color:
               showAllLanguages === "all"
-                ? "var(--addButtonIcon)"
+                ? "var(--secondaryColor)"
                 : "var(--text3)",
           }}
         >
@@ -779,7 +772,7 @@ const TranslationSettings = (props: {
           style={{
             color:
               showAllLanguages === "popular"
-                ? "var(--addButtonIcon)"
+                ? "var(--secondaryColor)"
                 : "var(--text3)",
           }}
         >

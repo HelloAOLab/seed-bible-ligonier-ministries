@@ -1,62 +1,38 @@
-import {
-  CanvasInteractions,
-  type CanvasInteraction,
-} from "bibleVizUtils.models.canvas";
-import type { Bot } from "../../../../typings/AuxLibraryDefinitions";
-import type { LayoutBookData } from "bibleVizUtils.models.entities.LayoutBookData";
-import type { DropEvent } from "bibleVizUtils.models.casualos";
+const {book, typeOfInteraction} = that;
+const layoutBookData = thisBot.GetPieceData({piece: book});
+const layoutData = layoutBookData.parentDataIds && layoutBookData.parentDataIds.layoutId ? thisBot.GetLayoutDataById({layoutId: layoutBookData.parentDataIds.layoutId}) : null;
 
-const {
-  book,
-  typeOfInteraction,
-  dropEvent,
-}: {
-  book: Bot;
-  typeOfInteraction: CanvasInteraction;
-  dropEvent?: DropEvent;
-} = that;
-const layoutBookData = await (thisBot.GetPieceData({ piece: book }) as Promise<
-  LayoutBookData | undefined
->);
+if(layoutData?.currentPlaylistShownId) return;
 
-if (!layoutBookData) {
-  throw new Error("HandleBookInteraction: layoutBookData not found.");
-}
-
-const layoutData =
-  layoutBookData.parentDataIds && layoutBookData.parentDataIds.layoutId
-    ? thisBot.GetLayoutDataById({
-        layoutId: layoutBookData.parentDataIds.layoutId,
-      })
-    : null;
-
-if (layoutData?.currentPlaylistShownId) return;
-
-switch (typeOfInteraction) {
-  case CanvasInteractions.Click:
+switch(typeOfInteraction)
+{
+    case BibleVizUtils.Data.tags.InteractionType.Click:
     {
-      if (!thisBot.masks.isAnimatingBible) {
-        if (BibleVizUtils.Data.masks.isHighlightToolEnabled) {
-          BibleVizUtils.Functions.HighlightBiblePiece({ data: layoutBookData });
-        } else {
-          if (!layoutBookData.isSelected) {
-            thisBot.SelectBook({ layoutBookData, layoutData });
-          }
+        if(!thisBot.masks.isAnimatingBible)
+        {
+            if(BibleVizUtils.Data.masks.isHighlightToolEnabled)
+            {
+                BibleVizUtils.Functions.HighlightBiblePiece({data: layoutBookData});
+            }
+            else
+            {
+                if(!layoutBookData.isSelected)
+                {
+                    thisBot.SelectBook({layoutBookData, layoutData})
+                }
+            }
         }
-      }
     }
     break;
-  case CanvasInteractions.Drag:
+    case BibleVizUtils.Data.tags.InteractionType.Drag:
     {
-      if (book.tags.draggable)
-        shout("OnLayoutPieceDrag", { data: layoutBookData });
+        if(book.tags.draggable) shout("OnLayoutPieceDrag", {data: layoutBookData});
     }
     break;
-  case CanvasInteractions.Drop:
+    case BibleVizUtils.Data.tags.InteractionType.Drop:
     {
-      shout("OnLayoutPieceDrop", { piece: book, dropEvent });
+        shout('OnLayoutPieceDrop', {piece: book, dropInfo});
     }
     break;
-  default:
-    break;
+    default: break;
 }

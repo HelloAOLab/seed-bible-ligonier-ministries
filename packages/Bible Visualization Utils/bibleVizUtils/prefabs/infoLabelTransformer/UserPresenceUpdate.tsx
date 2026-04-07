@@ -1,7 +1,7 @@
-import { updateIndicators } from "bibleVizUtils.controllers.userPresence.activityIndicatorsController";
-import { BiblePiece } from "bibleVizUtils.models.canvas";
-
-if (thisBot.tags.typeOfPiece === BiblePiece.StackSectionShadow) {
+if (
+  thisBot.tags.typeOfPiece ===
+  BibleVizUtils.Data.tags.BiblePieceType.StackSectionShadow
+) {
   // console.log(`[Debug] UserPresenceUpdate`, {
   //     "!thisBot.tags.isBaseInfoLabelTransformer": !thisBot.tags.isBaseInfoLabelTransformer,
   //     "thisBot.tags.isInUse": thisBot.tags.isInUse,
@@ -16,5 +16,9 @@ if (
   thisBot.tags.isInUse &&
   !thisBot.masks.isHiding
 ) {
-  updateIndicators(thisBot);
+  BibleVizUtils.Functions.UpdateUsersColorOnPiece({
+    source: "UserPresenceUpdate",
+    piece: thisBot,
+    manager: BibleStackManager,
+  });
 }

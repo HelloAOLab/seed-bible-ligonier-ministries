@@ -8,11 +8,13 @@
   border-radius: 12px;
   user-select: text;
 }
+
 @media (max-width: 480px) {
   .pageContainer {
     padding: 0;
   }
 }
+
 .no-select .ProseMirror,
 .no-select .ProseMirror *,
 .no-select,
@@ -52,12 +54,14 @@
   align-items: center;
   flex-direction: row;
 }
+
 .mobile-header-bookmark {
   position: absolute;
   left: calc(100% - 48px);
   top: 64px;
   /* display: none; */
 }
+
 .scroller > div:first-child {
   /* min-height: 100px; */
   /* height: 100px !important;  */
@@ -131,8 +135,6 @@
   text-decoration: var(--text-bookchapter-text-decoration);
   margin-top: var(--text-bookchapter-margin-top);
   margin-bottom: var(--text-bookchapter-margin-bottom);
-  margin-left: var(--text-bookchapter-margin-left);
-  margin-right: var(--text-bookchapter-margin-right);
   color: var(--pageTextColor);
 }
 

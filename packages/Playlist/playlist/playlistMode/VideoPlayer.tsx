@@ -1,7 +1,6 @@
 const { src, isYoutube, videoID, content } = that;
 const { useRef, useState, useLayoutEffect } = os.appHooks;
 const G = globalThis as any;
-const { Loader } = G.Components;
 thisBot.CloseFloatingApp();
 
 const VideoPlayerApp = (props: any) => {
@@ -10,7 +9,6 @@ const VideoPlayerApp = (props: any) => {
   const seekRef = useRef(null);
   const [playing, setPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [volume, setVolume] = useState(1);
 
   useLayoutEffect(() => {
@@ -77,36 +75,17 @@ const VideoPlayerApp = (props: any) => {
         ...style,
       }}
     >
-      {loading && (
-        <div
-          style={{
-            display: "grid",
-            placeItems: "center",
-            height: "100%",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            zIndex: 1000,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-          }}
-        >
-          <Loader />
-        </div>
-      )}
       {isYoutube ? (
         <iframe
           className="item-need-full-height"
-          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; autoplay;"
-          referrerpolicy="strict-origin-when-cross-origin"
           src={`${G.CONSTANTS.YT_PREFIX}/${videoID}`}
-          onLoad={() => setLoading(false)}
           style={{
             width: "auto",
             flexGrow: "1",
             objectFit: "cover",
           }}
           title={content}
+          allow="accelerometer;encrypted-media;gyroscope;"
         />
       ) : (
         <video
@@ -114,8 +93,6 @@ const VideoPlayerApp = (props: any) => {
           ref={videoRef}
           width="auto"
           height="auto"
-          onPlaying={() => setLoading(false)}
-          onWaiting={() => setLoading(true)}
           style={{
             flexGrow: "1",
             objectFit: "cover",

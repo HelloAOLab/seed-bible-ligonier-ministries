@@ -1,8 +1,2 @@
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
-
-shout("OnStackSectionInteracted", {
-  section: thisBot,
-  typeOfInteraction: CanvasInteractions.Drag,
-  draggingEvent: that,
-});
+shout("OnStackSectionInteracted", {section: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.Drag, dragInfo: that});
 os.enableCustomDragging();

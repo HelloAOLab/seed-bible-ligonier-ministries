@@ -271,7 +271,7 @@
     "ligonier": {
       "clientBranding": {
         "enabled": true,
-        "clientName": "ligonier2",
+        "clientName": "Ligonier",
         "clientLogo": "https://res.cloudinary.com/dfbtwwa8p/image/upload/v1771444059/6mlAajOWLeNAAAAAElFTkSuQmCC_ruqkxe.png",
         "clientSite": "https://ligonier.org"
       },
@@ -283,9 +283,10 @@
       },
 
       "useTabs": false,
+
       "availableThemes": [
         {
-          "name": "Ligonier 2",
+          "name": "Ligonier",
           "colors": {
             "firstToolbarbutton": "#dfdede",
             "primaryColor": "#FFFFFF",
@@ -427,6 +428,12 @@
           }
         }
       ],
+
+      "onlineUsers": {
+        "enabled": true,
+        "anonymous": true
+      },
+
       "appSettings": {
         "disablePanels": true,
         "removeSpaces": true,
@@ -441,17 +448,19 @@
         "disableHighlighting": true,
         "removeAiAgent": true
       },
-      "onlineUsers": {
-        "enabled": true,
-        "anonymous": true
+
+      "pageSettings": {
+        "disableHighlighting": true,
+        "removeAiAgent": true
       },
+
       "sections": {
         "accountHeader": {
           "enabled": true,
           "showDivider": false,
           "items": {
-            "generalHeader": { "enabled": true, "labelKey": "generalSettings" },
-            "generalDesc": { "enabled": true, "labelKey": "manageAccountDesc" },
+            "generalHeader": { "enabled": false },
+            "generalDesc": { "enabled": false },
             "yourAccount": { "enabled": true }
           }
         },

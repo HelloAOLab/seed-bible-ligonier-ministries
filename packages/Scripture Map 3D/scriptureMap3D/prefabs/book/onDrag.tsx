@@ -1,6 +1,1 @@
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
-
-shout(`OnLayoutBookInteracted`, {
-  book: thisBot,
-  typeOfInteraction: CanvasInteractions.Drag,
-});
+shout(`OnLayoutBookInteracted`, {book: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.Drag});

@@ -1,6 +1,3 @@
-import { GetCamRotationFocusPoint } from "bibleVizUtils.functions.index";
-import { ObjectPoolTags } from "bibleVizUtils.models.canvas";
-import { GetBotScales } from "bibleVizUtils.functions.index";
 // // that parameters: {duration: float, easing: {type: string, mode: string}}
 
 // const {duration = 0.5, easing = {type: "sinusoidal", mode: "inout"}} = that ?? {};
@@ -11,21 +8,21 @@ import { GetBotScales } from "bibleVizUtils.functions.index";
 // const crossHorizontalLine = getBot("isCrossHorizontalLine", true);
 // const bibleTransformerPosition = getBotPosition(thisBot, dimension);
 // const lowerCoverPosition = getBotPosition(lowerCover, dimension);
-// const lowerCoverScales = GetBotScales(lowerCover);
+// const lowerCoverScales = BibleVizUtils.Functions.GetBotScales(lowerCover);
 // const containerScaleXYFactor = 0.81;
 // const containerInitialScaleZ = 0;
 // const containerScales = {x: lowerCoverScales.x * containerScaleXYFactor, y: lowerCoverScales.y * containerScaleXYFactor};
 // const focusOnRotation = {x: 1.01229, y:0.5};
 // const focusOnPositionOffsetZ = 12
-// const desiredFocusOnPosition = GetCamRotationFocusPoint({
-//     theta: focusOnRotation.y,
-//     phi: focusOnRotation.x,
+// const desiredFocusOnPosition = GetFocusOnPositionFromRotation({
+//     theta: focusOnRotation.y, 
+//     phi: focusOnRotation.x, 
 //     botPosition: new Vector3(bibleTransformerPosition.x, bibleTransformerPosition.y, (bibleTransformerPosition.z) + focusOnPositionOffsetZ)
 // });
 // const continerScaleZFactor = 0.02;
 // const containerInitialPositionZ = 0;
 // const animations = [];
-// let nextPositionZ = lowerCoverPosition.z + lowerCoverScales.z + BibleVizDataRepository.getStackSpacing("BetweenArrangements");
+// let nextPositionZ = lowerCoverPosition.z + lowerCoverScales.z + BibleVizUtils.Data.tags.StackSpacing.BetweenArrangements;
 // const containers = [];
 // let upperCoverOpenedPositionZ;
 // let crossOpenedPositionZ;
@@ -38,14 +35,15 @@ import { GetBotScales } from "bibleVizUtils.functions.index";
 //     zoom: 5
 // })
 
+
 // for(const testamentData of StackManager.vars.bibleStructure)
 // {
-//     nextPositionZ += BibleVizDataRepository.getStackSpacing("BetweenSections");
+//     nextPositionZ += BibleVizUtils.Data.tags.StackSpacing.BetweenSections;
 //     for(const sectionData of testamentData.sectionsData)
 //     {
 //         const desiredScaleZ = sectionData.section.tags.amountOfChaptersInSection * continerScaleZFactor;
-//         const container = ObjectPooler.GetObjectFromPool({tag: ObjectPoolTags.DonationContainer});
-
+//         const container = ObjectPooler.GetObjectFromPool({tag: BibleVizUtils.Data.tags.ObjectPoolTags.DonationContainer});
+        
 //         if(container)
 //         {
 //             const containerMod = {
@@ -81,10 +79,10 @@ import { GetBotScales } from "bibleVizUtils.functions.index";
 //                     easing
 //                 })
 //             )
-//             nextPositionZ += (desiredScaleZ + BibleVizDataRepository.getStackSpacing("BetweenSections"));
+//             nextPositionZ += (desiredScaleZ + BibleVizUtils.Data.tags.StackSpacing.BetweenSections);
 //         }
 //     }
-//     nextPositionZ += BibleVizDataRepository.getStackSpacing("BetweenArrangements")
+//     nextPositionZ += BibleVizUtils.Data.tags.StackSpacing.BetweenArrangements
 // }
 
 // animations.push(
@@ -95,7 +93,7 @@ import { GetBotScales } from "bibleVizUtils.functions.index";
 //     })
 // );
 
-// nextPositionZ += (lowerCoverScales.z + BibleVizDataRepository.getStackSpacing("CoverToCross"));
+// nextPositionZ += (lowerCoverScales.z + BibleVizUtils.Data.tags.StackSpacing.CoverToCross);
 
 // animations.push(
 //     animateTag([crossVerticalLine, crossHorizontalLine], dimension + "Z", {

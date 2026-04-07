@@ -1,29 +1,19 @@
-import { DateFormats, type DateFormat } from "bibleVizUtils.models.canvas";
-import type { LayoutBibleData } from "bibleVizUtils.models.entities.LayoutBibleData";
+const { layoutData, newDateFormat } = that;
 
-const {
-  layoutData,
-  newDateFormat,
-}: {
-  layoutData: LayoutBibleData;
-  newDateFormat: DateFormat;
-} = that;
-
-layoutData.changeDateFormat(newDateFormat);
+layoutData.currentDateFormat = newDateFormat;
 
 layoutData.childrenStructures.forEach((layoutBookStructure) => {
-  let newLabel;
-  switch (newDateFormat) {
-    case DateFormats.ElapsedYears:
-      {
-        newLabel = layoutBookStructure.elapsedYearsRange;
-      }
-      break;
-    case DateFormats.HistoricalDate:
-      {
-        newLabel = layoutBookStructure.historicalDateRange;
-      }
-      break;
-  }
-  setTag(layoutBookStructure.dateLabel, "label", newLabel);
+    let newLabel;
+    switch(newDateFormat)
+    {
+        case BibleVizUtils.Data.tags.DateFormats.ElapsedYears: {
+            newLabel = layoutBookStructure.elapsedYearsRange
+        }
+        break;
+        case BibleVizUtils.Data.tags.DateFormats.HistoricalDate: {
+            newLabel = layoutBookStructure.historicalDateRange
+        }
+        break;
+    }
+    setTag(layoutBookStructure.dateLabel, "label", newLabel);
 });

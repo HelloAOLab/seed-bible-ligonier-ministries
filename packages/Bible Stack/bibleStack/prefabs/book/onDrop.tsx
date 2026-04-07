@@ -1,7 +1,1 @@
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
-
-shout("OnStackBookInteracted", {
-  book: thisBot,
-  typeOfInteraction: CanvasInteractions.Drop,
-  dropEvent: that,
-});
+shout("OnStackBookInteracted", {book: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.Drop, dropInfo: that});

@@ -1,6 +1,1 @@
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
-
-shout(`OnLayoutChapterInteracted`, {
-  chapter: thisBot,
-  typeOfInteraction: CanvasInteractions.Drop,
-});
+shout(`OnLayoutChapterInteracted`, {chapter: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.Drop});

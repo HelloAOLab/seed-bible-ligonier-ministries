@@ -1,8 +1,1 @@
-import { updateIndicators } from "bibleVizUtils.controllers.userPresence.activityIndicatorsController";
-
-if (
-  thisBot.masks.isExpanded &&
-  !thisBot.masks.isDeselecting &&
-  !thisBot.masks.isSelecting
-)
-  updateIndicators(thisBot);
+if(thisBot.masks.isExpanded && !thisBot.masks.isDeselecting && !thisBot.masks.isSelecting) BibleVizUtils.Functions.UpdateUsersColorOnPiece({source: "TrySetUsersColorPosition", piece: thisBot, manager: BibleStackManager})

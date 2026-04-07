@@ -1,6 +1,1 @@
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
-
-shout("OnLayoutChunkOfVersesInteracted", {
-  chunk: thisBot,
-  typeOfInteraction: CanvasInteractions.Click,
-});
+shout("OnLayoutChunkOfVersesInteracted", {chunk: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.Click});

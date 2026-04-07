@@ -1,21 +1,15 @@
-import { BiblePiece } from "bibleVizUtils.models.canvas";
-
-const { piece } = that;
+const {piece} = that;
 let data;
 
-switch (piece.tags.typeOfPiece) {
-  case BiblePiece.LayoutBook:
-    data = thisBot.vars.layoutBooksData.find((data) => {
-      return data.isActive && data.piece?.id === piece.id;
-    });
+switch(piece.tags.typeOfPiece)
+{
+    case BibleVizUtils.Data.tags.BiblePieceType.LayoutBook:
+        data = thisBot.vars.layoutBooksData.find((data) => {return data.isActive && data.piece?.id === piece.id})
     break;
-  case BiblePiece.LayoutChapter:
-    data = thisBot.vars.layoutChaptersData.find((data) => {
-      return data.isActive && data.piece.id === piece.id;
-    });
+    case BibleVizUtils.Data.tags.BiblePieceType.LayoutChapter:
+        data = thisBot.vars.layoutChaptersData.find((data) => {return data.isActive && data.piece.id === piece.id})
     break;
-  default:
-    break;
+    default: break;
 }
 
 return data;

@@ -147,7 +147,7 @@
 }
 
 .icon:hover {
-  color: var(--primaryColor);
+  color: var(--secondaryColor);
 }
 
 .label-video {

@@ -1,30 +1,16 @@
-import { LayoutBibleData } from "bibleVizUtils.models.entities.LayoutBibleData";
-import type { LayoutBookStructure } from "bibleVizUtils.models.canvas";
+import {LayoutBibleData} from 'bibleVizUtils.classes.LayoutBibleData'
 
-const { position } = that;
+const {position} = that;
 
-const layoutDataId = uuid();
-const {
-  layoutBookStructures,
-  staticLayoutPieces,
-  amountOfRows,
-  sectionLinesInfo,
-  testamentLinesInfo,
-}: {
-  layoutBookStructures: LayoutBookStructure[];
-} = await thisBot.CreateLayoutStructure({ layoutDataId });
+const layoutData = new LayoutBibleData({id: uuid()});
+const { layoutBookStructures, staticLayoutPieces, amountOfRows, sectionLinesInfo, testamentLinesInfo } = await thisBot.CreateLayoutStructure({layoutData});
 
-const layoutData = new LayoutBibleData({
-  id: layoutDataId,
-  amountOfRows,
-  sectionLinesInfo,
-  testamentLinesInfo,
-  staticLayoutPieces,
-});
-layoutBookStructures.forEach((layoutBookStructure) => {
-  layoutData.addChild(layoutBookStructure);
-});
+layoutBookStructures.forEach((layoutBookStructure) => {layoutData.AddChild(layoutBookStructure)});
+layoutData.amountOfRows = amountOfRows
+layoutData.sectionLinesInfo = sectionLinesInfo;
+layoutData.testamentLinesInfo = testamentLinesInfo;
+layoutData.staticLayoutPieces = staticLayoutPieces;
 thisBot.vars.layoutsData.push(layoutData);
-thisBot.SetUpLayout({ layoutData, position });
+thisBot.SetUpLayout({layoutData, position});
 
-return { layoutData };
+return {layoutData}

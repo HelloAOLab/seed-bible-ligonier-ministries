@@ -1,82 +1,37 @@
 /**
- * This tag takes a section an set it to exploded view and unset the previous exploded view if it exists
- * @param {Object} that - Object that contains important data for the function
- * @param {Bok} that.section - The section to modify
- * @example
- * shout("TrySetSectionAsExplodedView", {section: someSection});
- */
-import { BibleVisualizationState } from "bibleVizUtils.models.canvas";
-import type { Bot } from "../../../../typings/AuxLibraryDefinitions";
-import type { StackSectionData } from "bibleVizUtils.models.entities.StackSectionData";
-import type { StackBibleData } from "bibleVizUtils.models.entities.StackBibleData";
-import type { StackTestamentData } from "bibleVizUtils.models.entities.StackTestamentData";
-import { seedBiblePresenceProvider } from "bibleVizUtils.services.index";
+    * This tag takes a section an set it to exploded view and unset the previous exploded view if it exists
+    * @param {Object} that - Object that contains important data for the function
+    * @param {Bok} that.section - The section to modify
+    * @example
+    * shout("TrySetSectionAsExplodedView", {section: someSection});
+*/
 
-const {
-  section,
-  setBibleAnimating = true,
-  speedMultiplier,
-  isInstantaneous,
-}: {
-  section: Bot;
-  setBibleAnimating?: boolean;
-  speedMultiplier: number;
-  isInstantaneous: boolean;
-} = that;
+const {section, setBibleAnimating = true, speedMultiplier, isInstantaneous} = that;
+if(thisBot.masks.isBibleAnimating && setBibleAnimating) return false;
+const sectionData = thisBot.GetPieceData({piece: section});
+const {bibleData, testamentData} = thisBot.GetDataChainFromParentDataIds({parentDataIds: sectionData.parentDataIds});
 
-if (thisBot.masks.isBibleAnimating && setBibleAnimating) return false;
+if(setBibleAnimating) setTagMask(thisBot, "isBibleAnimating", true);
 
-const sectionData = await (thisBot.GetPieceData({
-  piece: section,
-}) as Promise<StackSectionData | undefined>);
-
-if (!sectionData) {
-  throw new Error("sectionData not found at TrySetSectionAsExplodedView");
+if(testamentData || (bibleData && bibleData.currentStackVizState === BibleVizUtils.Data.tags.BibleVisualizationState.Regular))
+{
+    const previousExplodedViewSectionData = thisBot.GetPreviousExplodedViewSectionData({bibleData, testamentData});
+    if(previousExplodedViewSectionData) previousExplodedViewSectionData.isInExplodedView = false;
 }
-
-const { bibleData, testamentData } =
-  await (thisBot.GetDataChainFromParentDataIds({
-    parentDataIds: sectionData.parentDataIds,
-  }) as Promise<{
-    bibleData: StackBibleData | undefined;
-    testamentData: StackTestamentData | undefined;
-  }>);
-
-if (setBibleAnimating) setTagMask(thisBot, "isBibleAnimating", true);
-
-if (
-  testamentData ||
-  (bibleData &&
-    bibleData.currentStackVizState === BibleVisualizationState.Regular)
-) {
-  const previousExplodedViewSectionData: StackSectionData | undefined =
-    await thisBot.GetPreviousExplodedViewSectionData({
-      bibleData,
-      testamentData,
-    });
-  if (previousExplodedViewSectionData) {
-    previousExplodedViewSectionData.implode();
-  }
-}
-sectionData.explode();
+sectionData.isInExplodedView = true;
 thisBot.vars.lastInteractedStackSectionData = sectionData;
-await thisBot.UpdateStacks({ speedMultiplier, isInstantaneous });
+await thisBot.UpdateStacks({speedMultiplier, isInstantaneous});
 
-if (setBibleAnimating) setTagMask(thisBot, "isBibleAnimating", false);
+if(setBibleAnimating) setTagMask(thisBot, "isBibleAnimating", false);
 thisBot.UpdateStackPiecesActivityNotification();
 
-const activeTab = seedBiblePresenceProvider.getActiveTab();
+const activeTab = thisBot.vars.tabsContext.tabs.find((tab) => {return tab.id === thisBot.vars.tabsContext.activeTab});
 
-if (activeTab) {
-  const activeBook = sectionData.childrenData.flat().find((bookData) => {
-    return (
-      bookData.getPieceInfoProperty("commonName") === activeTab.data.book &&
-      bookData.isActivelySelected()
-    );
-  });
+if(activeTab)
+{
+    const activeBook = sectionData.childrenData.flat().find((bookData) => {
+        return bookData.pieceInfo.commonName === activeTab.data.book && bookData.isActive && bookData.isSelected
+    })
 
-  if (activeBook)
-    thisBot.UpdateStackTabsVisualization({
-      source: "OnStackBookSelectionComplete",
-    });
+    if(activeBook) thisBot.UpdateStackTabsVisualization({source: "OnStackBookSelectionComplete"});
 }

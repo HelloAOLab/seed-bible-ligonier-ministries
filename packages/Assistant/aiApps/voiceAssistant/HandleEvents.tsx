@@ -101,15 +101,14 @@ const HandleEvents = async ({ dc, data }) => {
     case "openChapter": {
       let { bookId, chapter } = JSON.parse(data.arguments || "{}");
 
-      const searchBar = getBot("system", "introduction.searchBar");
-      const booksData = [...searchBar.tags.booksData];
+      let searchBar = getBot("system", "introduction.searchBar");
+      let booksData = [...searchBar.tags.booksData];
       let correctId;
       chapter = Number(chapter);
-      for (const book of booksData) {
+      for (let book of booksData) {
         if (
           book.name.toLowerCase() === bookId.toLowerCase() ||
-          book.commonName.toLowerCase() === bookId.toLowerCase() ||
-          book.id.toLowerCase() === bookId.toLowerCase()
+          book.commonName.toLowerCase() === bookId.toLowerCase()
         ) {
           if (chapter <= book.numberOfChapters) {
             correctId = book.id;

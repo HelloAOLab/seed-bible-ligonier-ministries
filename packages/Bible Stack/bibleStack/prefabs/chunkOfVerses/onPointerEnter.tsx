@@ -1,6 +1,1 @@
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
-
-shout("OnStackChunkOfVersesInteracted", {
-  chunk: thisBot,
-  typeOfInteraction: CanvasInteractions.HoverBegin,
-});
+shout("OnStackChunkOfVersesInteracted", {chunk: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.HoverBegin});

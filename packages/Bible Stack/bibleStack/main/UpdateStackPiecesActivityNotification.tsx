@@ -1,8 +1,9 @@
-import { updateNotification } from "bibleVizUtils.controllers.userPresence.activityNotificationController";
+const piecesData = [
+    // ...thisBot.vars.stackTestamentsData,
+    // ...thisBot.vars.stackSectionsData,
+    // ...thisBot.vars.stackSectionBooksData,
+    // ...thisBot.vars.stackBooksData,
+    ...thisBot.vars.stackChaptersData,
+]
 
-const piecesData = [...thisBot.vars.stackChaptersData];
-
-updateNotification(piecesData, thisBot.tags.activityNotificationOffset, {
-  x: thisBot.tags.activityNotificationScaleX,
-  y: thisBot.tags.activityNotificationScaleY,
-});
+BibleVizUtils.Functions.UpdateActivityNotificationOnPieces({piecesData, manager: thisBot});

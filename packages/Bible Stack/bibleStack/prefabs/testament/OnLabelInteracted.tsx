@@ -1,11 +1,7 @@
 /**
- * Triggers an OnStackSectionInteracted event when the testament's label has been interacted.
- * @example
- * testament.OnLabelInteracted()
- */
-import { CanvasInteractions } from "bibleVizUtils.models.canvas";
+    * Triggers an OnStackSectionInteracted event when the testament's label has been interacted.
+    * @example
+    * testament.OnLabelInteracted()
+*/
 
-shout("OnStackTestamentInteracted", {
-  testament: thisBot,
-  typeOfInteraction: CanvasInteractions.Tap,
-});
+shout("OnStackTestamentInteracted", {testament: thisBot, typeOfInteraction: BibleVizUtils.Data.tags.InteractionType.Tap});
