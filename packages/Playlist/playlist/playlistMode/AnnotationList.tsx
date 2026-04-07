@@ -1,7 +1,9 @@
 const G = globalThis as any;
 const { LoaderSecondary } = G.Components;
 import { deleteAnnotation, getAnnotationRecord } from "db.annotations.library";
-const { useMemo, useEffect, useState, useRef } = os.appHooks;
+const { useMemo, useEffect } = os.appHooks;
+
+const { useState, useRef } = os.appHooks;
 
 const ChevronDown =
   "https://auth-aux-aobot-prod-filesbucket-141297942820.s3.amazonaws.com/aoBot/d03c885823b300c141eed037466a2ad6ab59f9523e2ada5ac781f4f3e5e7e45f.svg";
@@ -74,8 +76,6 @@ const AnnotationList = (props: any) => {
   } = props;
   const [filters, setFilters] = useState({ ...initialFilters });
   const [showFilters, setShowFilters] = useState(false);
-
-  const filterIconRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const discoverContainer = document.getElementById("discover-container");
@@ -272,7 +272,6 @@ const AnnotationList = (props: any) => {
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
       />
-      {filteredAnnotationData.length > 5 && <div ref={filterIconRef} />}
       {deleteModal.address && (
         <ConfirmationModal
           loading={loading}
@@ -305,27 +304,7 @@ const AnnotationList = (props: any) => {
               style={{
                 top: filteredAnnotationData.length > 0 ? "0.5rem" : "-2.1rem",
               }}
-              onClick={() => {
-                if (filteredAnnotationData.length < 2) {
-                  return ShowNotification({
-                    message: t("shouldHaveAtLeastTwoAnnotationsToFilter"),
-                    severity: "error",
-                  });
-                }
-                setShowFilters(true);
-                const isMobile =
-                  (window?.innerWidth || gridPortalBot.tags.pixelWidth) <
-                  G.MOBILE_VIEWPORT_THRESHOLD;
-                if (!isMobile) {
-                  // Scorll into view but 40px from the top
-                  filterIconRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                    inline: "nearest",
-                    top: 200,
-                  });
-                }
-              }}
+              onClick={() => setShowFilters(true)}
             >
               <img
                 className="img-icon"
@@ -336,7 +315,6 @@ const AnnotationList = (props: any) => {
             </div>
             {showFilters && (
               <AnnotationListFilters
-                showAtBottom={filteredAnnotationData.length < 6}
                 onChangeFilters={onChangeFilters}
                 onClearFilters={onClearFilters}
                 currentOpenedBook={currentOpenedBook}
@@ -347,25 +325,23 @@ const AnnotationList = (props: any) => {
               />
             )}
             {filteredAnnotationData.map((ele: any, index: number) => (
-              <>
-                <AnnotationHeading
-                  key={ele.address}
-                  address={ele.address}
-                  index={index}
-                  onDelete={onDelete}
-                  heading={ele.heading}
-                  tags={ele.tags}
-                  data={ele.data}
-                  currentOpenedBook={currentOpenedBook}
-                  chapter={chapter}
-                  deleteOverlay={deleteOverlay}
-                  setDeleteOverlay={setDeleteOverlay}
-                  position={position}
-                  setDeleteModal={setDeleteModal}
-                  setShowFilters={setShowFilters}
-                  closeOverlay={closeOverlay}
-                />
-              </>
+              <AnnotationHeading
+                key={ele.address}
+                address={ele.address}
+                index={index}
+                onDelete={onDelete}
+                heading={ele.heading}
+                tags={ele.tags}
+                data={ele.data}
+                currentOpenedBook={currentOpenedBook}
+                chapter={chapter}
+                deleteOverlay={deleteOverlay}
+                setDeleteOverlay={setDeleteOverlay}
+                position={position}
+                setDeleteModal={setDeleteModal}
+                setShowFilters={setShowFilters}
+                closeOverlay={closeOverlay}
+              />
             ))}
           </div>
         </>

@@ -101,15 +101,14 @@ const HandleEvents = async ({ dc, data }) => {
     case "openChapter": {
       let { bookId, chapter } = JSON.parse(data.arguments || "{}");
 
-      const searchBar = getBot("system", "introduction.searchBar");
-      const booksData = [...searchBar.tags.booksData];
+      let searchBar = getBot("system", "introduction.searchBar");
+      let booksData = [...searchBar.tags.booksData];
       let correctId;
       chapter = Number(chapter);
-      for (const book of booksData) {
+      for (let book of booksData) {
         if (
           book.name.toLowerCase() === bookId.toLowerCase() ||
-          book.commonName.toLowerCase() === bookId.toLowerCase() ||
-          book.id.toLowerCase() === bookId.toLowerCase()
+          book.commonName.toLowerCase() === bookId.toLowerCase()
         ) {
           if (chapter <= book.numberOfChapters) {
             correctId = book.id;
@@ -605,7 +604,7 @@ const HandleEvents = async ({ dc, data }) => {
       let { language } = JSON.parse(data.arguments || "{}");
       console.log(language, "language");
       let available_translations_req = await web.get(
-        "https://vmfnri.helloao.org/api/available_translations.json"
+        "https://ligonier.helloao.org/api/available_translations.json"
       );
       let translationOptions = [];
       available_translations_req.data.translations.map((translation) => {
@@ -635,13 +634,13 @@ const HandleEvents = async ({ dc, data }) => {
     case "changeTranslation": {
       let { translation } = JSON.parse(data.arguments || "{}");
       let translationReq = await web.get(
-        `https://vmfnri.helloao.org/api/${translation}/books.json`
+        `https://ligonier.helloao.org/api/${translation}/books.json`
       );
       let translationData = { ...translationReq.data };
       ChangeTranslation(
         translationData.translation.id,
         translationData.books,
-        "https://vmfnri.helloao.org"
+        "https://ligonier.helloao.org"
       );
       dc.send(
         JSON.stringify({

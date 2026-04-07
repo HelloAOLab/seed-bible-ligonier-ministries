@@ -187,6 +187,32 @@ export const SectionTextNumber = Node.create({
 });
 
 // ------- render helpers -------
+// Helper to split text into plain and citation chunks (simplified version for HTML generation)
+function splitTextWithCitations(text) {
+  const citationRE = /\([^)]*\)/g;
+  const parts = text.split(citationRE) || [];
+  const matches = text.match(citationRE) || [];
+  const result = [];
+
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i]) {
+      result.push({ text: parts[i], type: "plain" });
+    }
+    if (matches[i]) {
+      // Simple heuristic: if it contains numbers and looks like a citation, mark it
+      const inner = matches[i].slice(1, -1).trim();
+      const hasNumbers = /\d/.test(inner);
+      const looksLikeCitation = hasNumbers && /[\d:]/.test(inner);
+      result.push({
+        text: matches[i],
+        type: looksLikeCitation ? "citation" : "plain",
+      });
+    }
+  }
+
+  return result;
+}
+
 function renderStudyNotesToHTML(studyNote) {
   if (!studyNote || !studyNote.length || !studyNote[0]) {
     return `
@@ -195,29 +221,56 @@ function renderStudyNotesToHTML(studyNote) {
       </div>`;
   }
   let html = `<div class="judeTextPage">`;
-  studyNote.forEach((book) => {
+  studyNote.forEach((book, bookIdx) => {
     html += `<div class="studyTextContainer">`;
     html += `<h2 class="mainHeader">${book.header}</h2>`;
-    book.sections.forEach((verse) => {
-      html += `<div class="verse">`;
-      const sec = verse.section.toString();
-      const m = sec.match(/(\d+):(\d+)(?:\s+(.*))?/);
-      if (m) {
-        const bookNum = m[1];
-        const verseNum = m[2];
-        const tail = m[3] || "";
-        html += `<h3 class="verseNumber">${bookNum}:${verseNum}${
-          tail ? ` <span>${tail}</span>` : ""
-        }</h3>`;
-      } else {
-        html += `<h3 class="verseNumber">${sec}</h3>`;
-      }
-      verse.content.forEach((line) => {
-        html += `<span class="verseText">${line}</span>`;
+    if (book && book.sections) {
+      book.sections.forEach((verse, vIdx) => {
+        html += `<div class="verse">`;
+        const sec = verse.section.toString();
+        const m = sec.match(/(\d+):(\d+)(?:\s+(.*))?/);
+
+        html += `<h3 class="verseNumber">`;
+        if (!m) {
+          // No match - just show the section as a clickable span
+          html += `<span class="clickableCursor">${sec}</span>`;
+        } else {
+          const bookNum = m[1];
+          const verseNum = m[2];
+          const tail = m[3] || "";
+          const before = sec.slice(0, m.index).trim() || "";
+
+          // Before text + chapter:verse as clickable span
+          if (before) {
+            html += `<span class="clickableCursor">${before} ${bookNum}:${verseNum}</span>`;
+          } else {
+            html += `<span class="clickableCursor">${bookNum}:${verseNum}</span>`;
+          }
+
+          // Tail as separate clickable span if present
+          if (tail) {
+            html += `<span class="clickableCursor"> ${tail}</span>`;
+          }
+        }
+        html += `</h3>`;
+
+        // Split content with citations and render properly
+        const contentText = Array.isArray(verse.content)
+          ? verse.content.join(" ")
+          : String(verse.content || "");
+        const chunks = splitTextWithCitations(contentText);
+
+        chunks.forEach((chunk) => {
+          if (chunk.type === "plain") {
+            html += `<span class="verseText">${chunk.text}</span>`;
+          } else {
+            html += `<span class="studyCitation clickableCursor">${chunk.text}</span>`;
+          }
+        });
+        html += `</div>`;
       });
       html += `</div>`;
-    });
-    html += `</div>`;
+    }
   });
   html += `</div>`;
   return html;
@@ -309,7 +362,7 @@ const TextEditor = ({
 
   const htmlString = !studyNotes
     ? generateHtmlFromContent(data)
-    : renderStudyNotesToHTML(data);
+    : renderStudyNotesToHTML(studyNotes);
 
   useEffect(() => {
     const saveData = (editor) => {

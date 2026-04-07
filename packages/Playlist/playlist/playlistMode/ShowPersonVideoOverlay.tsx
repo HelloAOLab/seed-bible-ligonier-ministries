@@ -41,11 +41,7 @@ const VideoOverlay = () => {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setTimeout(() => {
-          videoRef.current.play().catch((err: any) => {
-            console.error("Error playing video:", err);
-          });
-        }, 100);
+        videoRef.current.play();
       } else {
         console.warn("videoRef.current is still null!");
       }
@@ -107,11 +103,11 @@ const VideoOverlay = () => {
         <video
           poster={`https://dummyimage.com/240x240/000/fff&text=Preview`}
           className={`size-${size}`}
+          autoPlay={true}
           muted={true}
           controls={false}
           ref={videoRef}
           playsInline
-          autoPlay
         />
         <div className="control-overlay">
           <span

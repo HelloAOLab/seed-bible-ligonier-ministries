@@ -2,7 +2,7 @@ import { captureElement } from "aiApps.voiceAssistant.Utils";
 
 const getTranslationData = async ({ language = "english" }) => {
   let available_translations_req = await web.get(
-    "https://vmfnri.helloao.org/api/available_translations.json"
+    "https://ligonier.helloao.org/api/available_translations.json"
   );
   let translationId;
   for (
@@ -20,7 +20,7 @@ const getTranslationData = async ({ language = "english" }) => {
   }
   console.log(translationId, language, "translationId");
   let translationReq = await web.get(
-    `https://vmfnri.helloao.org/api/${translationId}/books.json`
+    `https://ligonier.helloao.org/api/${translationId}/books.json`
   );
   return { ...translationReq.data };
 };
@@ -65,7 +65,7 @@ const verifyVerse = async (
   versePass
 ) => {
   let chapterReq = await web.get(
-    `https://vmfnri.helloao.org/api/${translationPass}/${bookPass}/${chapterPass}.json`
+    `https://ligonier.helloao.org/api/${translationPass}/${bookPass}/${chapterPass}.json`
   );
   let chapterData = { ...chapterReq.data };
   if (verse <= chapterData.numberOfVerses) {

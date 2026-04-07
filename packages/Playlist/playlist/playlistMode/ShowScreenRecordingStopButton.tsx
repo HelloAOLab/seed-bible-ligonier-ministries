@@ -71,10 +71,6 @@ const ShowScreenRecordingStopButton = () => {
   return hidden ? null : (
     <>
       <style>{thisBot.tags["ScreenRecording.css"]}</style>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-      />
       <div
         className="ScreenRecording"
         onMouseUp={handleMouseUp}
@@ -98,7 +94,7 @@ const ShowScreenRecordingStopButton = () => {
             brush
           </span>
         )}
-        <p>{t("youAreSharingYourScreen")}</p>
+        <p>You're sharing your screen.</p>
         <div
           src="https://auth-aux-aobot-prod-filesbucket-141297942820.s3.amazonaws.com/aoBot/8c36b2ef970a1ddd51de47ff2157fc2d7746fcfbb2f02f8941018052d29dbb31.svg"
           className="pointer stop-recording align-center"
@@ -108,8 +104,7 @@ const ShowScreenRecordingStopButton = () => {
               return;
             }
             G.StopVideoRecording = true;
-            // G.setTabPlaylist("create");
-            thisBot.OpenSelf({ force: true });
+            G.setTabPlaylist("create");
           }}
         >
           <span class="material-symbols-outlined">cancel</span>
@@ -126,7 +121,7 @@ const ShowScreenRecordingStopButton = () => {
             setHidden(true);
           }}
         >
-          {t("hide")}
+          Hide
         </p>
       </div>
     </>

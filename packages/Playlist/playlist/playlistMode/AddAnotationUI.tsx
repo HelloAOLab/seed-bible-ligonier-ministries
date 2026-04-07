@@ -496,9 +496,7 @@ const AddAnotationUI = (props: any) => {
 
   // Edit Mode
   const [isEditAddress, setIsEditAddress] = useState(editData?.address);
-  const [editDataDetails, setEditDataDetails] = useState<any>(
-    G.EditAnnoDataDetailsRestorePlaylist || {}
-  );
+  const [editDataDetails, setEditDataDetails] = useState<any>({});
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -511,9 +509,7 @@ const AddAnotationUI = (props: any) => {
   );
 
   const [showMoreOptions, setShowMoreOptions] = useState(false);
-  const [publishAccess, setPublishAccess] = useState(
-    G.PublishAccessRestorePlaylist || "public"
-  );
+  const [publishAccess, setPublishAccess] = useState("public");
 
   const [loading, setLoading] = useState(false);
   const [dataFetching, setDataFetching] = useState(false);
@@ -531,12 +527,8 @@ const AddAnotationUI = (props: any) => {
   useLayoutEffect(() => {
     G.SetSelectedAnnotations = setSelectedAnnotation;
     G.AddAnotationUI = true;
-    if (
-      editData?.address &&
-      editData?.address !== G.LastEditingAnnotationAddress
-    ) {
+    if (editData?.address) {
       (async () => {
-        G.LastEditingAnnotationAddress = editData?.address;
         setDataFetching(true);
         setList([]);
         try {
@@ -550,7 +542,7 @@ const AddAnotationUI = (props: any) => {
             setTags([...(data.chronicle_tags || [])]);
             G.IsEditingAnnotation = true;
             const booksDetails = G.findNameRank(data.bookId);
-            const ediDataBookItem = {
+            setEditDataDetails({
               type: "heading",
               content: data.data.html,
               createdAtMs: data.data.createdAtMs,
@@ -568,11 +560,8 @@ const AddAnotationUI = (props: any) => {
                 bookRank: booksDetails.item,
               },
               id: data.id,
-            };
-            G.EditAnnoDataDetailsRestorePlaylist = ediDataBookItem;
-            setEditDataDetails(ediDataBookItem);
+            });
           } else if (data.data) {
-            G.EditAnnoDataDetailsRestorePlaylist = { ...data.data };
             setEditDataDetails({ ...data.data });
             const layers = data.data.additionalInfo?.layers?.filter(
               (ele: any) => ele.type === "heading"
@@ -613,11 +602,6 @@ const AddAnotationUI = (props: any) => {
       G.SetEditAnnoData?.(null);
     };
   }, []);
-
-  // Restore publish access
-  useLayoutEffect(() => {
-    G.PublishAccessRestorePlaylist = publishAccess;
-  }, [publishAccess]);
 
   G.AnnotationUISingleMode = singleMode;
 
@@ -1065,8 +1049,6 @@ const AddAnotationUI = (props: any) => {
       if (setTab) setTab("discover");
       delete G.AnnotationsData[`${book}-${chapter}`];
       thisBot.fetchAnnotationsData({ ...G.CurrentBookData });
-      G.LastEditingAnnotationAddress = null;
-      thisBot.resetPlaylistGlobalStateVars();
     } catch (e) {
       setLoading(false);
       console.error(`${t("errorUpdatingAnnotations")}:`, e);
@@ -1223,7 +1205,6 @@ const AddAnotationUI = (props: any) => {
         delete G.AnnotationsData[`${book}-${chapter}`];
         thisBot.fetchAnnotationsData({ ...G.CurrentBookData });
         setTextHTML(null);
-        thisBot.resetPlaylistGlobalStateVars();
       }
     } catch (e) {
       setLoading(false);
@@ -1902,7 +1883,6 @@ const AddAnotationUI = (props: any) => {
                   if (isEditAddress) setList([]);
                   setIsEditAddress(false);
                   G.SetEditAnnoData?.(null);
-                  thisBot.resetPlaylistGlobalStateVars();
                   if (setTab) setTab("discover");
                 }}
               >
@@ -2003,7 +1983,6 @@ const AddAnotationUI = (props: any) => {
                   marginRight: "0.5rem",
                 }}
                 onClick={(e) => {
-                  thisBot.resetPlaylistGlobalStateVars();
                   setList([]);
                   G.PreviousHTML = null;
                   setTextHTML(null);
@@ -2015,8 +1994,34 @@ const AddAnotationUI = (props: any) => {
                 {t("cancel")}
               </div>
               <TogglePlaylistHeight />
+              <div
+                className="publish-setting"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+
+                  const x = rect.left; // X position where the element starts (from left of screen)
+                  const y = rect.bottom; // Y position where the element ends (bottom of element from top of screen)
+
+                  G.LastClickX = x;
+                  G.LastClickY = y;
+                  showMorePosition.current = { ...getPosition() };
+                  setShowMoreOptions(true);
+                }}
+              >
+                <img
+                  className="img-icon"
+                  src={G.Settings_Icon}
+                  alt="Settings_Icon"
+                />
+              </div>
             </div>
           </div>
+        )}
+
+        {false && (
+          <p style={{ margin: "0.25rem 0", fontWeight: "600" }}>
+            {t("noteRangesOfChapterWillBeSkippedInSavingAnnotation")}
+          </p>
         )}
 
         {(isSomethingChecked || embedding) && (
@@ -2049,11 +2054,7 @@ const AddAnotationUI = (props: any) => {
               !isEditAddress &&
               isSomethingChecked &&
               !isSomethingEmbededChecked && (
-                <Button
-                  onClick={onEmbedInside}
-                  secondaryAlt
-                  color="var(--secondaryColor)"
-                >
+                <Button onClick={onEmbedInside} secondaryAlt color="#3B82F6">
                   <span
                     style={{ marginRight: "0.5rem" }}
                     class="material-symbols-outlined unfollow color-inherit"
@@ -2113,7 +2114,7 @@ const AddAnotationUI = (props: any) => {
                   onDisembed(values);
                 }}
                 secondaryAlt
-                color="var(--secondaryColor)"
+                color="#3B82F6"
               >
                 <span
                   style={{ marginRight: "0.5rem" }}
@@ -2149,7 +2150,7 @@ const AddAnotationUI = (props: any) => {
             <p>{t("fetchingAnnotationData")}</p>
           </div>
         )}
-        {finalHistoryObject.length === 0 && !dataFetching && !isEditAddress && (
+        {finalHistoryObject.length === 0 && !dataFetching && (
           <p style={{ margin: "1rem 0" }}>{t("addItemsToStartAnnotating")}</p>
         )}
         {finalHistoryObject.map((ele: any, index: number) =>
@@ -2289,7 +2290,6 @@ const AddAnotationUI = (props: any) => {
                 !embedding && (
                   <div style={{ padding: "1rem 1rem 0 1rem" }}>
                     <CustomAnnotationTextEditor
-                      isEditAddress={isEditAddress}
                       showPreview={showPreview}
                       setShowPreview={setShowPreview}
                       initialHTML={textHTML}

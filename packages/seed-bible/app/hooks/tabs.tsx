@@ -41,8 +41,8 @@ export function TabsProvider({ children }) {
             book: "Genesis",
             bookId: "GEN",
             chapter: 1,
-            translation: "AAB",
-            shortName: "AAB",
+            translation: "ESV",
+            shortName: "ESV",
           },
         },
       ], // Standalone tabs (not in a folder)
@@ -72,8 +72,8 @@ export function TabsProvider({ children }) {
             book: "Genesis",
             bookId: "GEN",
             chapter: 1,
-            translation: "AAB",
-            shortName: "AAB",
+            translation: "ESV",
+            shortName: "ESV",
           },
         },
       ],
@@ -103,8 +103,8 @@ export function TabsProvider({ children }) {
             book: "Genesis",
             bookId: "GEN",
             chapter: 1,
-            translation: "AAB",
-            shortName: "AAB",
+            translation: "ESV",
+            shortName: "ESV",
           },
         },
       ],
@@ -507,8 +507,8 @@ export function TabsProvider({ children }) {
             book: "Genesis",
             bookId: "GEN",
             chapter: 1,
-            translation: "AAB",
-            shortName: "AAB",
+            translation: "ESV",
+            shortName: "ESV",
           },
         },
       ],
@@ -660,11 +660,13 @@ export function TabsProvider({ children }) {
   useEffect(() => {
     globalThis.ActiveTab = activeTab;
     globalThis.SetActiveTab = setActiveTab;
+    globalThis.GetTabsInSpace = () => getAllTabsInSpace(activeSpace);
     return () => {
       globalThis.ActiveTab = null;
       globalThis.SetActiveTab = null;
+      globalThis.GetTabsInSpace = null;
     };
-  }, [activeTab]);
+  }, [activeTab, activeSpace]);
   useEffect(() => {
     // os.log("checking active space for shared tab", tabs, activeSpace);
     // setTimeout(() => {

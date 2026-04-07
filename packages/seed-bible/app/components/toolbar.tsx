@@ -7,7 +7,12 @@ import { useMouseMove } from "app.hooks.mouseMove";
 import SurroundingDivs from "app.components.surroundingDivs";
 import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
-import { BurgerMenuIcon, MoreIcon, TabsIcon } from "app.components.icons";
+import {
+  BurgerMenuIcon,
+  MoreIcon,
+  TabsIcon,
+  getIcon,
+} from "app.components.icons";
 
 const G = globalThis as any;
 
@@ -301,14 +306,29 @@ export function Toolbar() {
               className="mobile-center-logo"
             >
               <div className="logo-container">
-                <img
-                  src={
-                    mobileBookLogo ||
-                    "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
-                  }
-                  alt="Seed Bible"
-                  className="seed-bible-logo"
-                />
+                {getSettingsPreset() === "ligonier" ||
+                mobileBookLogo === "LigonierSeedBibleIcon" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "32px",
+                      height: "32px",
+                    }}
+                  >
+                    <LigonierSeedBibleIcon />
+                  </div>
+                ) : (
+                  <img
+                    src={
+                      mobileBookLogo ||
+                      "https://res.cloudinary.com/dacw0qnpr/image/upload/v1759916122/Seed_Bible_-_All_Logos_2025-25_vvawwg.png"
+                    }
+                    alt="Seed Bible"
+                    className="seed-bible-logo"
+                  />
+                )}
               </div>
             </div>
 
@@ -326,17 +346,26 @@ export function Toolbar() {
                           setActiveMoreApp(tool.label);
                         }}
                       >
-                        {tool?.isImg ? (
-                          <img
-                            src={tool.icon}
-                            style={{ width: "20px" }}
-                            alt={tool.label}
-                          />
-                        ) : (
-                          <span className="material-symbols-outlined">
-                            {tool?.icon}
-                          </span>
-                        )}
+                        {(() => {
+                          if (tool?.isImg) {
+                            return (
+                              <img
+                                src={tool.icon}
+                                style={{ width: "20px" }}
+                                alt={tool.label}
+                              />
+                            );
+                          }
+                          const CustomIcon = getIcon(tool?.icon);
+                          if (CustomIcon) {
+                            return <CustomIcon width={20} height={20} />;
+                          }
+                          return (
+                            <span className="material-symbols-outlined">
+                              {tool?.icon}
+                            </span>
+                          );
+                        })()}
                         <span className="more-menu-item-label">
                           {tool?.label}
                         </span>
@@ -516,17 +545,26 @@ export function Toolbar() {
                       }}
                       onMouseLeave={() => clearTimeout(holdTimeoutRef.current)}
                     >
-                      {tool.isImg ? (
-                        <img
-                          src={tool.icon}
-                          style={{ width: "25px" }}
-                          alt={tool.label}
-                        />
-                      ) : (
-                        <span className="material-symbols-outlined">
-                          {tool.icon}
-                        </span>
-                      )}
+                      {(() => {
+                        if (tool.isImg) {
+                          return (
+                            <img
+                              src={tool.icon}
+                              style={{ width: "25px" }}
+                              alt={tool.label}
+                            />
+                          );
+                        }
+                        const CustomIcon = getIcon(tool.icon);
+                        if (CustomIcon) {
+                          return <CustomIcon width={25} height={25} />;
+                        }
+                        return (
+                          <span className="material-symbols-outlined">
+                            {tool.icon}
+                          </span>
+                        );
+                      })()}
                       {tool.label && (
                         <span
                           className="toolbar-btn-label"

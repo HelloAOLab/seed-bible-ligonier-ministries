@@ -2,7 +2,7 @@
   "author": "Gabriel Souki",
   "configEditor": {
     "author": "Gabriel Souki",
-    "app": "@getApp",
+    "app": "@GetScriptureMap2D",
     "toolbarConfig": {
       "label": "Scripture Map 2D",
       "hasToggle": true,
@@ -35,7 +35,7 @@
   "id": 1757954638673,
   "license": "MIT",
   "linkedDependencies": [],
-  "mainBotTag": "scriptureMap2D.casualos",
+  "mainBotTag": "scriptureMap2D.main",
   "name": "Scripture Map 2D",
   "otherBots": [],
   "recordFile": {

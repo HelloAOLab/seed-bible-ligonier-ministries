@@ -11,6 +11,7 @@ G[`${id}SetCreatingPlaylist`] && G[`${id}SetCreatingPlaylist`](false);
 // thisBot.showInfo(`History Mode`);
 G[`${id}SetDontOpenPlaylist`] && G[`${id}SetDontOpenPlaylist`](false);
 os.unregisterApp("controlButtons");
+
 G.SetEditData({
   color: null,
   id: null,

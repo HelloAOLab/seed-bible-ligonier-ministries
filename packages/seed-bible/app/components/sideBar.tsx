@@ -849,11 +849,13 @@ function SideBar({ panelsNumber }) {
     selectedTabs,
     setSelectedTabs,
     sharedTab,
+    getAllTabsInSpace,
   } = useTabsContext();
   const hidePanels =
     tags?.settingsConfigs?.presets?.[getSettingsPreset()]?.appSettings
       ?.disablePanels;
   globalThis.AddTab = addTab;
+  globalThis.GetTabsInSpace = () => getAllTabsInSpace(activeSpace);
   const { screens, setScreens, fullScreen, setFullScreen, ReSeed, setReSeed } =
     useBibleContext();
   // globalThis.setScreens = setScreens
@@ -1472,8 +1474,8 @@ function SideBar({ panelsNumber }) {
                 book: "Genesis",
                 bookId: "GEN",
                 chapter: 1,
-                translation: "AAB",
-                shortName: "AAB",
+                translation: "ESV",
+                shortName: "ESV",
               },
             });
             closePopupSettings();
@@ -1610,8 +1612,8 @@ function SideBar({ panelsNumber }) {
           book: "Genesis",
           bookId: "GEN",
           chapter: 1,
-          translation: "AAB",
-          shortName: "AAB",
+          translation: "ESV",
+          shortName: "ESV",
         },
       };
       addTab(newTab);
@@ -2864,8 +2866,8 @@ function SideBar({ panelsNumber }) {
                       book: "Genesis",
                       bookId: "GEN",
                       chapter: 1,
-                      translation: "AAB",
-                      shortName: "AAB",
+                      translation: "ESV",
+                      shortName: "ESV",
                     },
                   });
                 }
@@ -3027,7 +3029,6 @@ export const SpaceUI = () => {
                 <MobileSettingsIcon filter="var(--filter-mode)" />
               </span>
               <SettingsProfile />
-              <UserProfile />
             </>
           ) : (
             <>
@@ -3271,7 +3272,8 @@ export const UserProfile = ({ collapsed }) => {
           // border: `2px solid ${!configBot.tags.staticInst ? colors[colorIndex] : "var(--pageTextColor)"}`,
           padding: 2,
           display: "flex",
-          backgroundColor: "var(--addButtonIcon)",
+          backgroundColor:
+            "var(--profileAvatar, var(--spaceSelection, #859E3B))",
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",

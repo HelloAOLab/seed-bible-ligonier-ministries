@@ -2,7 +2,7 @@
 .judeTextPage {
   margin: 0 auto;
   padding: 20px;
-  background-color: #fff;
+  background-color: var(--panelBackground, #fff);
 }
 
 /* each book block */
@@ -65,6 +65,6 @@
 }
 
 .verse.highlighted {
-  border-color: #4F645B;
+  border-color: #4f645b;
   background-color: #639498;
 }

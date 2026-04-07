@@ -1,6 +1,5 @@
 const { useState, useMemo, useLayoutEffect } = os.appHooks;
 const G = globalThis as any;
-const { Button } = G.Components;
 
 const PlaylistRowItem = await thisBot.PlaylistRowItem();
 
@@ -163,11 +162,16 @@ const AddToPlaylist = ({
               />
             );
           })}
-          <div style={{ width: "max-content", marginTop: "0.5rem" }}>
-            <Button secondary onClick={onAddNewPlaylist}>
-              + {t("addToNew")}
-            </Button>
-          </div>
+          <p
+            style={{
+              cursor: "pointer",
+              color: "var(--secondaryColor)",
+              fontSize: "14px",
+            }}
+            onClick={onAddNewPlaylist}
+          >
+            + {t("addToNew")}
+          </p>
         </div>
       </div>
       <style>{thisBot.tags["AddToPlaylist.css"]}</style>
