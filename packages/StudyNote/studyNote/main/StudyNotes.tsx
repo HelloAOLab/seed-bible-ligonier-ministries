@@ -2451,59 +2451,9 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                 <span
                                   key={`${keyPrefix}-${i}`}
                                   className="studyCitation clickableCursor"
-                                  onMouseEnter={(e) => {
-                                    e.stopPropagation();
-                                    scheduleOpenPopupOnHover(e, chunk.text);
-                                  }}
-                                  onMouseLeave={() => {
-                                    clearHoverOpenTimer();
-                                    overCitationRef.current = false;
-                                  }}
                                   onClick={(e) => {
-                                    console.log("text: ", chunk.text);
                                     e.stopPropagation();
-                                    overCitationRef.current = true;
-                                    const { clientX, clientY } = e;
-                                    const containerRect =
-                                      containerRef.current.getBoundingClientRect() || {
-                                        width: 0,
-                                      };
-                                    const targetEl = e.currentTarget;
-                                    const targetRect =
-                                      targetEl.getBoundingClientRect();
-                                    const margin = 15;
-                                    const gap = 5;
-                                    const popupWidth = Math.min(
-                                      containerRect.width * 0.6,
-                                      480
-                                    );
-                                    const {
-                                      offsetLeft,
-                                      offsetTop,
-                                      offsetWidth,
-                                      offsetHeight,
-                                    } = e.target;
-                                    const centerPivotX =
-                                      offsetLeft + offsetWidth / 4;
-                                    const ideal = centerPivotX - popupWidth / 2;
-                                    const realLeft = Math.max(
-                                      margin,
-                                      Math.min(
-                                        ideal,
-                                        containerRect.width -
-                                          15 -
-                                          margin -
-                                          popupWidth
-                                      )
-                                    );
-                                    const distanceFromViewportTop =
-                                      targetRect.top;
-                                    const isBelow =
-                                      distanceFromViewportTop < 300;
-                                    const relY = isBelow
-                                      ? offsetTop + offsetHeight + gap
-                                      : offsetTop - gap;
-                                    // Use contextBook from plain text if available (e.g., "in Leviticus (19:9)")
+                                    HandleClosePopup();
                                     const effectiveBookId =
                                       chunk.contextBook || bookId;
                                     const refs = parseCitationReferences(
@@ -2511,19 +2461,9 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                       effectiveBookId,
                                       contextChapterRef.current + 1
                                     );
-                                    const newPopup = {
-                                      text: chunk.text,
-                                      refs,
-                                      clientX,
-                                      clientY,
-                                      relX: realLeft,
-                                      relY,
-                                      margin: offsetHeight,
-                                      isBelow,
-                                    };
-                                    setNextPopup(newPopup);
-                                    switchPopup(newPopup);
-                                    fetchCitationDataForRefs(refs);
+                                    if (refs && refs.length > 0) {
+                                      handleCitationHeadingClick(refs[0], e);
+                                    }
                                   }}
                                 >
                                   {chunk.text}
