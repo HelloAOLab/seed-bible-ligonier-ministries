@@ -2592,7 +2592,25 @@ function ThePage({
                     marginLeft: "var(--text-bookchapter-margin-left)",
                   }}
                 >
-                  <span style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    onClick={(e) => {
+                      if (globalThis.setOpenSidebar && globalThis.openSidebar) {
+                        globalThis.setOpenSidebar(false);
+                        globalThis.selectBookSelectorBook &&
+                          globalThis.selectBookSelectorBook(null);
+                      } else {
+                        globalThis.setOpenSidebar &&
+                          globalThis.setOpenSidebar(true);
+                        globalThis.selectBookSelectorBook &&
+                          globalThis.selectBookSelectorBook(data.bookId);
+                      }
+                    }}
+                    style={{
+                      "pointer-events": isDragging ? "none" : null,
+                      marginBottom: 0,
+                    }}
+                    className="bookTitle"
+                  >
                     {`${data?.book} ${data?.chapter}`}{" "}
                     <span
                       style={{
@@ -2620,15 +2638,8 @@ function ThePage({
                         }
                       }}
                     >{` / ${data?.shortName}`}</span>
-                  </span>
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      marginLeft: "auto",
-                      paddingTop: "8px",
-                      flexShrink: 0,
-                    }}
-                  >
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <MoreResources />
                   </div>
                 </div>

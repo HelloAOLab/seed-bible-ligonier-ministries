@@ -9,6 +9,7 @@ import { useBibleContext } from "app.hooks.bibleVariables";
 import { useTabsContext } from "app.hooks.tabs";
 import {
   BurgerMenuIcon,
+  LigonierSeedBibleIcon,
   MoreIcon,
   TabsIcon,
   getIcon,
