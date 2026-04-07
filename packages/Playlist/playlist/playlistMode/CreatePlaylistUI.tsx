@@ -316,8 +316,13 @@ const CreatePlaylistUI = (props: any) => {
   const addDataToPlaylist = (
     data: any[],
     isBulk = false,
-    combineLast = false
+    combineLast = false,
+    setDirect = false
   ) => {
+    if (setDirect) {
+      setPlaylist(data);
+      return;
+    }
     if (isBulk) {
       setPlaylist((prev: any[]) => {
         const old = [...prev, ...data];
@@ -950,6 +955,70 @@ const CreatePlaylistUI = (props: any) => {
         padding: "12px",
       }}
     >
+      {(dataWarning || loseProgressWarning) && (
+        <Modal
+          title={dataWarning ? t("dataWarning") : t("loseProgressWarning")}
+          onClose={() => {
+            if (loading) return;
+            setDataWarning(false);
+            setLoseProgressWarning(false);
+          }}
+          showIcon={false}
+        >
+          <h2 style={{ fontSize: "1rem", marginBottom: "1rem" }}>
+            {dataWarning ? t("dataWarningMsg") : t("loseProgressWarningMsg")}
+          </h2>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
+            <Button
+              loading={loading}
+              secondaryAlt={dataWarning ? false : true}
+              secondary={dataWarning ? true : false}
+              onClick={async () => {
+                setLoading(true);
+                if (dataWarning) {
+                  await G.OnClickSend(true);
+                  setTimeout(() => {
+                    onClickSave();
+                  }, 100);
+                } else {
+                  isTempEdit.current = false;
+                  setPlaylist([]);
+                  setCreatingPlaylist(false);
+                }
+                setDataWarning(false);
+                setLoseProgressWarning(false);
+                setLoading(false);
+              }}
+            >
+              {dataWarning ? t("addAndSave") : t("confirm")}
+            </Button>
+            {dataWarning && (
+              <Button
+                disabled={loading}
+                secondary
+                onClick={() => {
+                  onClickSave();
+                }}
+              >
+                {t("ignoreAndSave")}
+              </Button>
+            )}
+            <Button
+              secondaryAlt={dataWarning ? true : false}
+              secondary={dataWarning ? false : true}
+              disabled={loading}
+              onClick={() => {
+                setDataWarning(false);
+                setLoseProgressWarning(false);
+              }}
+            >
+              {t("cancel")}
+            </Button>
+          </div>
+        </Modal>
+      )}
       {layersWarning && (
         <Modal
           title={t("noEmbdedItemsFound")}
@@ -1770,19 +1839,13 @@ const CreatePlaylistUI = (props: any) => {
             <div className="add-playlist-actions">
               <Button
                 onClick={() => {
-                  if (!playList.length)
-                    return ShowNotification({
-                      message: t("pleaseAddSomeItemsToSavePlaylist"),
-                      severity: "error",
-                    });
-                  if (layers) {
-                    const checkEmbed = playList.some(
-                      (ele: any) => !ele.additionalInfo.layers?.length
-                    );
-                    if (checkEmbed) {
-                      setLayersWarning(true);
-                      return;
-                    }
+                  if (
+                    G.RetainDataData ||
+                    (G.RetainDataName && G.RetainDataSelectedType === "TEXT")
+                  ) {
+                    setDataWarning(true);
+                  } else {
+                    onClickSave();
                   }
                   setOpenAttachLink(false);
                   startCreatingPlaylist("", playList, id);

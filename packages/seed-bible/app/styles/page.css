@@ -120,6 +120,9 @@
 }
 
 .bookTitle {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
   font-size: var(--scripture-bookHeading-size, 32px);
   margin-bottom: 60px;
   font-weight: 500;
@@ -136,18 +139,14 @@
 }
 
 .more-resources {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: #859e3b;
-  font-size: 14px;
-  font-weight: 500;
-  transition: opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .more-resources {
+    display: none;
+  }
+  .bookTitle {
     display: none !important;
   }
 }
@@ -194,16 +193,18 @@
 /* Additions ------> */
 
 .sectionText.highlighted {
-  border-bottom-color: #4f645b;
+  text-decoration: underline;
+  text-decoration-color: black;
+  text-decoration-thickness: 2px;
+  background-color: transparent;
+  border-color: transparent;
 }
 
-/* Underline applied from Study Note verse header clicks */
+/* Applied via DOM by applyVerseUnderline() in StudyNotes */
 .sn-verse-underline {
-  text-decoration: underline !important;
-  text-decoration-color: #4f645b !important;
-  text-decoration-thickness: 2px !important;
-  text-underline-offset: 4px !important;
-  transition: text-decoration-color 0.3s ease-in-out;
+  text-decoration: underline;
+  text-decoration-color: black;
+  text-decoration-thickness: 2px;
 }
 
 .clickableCursor {

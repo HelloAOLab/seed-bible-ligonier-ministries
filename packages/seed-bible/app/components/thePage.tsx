@@ -128,7 +128,7 @@ function MoreResources() {
     const panelKey = "STUDY_NOTES_PANEL_ID";
 
     if (globalThis.makingApp === label && globalThis[panelKey]) {
-      globalThis.RemoveApplicationByID(globalThis[panelKey]);
+      RemoveApplicationByID(globalThis[panelKey]);
       globalThis[panelKey] = null;
       globalThis.makingApp = null;
       globalThis.studyNotesPresent = false;
@@ -150,7 +150,7 @@ function MoreResources() {
       globalThis[panelKey] = id;
       globalThis.STUDYNOTES_PANEL_ID = id;
 
-      globalThis.AddApplication({
+      AddApplication({
         id,
         App: (
           <StudyNotes
@@ -159,7 +159,7 @@ function MoreResources() {
             chapter={globalThis.GlobalChapter}
           />
         ),
-        to: globalThis.IsMobileNow() ? undefined : "panel",
+        to: "panel",
         minWidth: "30rem",
       });
     }
@@ -421,7 +421,7 @@ function ThePage({
           bookId = book0.id;
           bookTranslationId = trValue.value.id;
           firstChapterApiLink = book0.firstChapterApiLink;
-        } else {
+        } else if (urlId) {
           const result = await web.get(translationId);
           if (result.status === 200) {
             const url = new URL(translationId);
@@ -567,7 +567,7 @@ function ThePage({
       const activeTab = globalThis.StudyNoteActiveTab || "notes";
       if (activeTab === "notes" || activeTab === "discover") {
         const StudyNotes = globalThis.GlobalStudyNotes;
-        globalThis.UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
           App: (
             <StudyNotes
               key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
@@ -1126,7 +1126,7 @@ function ThePage({
       const activeTab = globalThis.StudyNoteActiveTab || "notes";
       if (activeTab === "notes" || activeTab === "discover") {
         const StudyNotes = globalThis.GlobalStudyNotes;
-        globalThis.UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
           App: (
             <StudyNotes
               key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
@@ -1152,7 +1152,7 @@ function ThePage({
 
     if (globalThis.studyNotesPresent && globalThis.GlobalStudyNotes) {
       const StudyNotes = globalThis.GlobalStudyNotes;
-      globalThis.UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+      UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
         App: (
           <StudyNotes
             id={globalThis.STUDYNOTES_PANEL_ID}
@@ -1199,7 +1199,7 @@ function ThePage({
       const activeTab = globalThis.StudyNoteActiveTab || "notes";
       if (activeTab === "notes" || activeTab === "discover") {
         const StudyNotes = globalThis.GlobalStudyNotes;
-        globalThis.UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
           App: (
             <StudyNotes
               key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
@@ -1378,7 +1378,7 @@ function ThePage({
       const activeTab = globalThis.StudyNoteActiveTab || "notes";
       if (activeTab === "notes" || activeTab === "discover") {
         const StudyNotes = globalThis.GlobalStudyNotes;
-        globalThis.UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
+        UpdateApplication(globalThis.STUDYNOTES_PANEL_ID, {
           App: (
             <StudyNotes
               key={`${globalThis.BookId}-${globalThis.GlobalChapter}`}
@@ -1818,7 +1818,6 @@ function ThePage({
             .join(" "),
           book: data?.book,
           chapter: data?.chapter,
-          translation: data?.translation,
         });
 
         setShowVerseToolbar(true);
@@ -2593,25 +2592,7 @@ function ThePage({
                     marginLeft: "var(--text-bookchapter-margin-left)",
                   }}
                 >
-                  <div
-                    onClick={(e) => {
-                      if (globalThis.setOpenSidebar && globalThis.openSidebar) {
-                        globalThis.setOpenSidebar(false);
-                        globalThis.selectBookSelectorBook &&
-                          globalThis.selectBookSelectorBook(null);
-                      } else {
-                        globalThis.setOpenSidebar &&
-                          globalThis.setOpenSidebar(true);
-                        globalThis.selectBookSelectorBook &&
-                          globalThis.selectBookSelectorBook(data.bookId);
-                      }
-                    }}
-                    style={{
-                      "pointer-events": isDragging ? "none" : null,
-                      marginBottom: 0,
-                    }}
-                    className="bookTitle"
-                  >
+                  <span style={{ flex: 1, minWidth: 0 }}>
                     {`${data?.book} ${data?.chapter}`}{" "}
                     <span
                       style={{
@@ -2639,8 +2620,15 @@ function ThePage({
                         }
                       }}
                     >{` / ${data?.shortName}`}</span>
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
+                  </span>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      marginLeft: "auto",
+                      paddingTop: "8px",
+                      flexShrink: 0,
+                    }}
+                  >
                     <MoreResources />
                   </div>
                 </div>
@@ -3018,7 +3006,7 @@ function PageToolbar({ panelId, tab, path = "showInPageToolbar" }) {
 }
 
 function splitBySectionKeys(text, verseSectionMap) {
-  const stripRe = /[.,'"""'']/g;
+  const stripRe = /[.,'""'']/g;
 
   const subphraseMap = {};
   let maxLen = 1;
@@ -3394,14 +3382,12 @@ function Section({
       return;
     }
     const result = {};
-    if (globalThis.studyNotesPresent) {
-      verses.forEach((v) => {
-        result[v.verseNumber] = splitBySectionKeys(
-          v.text,
-          globalThis.VerseSectionMap
-        );
-      });
-    }
+    verses.forEach((v) => {
+      result[v.verseNumber] = splitBySectionKeys(
+        v.text,
+        globalThis.VerseSectionMap
+      );
+    });
     setChunksMap(result);
   }, [globalThis.VerseSectionMap, verses]);
 
@@ -3820,7 +3806,7 @@ function Section({
           className="sectionTitle"
           {...eventHandlers}
           onClick={(e) => {
-            if (shouldSuppressClick()) return; // Prevent normal click if hold already triggered
+            if (shouldSuppressClick()) return;
 
             shout("onHeadingClick", { heading });
           }}
@@ -3849,7 +3835,9 @@ function Section({
             }
 
             const [c, setC] = useState(false);
-            const isActive = verse.verseNumber.toString() === activeVerse;
+            const isVerseActive =
+              activeVerses.has(verse.verseNumber) ||
+              verse?.verseNumber.toString() === String(activeVerse);
             const maxClicked = clickedVerses?.length
               ? Math.max(...clickedVerses)
               : null;
@@ -3864,6 +3852,7 @@ function Section({
               selected[verse.verseNumber] ||
               blinker[verse.verseNumber];
             const isClicked = clickedVerses.includes(verse.verseNumber);
+
             return (
               <span key={verse.verseNumber}>
                 <span
@@ -3873,15 +3862,14 @@ function Section({
                     e.preventDefault();
                     handleVerseClick(verse.verseNumber);
                     SetShowCommands(false);
-                    // setInHold(verse.verseNumber);
-                    // setLastSelectedVerse(verse.verseNumber);
 
                     setContextData({
                       verse: verse.text,
                       reference: `${book} ${chapter}:${verse.verseNumber}`,
                       book,
                       chapter,
-                      verses: [verse.verseNumber],
+                      book,
+                      highlighted: highlighted?.[verse.verseNumber],
                     });
                     // shout("onVeresRightClick", {
                     //   verseNumber: verse.verseNumber,
@@ -3972,9 +3960,7 @@ function Section({
                       : "none",
                   }}
                   className={`sectionText ${
-                    verse?.verseNumber.toString() === activeVerse.toString()
-                      ? "highlighted"
-                      : ""
+                    isVerseActive ? "highlighted" : ""
                   } ${
                     highlighted?.[`${book}-${chapter}-${verse.verseNumber}`]
                       ? "verse-highlighted"
@@ -4057,7 +4043,7 @@ function Section({
                                         });
                                         setShowFootnoteModal(true);
                                       }}
-                                      title={t("viewFootnotes")}
+                                      title="View footnotes"
                                     >
                                       <span class="material-symbols-outlined">
                                         info
@@ -4097,7 +4083,7 @@ function Section({
                                       });
                                       setShowFootnoteModal(true);
                                     }}
-                                    title={t("viewFootnotes")}
+                                    title="View footnotes"
                                   >
                                     <span class="material-symbols-outlined">
                                       info
@@ -4139,7 +4125,7 @@ function Section({
                                     });
                                     setShowFootnoteModal(true);
                                   }}
-                                  title={t("viewFootnotes")}
+                                  title="View footnotes"
                                 >
                                   <span class="material-symbols-outlined">
                                     info

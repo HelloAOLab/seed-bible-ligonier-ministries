@@ -246,13 +246,13 @@ const builtinDefaultTheme = {
   propheticSize: "12",
 
   primaryLight: "#EEF3DC",
-  onPrimaryLight: "#4B5320",
+  onPrimaryLight: "#8B4513",
   primaryBase: "#859E3B",
   onPrimaryBase: "#FFFFFF",
   primaryDark: "#6B7D2F",
   onPrimaryDark: "#FFFFFF",
-  secondaryLight: "#EEF3DC",
-  onSecondaryLight: "#4B5320",
+  secondaryLight: "#FFE4C4",
+  onSecondaryLight: "#8B4513",
   secondaryBase: "#6B7D2F",
   onSecondaryBase: "#FFFFFF",
   secondaryDark: "#4F5C22",
@@ -399,7 +399,7 @@ const defaultThemes = [
       text3: "#F1F5F9",
       // Bible arrangements - TaNaK order
       torahBorder: "#666666",
-      torahFill: "#E07B4C",
+      torahFill: "#859E3B",
       torahFont: "DM Sans",
       torahSize: "12",
       neviimBorder: "#666666",
@@ -420,7 +420,7 @@ const defaultThemes = [
       chapterColorFill: "#666666",
       // Bible arrangements - Traditional order
       pentateuchBorder: "#666666",
-      pentateuchFill: "#E07B4C",
+      pentateuchFill: "#859E3B",
       pentateuchFont: "DM Sans",
       pentateuchSize: "12",
       historicalBorder: "#666666",
@@ -491,7 +491,7 @@ const defaultThemes = [
       unselectedSpaceColor: "#DDD6FE",
       spaceNameText: "#4C1D95",
       addButtonBackground: "transparent",
-      addButtonIcon: "#E07B4C",
+      addButtonIcon: "#859E3B",
       selectPanelIcon: "#4C1D95",
       openCloseMenuIcon: "#4C1D95",
       moreIcon: "#6B7280",
@@ -4602,7 +4602,7 @@ const BibleArrangementsSectionContent = ({
             {t("fill")}
           </span>
           <SmallColorPicker
-            value={colors[fillField] || "#E07B4C"}
+            value={colors[fillField] || "#859E3B"}
             onChange={(e) => onColorChange(fillField, e.target.value)}
           />
         </div>
@@ -5926,32 +5926,47 @@ const SettingsUI = () => {
   // ————————————————————————————————————————————————————————————
   // Apply Ready Theme
   // ————————————————————————————————————————————————————————————
-  const applyReadyTheme = (themeColors) => {
+  const applyReadyTheme = (newColors) => {
+    if (!newColors) return;
     setChagesSaved(false);
 
     // Apply toolbar background side-effect if needed
-    if (themeColors.toolbarBackground) {
-      globalThis.SetToolbarBackground?.(themeColors.toolbarBackground);
+    if (newColors.toolbarBackground) {
+      globalThis.SetToolbarBackground?.(newColors.toolbarBackground);
     }
 
     let filterMode;
-    if (themeColors["iconColor"]) {
-      filterMode = getColorFilterCached(themeColors["iconColor"]);
+    try {
+      if (newColors["iconColor"]) {
+        filterMode = getColorFilterCached(newColors["iconColor"]);
+      }
+    } catch (e) {
+      os.log("filter computation failed, using theme default", e);
     }
-    os.log("computed filter for icon color filterMode", filterMode);
+
+    const appliedColors = filterMode
+      ? { ...newColors, "filter-mode": filterMode }
+      : newColors;
+
+    // Immediately apply CSS variables to DOM for instant visual feedback
+    const root = document.documentElement;
+    Object.entries(appliedColors).forEach(([key, value]) => {
+      if (typeof value === "string") {
+        root.style.setProperty(`--${key}`, value);
+      }
+    });
+
     // Update local map
     setColorsMap((prev) => ({
       ...prev,
-      [activeSpace]: filterMode
-        ? { ...themeColors, "filter-mode": filterMode }
-        : themeColors,
+      [activeSpace]: appliedColors,
     }));
 
     // Update sidebar theme state (immediate apply)
-    setThemeColors((prev) => ({ ...prev, [activeSpace]: themeColors }));
+    setThemeColors((prev) => ({ ...prev, [activeSpace]: appliedColors }));
 
     // Persist to the space
-    updateSpace(activeSpace, { themeColors });
+    updateSpace(activeSpace, { themeColors: appliedColors });
   };
 
   // When switching spaces without saving, restore the last committed theme for that space
@@ -6031,10 +6046,12 @@ const SettingsUI = () => {
   }, [activeSpace, currentSpace]);
 
   const handleThemeSelect = (index) => {
+    const themeColors = presetThemes[index]?.colors;
+    if (!themeColors) return;
     setSelectedTheme(index);
-    applyReadyTheme(presetThemes[index]?.colors);
+    applyReadyTheme(themeColors);
     setChagesSaved(true);
-    globalThis.CurrentColors = presetThemes[index]?.colors || colors;
+    globalThis.CurrentColors = themeColors;
   };
 
   const applyVerseFont = (fontFamily) => {

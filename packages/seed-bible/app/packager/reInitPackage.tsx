@@ -188,7 +188,12 @@ async function SetUpApplicationWithoutApp(toolbarConfig, bot) {
   };
 
   const toolbarOption = {
-    icon: !toolbarConfig?.iconUrl ? toolbarConfig.icon : toolbarConfig.iconUrl,
+    icon:
+      toolbarConfig?.isCurrentIcon && toolbarConfig?.icon
+        ? toolbarConfig.icon
+        : !toolbarConfig?.iconUrl
+          ? toolbarConfig.icon
+          : toolbarConfig.iconUrl,
     label: toolbarConfig.label,
     hasToggle: toolbarConfig.hasToggle,
     active:
@@ -198,7 +203,9 @@ async function SetUpApplicationWithoutApp(toolbarConfig, bot) {
 
     onHold: runFn,
     onClick: runFn,
-    isImg: !!toolbarConfig?.iconUrl,
+    isImg:
+      !(toolbarConfig?.isCurrentIcon && toolbarConfig?.icon) &&
+      !!toolbarConfig?.iconUrl,
   };
 
   if (globalThis.AddTool) {

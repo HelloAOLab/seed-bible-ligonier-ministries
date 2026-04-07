@@ -11,7 +11,7 @@ import {
   BurgerMenuIcon,
   MoreIcon,
   TabsIcon,
-  LigonierSeedBibleIcon,
+  getIcon,
 } from "app.components.icons";
 
 const G = globalThis as any;
@@ -346,30 +346,26 @@ export function Toolbar() {
                           setActiveMoreApp(tool.label);
                         }}
                       >
-                        {tool?.icon === "LigonierSeedBibleIcon" ? (
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "20px",
-                              height: "20px",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <LigonierSeedBibleIcon />
-                          </div>
-                        ) : tool?.isImg ? (
-                          <img
-                            src={tool.icon}
-                            style={{ width: "20px" }}
-                            alt={tool.label}
-                          />
-                        ) : (
-                          <span className="material-symbols-outlined">
-                            {tool?.icon}
-                          </span>
-                        )}
+                        {(() => {
+                          if (tool?.isImg) {
+                            return (
+                              <img
+                                src={tool.icon}
+                                style={{ width: "20px" }}
+                                alt={tool.label}
+                              />
+                            );
+                          }
+                          const CustomIcon = getIcon(tool?.icon);
+                          if (CustomIcon) {
+                            return <CustomIcon width={20} height={20} />;
+                          }
+                          return (
+                            <span className="material-symbols-outlined">
+                              {tool?.icon}
+                            </span>
+                          );
+                        })()}
                         <span className="more-menu-item-label">
                           {tool?.label}
                         </span>
@@ -549,29 +545,26 @@ export function Toolbar() {
                       }}
                       onMouseLeave={() => clearTimeout(holdTimeoutRef.current)}
                     >
-                      {tool.icon === "LigonierSeedBibleIcon" ? (
-                        <div
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: "25px",
-                            height: "25px",
-                          }}
-                        >
-                          <LigonierSeedBibleIcon />
-                        </div>
-                      ) : tool.isImg ? (
-                        <img
-                          src={tool.icon}
-                          style={{ width: "25px" }}
-                          alt={tool.label}
-                        />
-                      ) : (
-                        <span className="material-symbols-outlined">
-                          {tool.icon}
-                        </span>
-                      )}
+                      {(() => {
+                        if (tool.isImg) {
+                          return (
+                            <img
+                              src={tool.icon}
+                              style={{ width: "25px" }}
+                              alt={tool.label}
+                            />
+                          );
+                        }
+                        const CustomIcon = getIcon(tool.icon);
+                        if (CustomIcon) {
+                          return <CustomIcon width={25} height={25} />;
+                        }
+                        return (
+                          <span className="material-symbols-outlined">
+                            {tool.icon}
+                          </span>
+                        );
+                      })()}
                       {tool.label && (
                         <span
                           className="toolbar-btn-label"

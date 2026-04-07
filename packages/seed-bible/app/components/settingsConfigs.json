@@ -10,8 +10,7 @@
         "removeBibleStack": true,
         "removeJoinSession": true,
         "removeBookMark": true,
-        "removeAddSession": true,
-        "removeUserIcon": true
+        "removeAddSession": true
       },
       "pageSettings": {
         "disableHighlighting": true,
@@ -51,7 +50,6 @@
           "showDivider": false,
           "items": {
             "language": { "enabled": true },
-            "uiTextSize": { "enabled": false },
             "reportBug": { "enabled": true }
           }
         }
@@ -264,7 +262,6 @@
           "showDivider": false,
           "items": {
             "language": { "enabled": true },
-            "uiTextSize": { "enabled": true },
             "reportBug": { "enabled": true }
           }
         }
@@ -276,10 +273,9 @@
         "enabled": true,
         "clientName": "Ligonier",
         "clientLogo": "https://res.cloudinary.com/dfbtwwa8p/image/upload/v1771444059/6mlAajOWLeNAAAAAElFTkSuQmCC_ruqkxe.png",
-        "clientSite": "https://www.ligonier.org/"
+        "clientSite": "https://ligonier.org"
       },
-
-      "mobileBookLogo": "https://res.cloudinary.com/dpudrufae/image/upload/v1771785855/book-open_mnbvoe.svg",
+      "mobileBookLogo": "https://res.cloudinary.com/dpudrufae/image/upload/v1773678582/book_gkk9bt.svg",
       "titlesAndIcon": {
         "icon": "splitscreen_right",
         "title": "Study Notes",
@@ -296,13 +292,11 @@
             "primaryColor": "#FFFFFF",
             "secondaryColor": "#859E3B",
             "tertiaryColor": "#EEF3DC",
-
             "themeSideMenu": "#FFFFFF",
             "panelBackground": "#F8FAFC",
             "pageBookBackground": "#FFFFFF",
             "inputBackground": "#E8E8E8",
             "sidebarShadow": "#E8E8E8",
-
             "tabSelection": "#859E3B",
             "activeTabBackground": "#EEF3DC",
             "activeTabText": "#859E3B",
@@ -310,7 +304,6 @@
             "activeTabFill": "#EEF3DC",
             "simpleTabText": "#333333",
             "inactiveTabText": "#333333",
-
             "primaryButton": "#859E3B",
             "primaryButtonColor": "#FFFFFF",
             "primaryButtonBorder": "#859E3B",
@@ -321,14 +314,12 @@
             "secondaryButtonFill": "#6B7D2F",
             "tertiaryButtonColor": "#333333",
             "buttonBorder": "#E1E3EA",
-
             "bookHeadingColor": "#333333",
             "chapterHeadingColor": "#333333",
             "verseNumberColor": "#000000",
             "verseTextColor": "#333333",
             "pageBackground": "#FFFFFF",
             "pageTextColor": "#333333",
-
             "heading1Color": "#333333",
             "heading2Color": "#333333",
             "heading3Color": "#333333",
@@ -350,7 +341,6 @@
             "inactiveSpaceIndicator": "#E1E3EA",
             "activeSpaceIndicator": "#859E3B",
             "profileAvatar": "#859E3B",
-
             "toolbarBorder": "#E1E3EA",
             "toolbarFill": "#FFFFFF",
             "toolbarIconsColor": "#333333",
@@ -359,7 +349,6 @@
             "selectionIconsColor": "#333333",
             "toolbarBackground": "#FFFFFF",
             "iconColor": "#333333",
-
             "inputTitleColor": "#333333",
             "inputPlaceholderColor": "#999999",
             "inputActiveBorder": "#859E3B",
@@ -369,88 +358,70 @@
             "inputBorder": "#E1E3EA",
             "inputText": "#333333",
             "inputPlaceholder": "#999999",
-
             "logoColor": "#333333",
             "accentColor": "#859E3B",
-
             "spaceSelection": "#859E3B",
-
             "text1": "#333333",
             "text2": "#666666",
             "showTabIcons": true,
-
             "torahBorder": "#E1E3EA",
             "torahFill": "#859E3B",
             "torahFont": "DM Sans",
             "torahSize": "12",
-
             "neviimBorder": "#E1E3EA",
             "neviimFill": "#9CB32C",
             "neviimFont": "DM Sans",
             "neviimSize": "12",
-
             "ketuvimBorder": "#E1E3EA",
             "ketuvimFill": "#00BCD4",
             "ketuvimFont": "DM Sans",
             "ketuvimSize": "12",
-
             "bookTextColor": "#4A4A4A",
             "bookTextFont": "DM Sans",
             "bookTextSize": "12",
-
             "chapterTextColor": "#4A4A4A",
             "chapterTextFont": "DM Sans",
             "chapterTextSize": "12",
-
             "chapterColorBorder": "#E1E3EA",
             "chapterColorFill": "#E1E3EA",
-
             "pentateuchBorder": "#E1E3EA",
             "pentateuchFill": "#859E3B",
             "pentateuchFont": "DM Sans",
             "pentateuchSize": "12",
-
             "historicalBorder": "#E1E3EA",
             "historicalFill": "#4CAF50",
             "historicalFont": "DM Sans",
             "historicalSize": "12",
-
             "poeticBorder": "#E1E3EA",
             "poeticFill": "#9C27B0",
             "poeticFont": "DM Sans",
             "poeticSize": "12",
-
             "propheticBorder": "#E1E3EA",
             "propheticFill": "#FF9800",
             "propheticFont": "DM Sans",
             "propheticSize": "12",
-
             "primaryLight": "#EEF3DC",
             "onPrimaryLight": "#4B5320",
             "primaryBase": "#859E3B",
             "onPrimaryBase": "#FFFFFF",
             "primaryDark": "#6B7D2F",
             "onPrimaryDark": "#FFFFFF",
-
             "secondaryLight": "#EEF3DC",
             "onSecondaryLight": "#4B5320",
             "secondaryBase": "#6B7D2F",
             "onSecondaryBase": "#FFFFFF",
             "secondaryDark": "#4F5C22",
             "onSecondaryDark": "#FFFFFF",
-
             "tertiaryLight": "#EEF3DC",
             "onTertiaryLight": "#4B5320",
             "tertiaryBase": "#859E3B",
             "onTertiaryBase": "#FFFFFF",
             "tertiaryDark": "#4F5C22",
             "onTertiaryDark": "#FFFFFF",
-
             "background": "#FFFFFF",
             "onBackground": "#333333",
             "surface": "#FAFAFA",
             "onSurface": "#333333",
-
             "filter-mode": "invert(0)",
             "text3": "#333333",
             "secondary-filter-mode": "invert(100%)"
@@ -472,6 +443,10 @@
         "removeJoinSession": true,
         "removeBookMark": true,
         "removeAddSession": true
+      },
+      "pageSettings": {
+        "disableHighlighting": true,
+        "removeAiAgent": true
       },
 
       "pageSettings": {
@@ -503,7 +478,8 @@
           "showDivider": false,
           "items": {
             "language": { "enabled": true },
-            "reportBug": { "enabled": true }
+            "reportBug": { "enabled": true },
+            "help": { "enabled": true }
           }
         }
       }
@@ -589,7 +565,6 @@
               "showDivider": true,
               "items": {
                 "language": { "enabled": true },
-                "uiTextSize": { "enabled": true },
                 "reseedToggle": { "enabled": true },
                 "reportBug": { "enabled": true },
                 "help": { "enabled": false }

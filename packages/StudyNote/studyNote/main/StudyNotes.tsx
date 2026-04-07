@@ -1185,7 +1185,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
   // --- Back FAB fade-out control ---
   const [showBackFab, setShowBackFab] = useState(
-    !!mainBot?.tags.previousTab?.tabId
+    !!mainBot?.tags.previousTab?.tabId || !!globalThis._pendingBackFab
   );
   const [backFabFading, setBackFabFading] = useState(false);
   const [backFabHovering, setBackFabHovering] = useState(false);
@@ -1789,6 +1789,9 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
         },
       });
 
+      setTagMask(mainBot, "shouldHighlight", false);
+      globalThis._pendingBackFab = true;
+
       // Use thePage's native open to navigate within the same tab
       await globalThis.Open(internalBookId, chapter);
 
@@ -1918,6 +1921,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           translation: "ESV",
         },
       });
+
+      setTagMask(mainBot, "shouldHighlight", false);
 
       // Use thePage's native open to navigate within the same tab
       await globalThis.Open(internalBookId, chapter);
@@ -2145,16 +2150,16 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
   }
 
   const removeStudyNoteBackButton = () => {
-    // fade out right after click, then clear
     clearBackTimers();
     setBackFabFading(true);
     setBackFabHovering(false);
-    // Immediately mark as "close" so the hotspot is removed right away
-    // (prevents the ghost hotspot from re-triggering during the fade)
     setLastDismissReason("close");
+    // Clear tags immediately so shouldShowBackFab becomes false right away.
+    // The useEffect guards against interrupting an active fade, so the
+    // visual fade-out still completes before the element is unmounted.
+    setTagMask(mainBot, "previousTab", {});
+    setTagMask(mainBot, "_prevTabCache", {});
     backCleanupTimerRef.current = setTimeout(() => {
-      setTagMask(mainBot, "previousTab", {});
-      setTagMask(mainBot, "_prevTabCache", {});
       setShowBackFab(false);
       setBackFabFading(false);
     }, 400);
@@ -2163,23 +2168,18 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
   globalThis.RemoveStudyNoteBackButton = removeStudyNoteBackButton;
 
   async function handleBackFabClick() {
-    // Reset hover state immediately — mouseLeave won't fire because the
-    // button is about to be removed from the DOM.
     setBackFabHovering(false);
 
-    if (mainBot?.tags._prevTabCache && !mainBot?.tags.previousTab?.tabId) {
-      // ignore cache when user explicitly clicks: treat as normal back using cache if needed
-      setTagMask(mainBot, "previousTab", mainBot.tags._prevTabCache);
-    }
+    const prev = mainBot?.tags.previousTab?.tabId
+      ? mainBot.tags.previousTab
+      : mainBot?.tags._prevTabCache?.tabId
+        ? mainBot.tags._prevTabCache
+        : null;
 
-    if (mainBot?.tags.previousTab?.tabId) {
-      const prev = mainBot.tags.previousTab;
-
+    if (prev) {
       if (prev.bookId === globalThis.BookId) {
-        // Same book, different chapter: use thePage's native open to go back
         await globalThis.Open(prev.bookId, prev.chapter);
       } else {
-        // Different book: switch tab and reload
         SetActiveTab(prev.tabId);
         await loadTabsData(prev.bookId, prev.chapter, prev.tabId, prev.tabData);
       }
@@ -2189,39 +2189,42 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
   }
 
   // derive current visibility from the tag each render
-  const shouldShowBackFab = !!mainBot?.tags.previousTab?.tabId;
+  const shouldShowBackFab =
+    !!mainBot?.tags.previousTab?.tabId || !!globalThis._pendingBackFab;
 
   // whenever it appears, show it, then fade after 3s, then clear the tag
   useEffect(() => {
-    // keep in sync with tag presence
     if (!shouldShowBackFab) {
-      clearBackTimers();
-      setShowBackFab(false);
-      setBackFabFading(false);
+      // If a dismiss-fade is in progress (backFabFading=true), don't cancel
+      // it — let the 400ms cleanup timer from removeStudyNoteBackButton fire.
+      if (!backFabFading) {
+        clearBackTimers();
+        setShowBackFab(false);
+        setBackFabFading(false);
+      }
       return;
     }
 
     setShowBackFab(true);
+    globalThis._pendingBackFab = false;
 
     // if not hovering, arm the 3s fade timer; if hovering, do nothing
     clearBackTimers();
     if (!backFabHovering) {
       backFadeTimerRef.current = setTimeout(() => {
-        // start fading
         setBackFabFading(true);
-        // after transition, clear tag & hide
         backCleanupTimerRef.current = setTimeout(() => {
           setTagMask(mainBot, "_prevTabCache", mainBot?.tags.previousTab || {});
           setTagMask(mainBot, "previousTab", {});
           setShowBackFab(false);
           setBackFabFading(false);
           setLastDismissReason("timeout");
-        }, 400); // keep in sync with CSS duration
+        }, 400);
       }, 3000);
     }
 
     return clearBackTimers;
-  }, [shouldShowBackFab, backFabHovering]);
+  }, [shouldShowBackFab, backFabHovering, backFabFading]);
 
   function onBackFabMouseEnter() {
     setBackFabHovering(true);
@@ -2464,7 +2467,6 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                     overCitationRef.current = false;
                                   }}
                                   onClick={(e) => {
-                                    console.log("text: ", chunk.text);
                                     e.stopPropagation();
                                     overCitationRef.current = true;
                                     const { clientX, clientY } = e;
@@ -2507,7 +2509,6 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                     const relY = isBelow
                                       ? offsetTop + offsetHeight + gap
                                       : offsetTop - gap;
-                                    // Use contextBook from plain text if available (e.g., "in Leviticus (19:9)")
                                     const effectiveBookId =
                                       chunk.contextBook || bookId;
                                     const refs = parseCitationReferences(
