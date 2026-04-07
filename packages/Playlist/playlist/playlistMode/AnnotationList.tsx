@@ -276,6 +276,7 @@ const AnnotationList = (props: any) => {
         <ConfirmationModal
           loading={loading}
           title={t("deleteAnnotation")}
+          colorSwitch={true}
           para={t("deleteAnnotationConfirmation")}
           onClose={() => {
             if (!loading) closeModal();

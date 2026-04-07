@@ -71,7 +71,13 @@ const AnnotationListFilters = (props: any) => {
     <>
       <style>{`${thisBot.tags["AnnotationListFilters.css"]}`}</style>
       <div className="backdrop" onClick={() => handleClose()} />
-      <div className="filter-container">
+      <div
+        className="filter-container"
+        style={{
+          top: showAtBottom ? "auto" : "3.5rem",
+          bottom: showAtBottom ? "2rem" : "auto",
+        }}
+      >
         <h3 className="filter-title">Filter By</h3>
         <div>
           <AnnotationFilterHeadings
