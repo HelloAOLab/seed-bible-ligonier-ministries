@@ -1185,7 +1185,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
   // --- Back FAB fade-out control ---
   const [showBackFab, setShowBackFab] = useState(
-    !!mainBot?.tags.previousTab?.tabId
+    !!mainBot?.tags.previousTab?.tabId || !!globalThis._pendingBackFab
   );
   const [backFabFading, setBackFabFading] = useState(false);
   const [backFabHovering, setBackFabHovering] = useState(false);
@@ -1789,6 +1789,9 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
         },
       });
 
+      setTagMask(mainBot, "shouldHighlight", false);
+      globalThis._pendingBackFab = true;
+
       // Use thePage's native open to navigate within the same tab
       await globalThis.Open(internalBookId, chapter);
 
@@ -1918,6 +1921,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
           translation: "ESV",
         },
       });
+
+      setTagMask(mainBot, "shouldHighlight", false);
 
       // Use thePage's native open to navigate within the same tab
       await globalThis.Open(internalBookId, chapter);
@@ -2184,7 +2189,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
   }
 
   // derive current visibility from the tag each render
-  const shouldShowBackFab = !!mainBot?.tags.previousTab?.tabId;
+  const shouldShowBackFab =
+    !!mainBot?.tags.previousTab?.tabId || !!globalThis._pendingBackFab;
 
   // whenever it appears, show it, then fade after 3s, then clear the tag
   useEffect(() => {
@@ -2200,6 +2206,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
     }
 
     setShowBackFab(true);
+    globalThis._pendingBackFab = false;
 
     // if not hovering, arm the 3s fade timer; if hovering, do nothing
     clearBackTimers();

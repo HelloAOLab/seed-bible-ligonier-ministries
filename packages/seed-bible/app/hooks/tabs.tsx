@@ -660,11 +660,13 @@ export function TabsProvider({ children }) {
   useEffect(() => {
     globalThis.ActiveTab = activeTab;
     globalThis.SetActiveTab = setActiveTab;
+    globalThis.GetTabsInSpace = () => getAllTabsInSpace(activeSpace);
     return () => {
       globalThis.ActiveTab = null;
       globalThis.SetActiveTab = null;
+      globalThis.GetTabsInSpace = null;
     };
-  }, [activeTab]);
+  }, [activeTab, activeSpace]);
   useEffect(() => {
     // os.log("checking active space for shared tab", tabs, activeSpace);
     // setTimeout(() => {
