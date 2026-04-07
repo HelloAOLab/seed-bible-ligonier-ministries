@@ -971,76 +971,25 @@ function getBookIdFromCitation(citation, defaultBookId) {
 }
 
 async function loadTabsData(bookId, chapter, tabId, tabData) {
-  // ---------- Preflight: fetch chapter 1 to know total chapters ----------
-  const preflight = new BibleDataManager({
-    tabId: `preflight-${tabId}`,
+  // Fetch the requested chapter directly — no preflight needed.
+  // The old preflight checked numberOfChapters but that field may be
+  // missing from the API response, causing RemoveTab to fire incorrectly.
+  const bible = new BibleDataManager({
+    tabId,
     translation: "ESV",
     bookId,
-    chapter: 1,
+    chapter,
   });
 
   try {
-    await preflight.fetch();
+    await bible.fetch();
   } catch (e) {
-    console.error(
-      `[loadTabsData] Preflight fetch failed for ${bookId} ch1:`,
-      e
-    );
-    return;
-  }
-
-  const getTotalChapters = (pf) => {
-    const d = pf?.data || {};
-    return d?.numberOfChapters ?? undefined;
-  };
-
-  const totalChapters = getTotalChapters(preflight);
-
-  if (!Number.isFinite(totalChapters) || totalChapters <= 0) {
-    console.warn(
-      `[loadTabsData] Could not determine total chapters for ${bookId}. Data shape:`,
-      preflight?.data
-    );
+    console.error(`[loadTabsData] Fetch failed for ${bookId} ch${chapter}:`, e);
     RemoveTab(tabId);
     return;
   }
 
-  if (!Number.isFinite(chapter) || chapter < 1 || chapter > totalChapters) {
-    console.warn(
-      `[loadTabsData] Requested chapter ${chapter} is out of range for ${bookId} (1..${totalChapters}).`
-    );
-    RemoveTab(tabId);
-    return;
-  }
-
-  // ---------- Main load: reuse preflight if chapter === 1 ----------
-  const bible =
-    chapter === 1
-      ? preflight
-      : new BibleDataManager({
-          tabId,
-          translation: "ESV",
-          bookId,
-          chapter,
-        });
-
-  if (chapter !== 1) {
-    try {
-      await bible.fetch();
-    } catch (e) {
-      console.error(
-        `[loadTabsData] Fetch failed for ${bookId} ch${chapter}:`,
-        e
-      );
-      RemoveTab(tabId);
-      return;
-    }
-  }
-
-  // ---------- After fetch ----------
-  globalThis.BookId = bible.bookId;
-
-  const { data, loading, error } = bible.getState();
+  const { data, error } = bible.getState();
   if (error) {
     console.error(
       `[loadTabsData] State has error for ${bookId} ch${chapter}:`,
@@ -1049,8 +998,6 @@ async function loadTabsData(bookId, chapter, tabId, tabData) {
     RemoveTab(tabId);
     return;
   }
-
-  console.log(data, "the data loaded");
 
   const customeTabData = {
     id: tabId,
@@ -1064,6 +1011,7 @@ async function loadTabsData(bookId, chapter, tabId, tabData) {
   UpdateTab(customeTabData);
   SetActiveTab(tabId);
 
+  globalThis.BookId = bible.bookId || bookId;
   globalThis.GlobalChapter = (bible.data?.chapter ?? chapter) - 1;
 
   if (globalThis.studyNotesPresent) {
