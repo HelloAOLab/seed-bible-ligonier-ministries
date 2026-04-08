@@ -1,12 +1,3 @@
-import { DespawnLabelForPiece } from "bibleVizUtils.controllers.label.lifecycle";
-import { StackBibleData } from "bibleVizUtils.models.entities.StackBibleData";
-import { StackTestamentData } from "bibleVizUtils.models.entities.StackTestamentData";
-import { StackSectionData } from "bibleVizUtils.models.entities.StackSectionData";
-import { StackSectionBookData } from "bibleVizUtils.models.entities.StackSectionBookData";
-import { StackBookData } from "bibleVizUtils.models.entities.StackBookData";
-import { StackChapterData } from "bibleVizUtils.models.entities.StackChapterData";
-import type { Bot } from "../../../../typings/AuxLibraryDefinitions";
-
 /**
  * Deletes a Bible, Testament, Section, Book, or Chapter based on the provided `pieceData`.
  * It removes the piece from the data structures and releases associated resources.
@@ -22,64 +13,39 @@ import type { Bot } from "../../../../typings/AuxLibraryDefinitions";
  * thisBot.DeletePiece({pieceData: somePieceData, piece: somePiece});
  */
 
-type AnyData =
-  | StackBibleData
-  | StackTestamentData
-  | StackSectionData
-  | StackSectionBookData
-  | StackBookData
-  | StackChapterData;
-
-let {
-  pieceData,
-}: {
-  pieceData: AnyData | undefined;
-} = that;
-const {
-  piece,
-}: {
-  piece: Bot | undefined;
-} = that;
+let { pieceData } = that;
+const { piece } = that;
 if (!pieceData) {
-  if (!piece) {
-    throw new Error("DeletePiece: pieceData or piece must be defined.");
-  }
   if (piece.tags.isStackPiece) {
-    pieceData = await (thisBot.GetPieceData({ piece }) as Promise<
-      AnyData | undefined
-    >);
+    pieceData = thisBot.GetPieceData({ piece });
   } else if (piece.tags.isStackBibleTransformer) {
-    pieceData = (thisBot.vars.stackBiblesData as StackBibleData[]).find(
-      (bibleData) => {
-        return bibleData.id == piece.tags.stackBibleId;
-      }
-    );
+    pieceData = thisBot.vars.stackBiblesData.find((bibleData) => {
+      return bibleData.id == piece.tags.stackBibleId;
+    });
   } else if (piece.tags.isSectionShadow) {
-    pieceData = (thisBot.vars.stackSectionsData as StackSectionData[]).find(
-      (data) => {
-        return data.isActive && data.id == piece.tags.sectionDataId;
-      }
-    );
+    pieceData = thisBot.vars.stackSectionsData.find((data) => {
+      return data.isActive && data.id == piece.tags.sectionDataId;
+    });
   }
 }
 // const {bibleData, testamentData, sectionData, sectionBookData, bookData} = thisBot.GetDataChainFromParentDataIds({parentDataIds: pieceData.parentDataIds});
 if (pieceData) {
   switch (true) {
     case pieceData instanceof StackBibleData:
-      await DeleteBible(pieceData);
+      DeleteBible(pieceData);
       break;
     case pieceData instanceof StackTestamentData:
-      await DeleteTestament(pieceData);
+      DeleteTestament(pieceData);
       break;
     case pieceData instanceof StackSectionData:
-      await DeleteSection(pieceData);
+      DeleteSection(pieceData);
       break;
     case pieceData instanceof StackSectionBookData:
     case pieceData instanceof StackBookData:
-      await DeleteBook(pieceData);
+      DeleteBook(pieceData);
       break;
     case pieceData instanceof StackChapterData:
-      await DeleteChapter(pieceData);
+      DeleteChapter(pieceData);
       break;
     default:
       break;
@@ -89,32 +55,7 @@ if (pieceData) {
     "interactiveBible.managers.thisBot.DeletePiece. No piece data found."
   );
 
-async function ClearPiece(piece: Bot) {
-  const { unhighlightDelayInfo } = await thisBot.GetUnhighlightDelayInfo({
-    piece,
-  });
-  if (unhighlightDelayInfo) {
-    await thisBot.ClearUnhighlightDelay({
-      unhighlightDelayInfo,
-    });
-  }
-
-  const isHighlightes = await thisBot.IsBiblePieceHighlighted({ piece });
-
-  if (isHighlightes) {
-    await thisBot.RemovePieceFromHighlightedList({ piece });
-  }
-
-  DespawnLabelForPiece(piece);
-
-  ObjectPooler.ReleaseObject({
-    obj: piece,
-    tag: piece.tags.poolTag,
-    dimension: thisBot.tags.desiredDimension,
-  });
-}
-
-async function DeleteChapter(chapterData: StackChapterData) {
+function DeleteChapter(chapterData) {
   /**
    * Deletes a `StackChapterData` object and its associated verses.
    *
@@ -122,11 +63,16 @@ async function DeleteChapter(chapterData: StackChapterData) {
    */
 
   const chapterDataIndex = thisBot.vars.stackChaptersData.indexOf(chapterData);
-  const piece = chapterData.clearPiece();
-  if (piece) {
-    if (piece.masks.isOnTheGround) {
-      if (chapterData.isSelected && piece.vars.chunksOfVerses?.length > 0) {
-        piece.vars.chunksOfVerses.forEach((chunk) => {
+  if (chapterData.piece) {
+    if (chapterData.piece.masks.isOnTheGround) {
+      BibleVizUtils.Functions.ReleaseLabelTransformerFromPiece({
+        piece: chapterData.piece,
+      });
+      if (
+        chapterData.isSelected &&
+        chapterData.piece.vars.chunksOfVerses?.length > 0
+      ) {
+        chapterData.piece.vars.chunksOfVerses.forEach((chunk) => {
           if (chunk.masks.isSelected && chunk.vars.verses?.length > 0) {
             chunk.vars.verses.flat().forEach((verse) => {
               ObjectPooler.ReleaseObject({
@@ -135,7 +81,7 @@ async function DeleteChapter(chapterData: StackChapterData) {
                 dimension: thisBot.tags.desiredDimension,
               });
             });
-            chunk.vars.verses = [];
+            chunk.vars.verses = []; //.splice(0, chunk.vars.verses.length);
           }
           ObjectPooler.ReleaseObject({
             obj: chunk,
@@ -143,16 +89,23 @@ async function DeleteChapter(chapterData: StackChapterData) {
             dimension: thisBot.tags.desiredDimension,
           });
         });
-        piece.vars.chunksOfVerses = []; //.splice(0, chapterData.piece.vars.chunksOfVerses.length);
+        chapterData.piece.vars.chunksOfVerses = []; //.splice(0, chapterData.piece.vars.chunksOfVerses.length);
       }
     }
-    await ClearPiece(piece);
+    ObjectPooler.ReleaseObject({
+      obj: chapterData.piece,
+      tag: chapterData.piece.tags.poolTag,
+      dimension: thisBot.tags.desiredDimension,
+    });
+    chapterData.piece = null;
   }
+  chapterData.pieceInfo = null;
+  chapterData.parentDataIds = null;
   if (chapterDataIndex != null)
     thisBot.vars.stackChaptersData.splice(chapterDataIndex, 1);
 }
 
-async function DeleteBook(bookData: StackSectionBookData | StackBookData) {
+function DeleteBook(bookData) {
   /**
    * Deletes a `StackBookData` or `StackSectionBookData` object and its associated chapters.
    *
@@ -160,28 +113,41 @@ async function DeleteBook(bookData: StackSectionBookData | StackBookData) {
    */
 
   let bookDataIndex;
-  const children = bookData.clearChildren();
-  const piece = bookData.clearPiece();
-  const promises: Promise<void>[] = [];
-
-  promises.push(
-    ...children.map((child) => {
-      return DeleteChapter(child);
-    })
-  );
-
-  if (piece) {
-    promises.push(ClearPiece(piece));
+  bookData.childrenData.forEach((chapterData) => {
+    DeleteChapter(chapterData);
+  });
+  bookData.childrenData.splice(0, bookData.childrenData.length);
+  if (bookData.piece) {
+    const { unhighlightDelayInfo, unhighlightDelayInfoIndex } =
+      thisBot.GetUnhighlightDelayInfo({ piece: bookData.piece });
+    if (unhighlightDelayInfo)
+      thisBot.ClearUnhighlightDelay({
+        unhighlightDelayInfo,
+        unhighlightDelayInfoIndex,
+      });
+    if (thisBot.IsBiblePieceHighlighted({ piece: bookData.piece }))
+      thisBot.RemovePieceFromHighlightedList({ piece: bookData.piece });
+    BibleVizUtils.Functions.ReleaseLabelTransformerFromPiece({
+      piece: bookData.piece,
+    });
+    ObjectPooler.ReleaseObject({
+      obj: bookData.piece,
+      tag: bookData.piece.tags.poolTag,
+      dimension: thisBot.tags.desiredDimension,
+    });
+    bookData.piece = null;
   }
 
-  await Promise.all(promises);
+  bookData.pieceInfo = null;
+  bookData.parentDataIds = null;
+  bookData.creationInfo = null;
 
   if (bookData instanceof StackBookData) {
     bookDataIndex = thisBot.vars.stackBooksData.indexOf(bookData);
     if (bookDataIndex != null)
       thisBot.vars.stackBooksData.splice(bookDataIndex, 1);
   } else {
-    // bookData.pieceBookInfo = null;
+    bookData.pieceBookInfo = null;
     bookDataIndex = thisBot.vars.stackSectionBooksData.indexOf(bookData);
     if (bookDataIndex != null)
       thisBot.vars.stackSectionBooksData.splice(bookDataIndex, 1);
@@ -193,7 +159,7 @@ async function DeleteBook(bookData: StackSectionBookData | StackBookData) {
     thisBot.vars.lastInteractedStackBookData = null;
 }
 
-async function DeleteSection(sectionData: StackSectionData) {
+function DeleteSection(sectionData) {
   /**
    * Deletes a `StackSectionData` object and its associated books.
    *
@@ -201,27 +167,45 @@ async function DeleteSection(sectionData: StackSectionData) {
    */
 
   const sectionDataIndex = thisBot.vars.stackSectionsData.indexOf(sectionData);
-
-  const children = sectionData.clearChildren();
-  const piece = sectionData.clearPiece();
-  const shadow = sectionData.detachShadow();
-  const promises: Promise<void>[] = [];
-
-  promises.push(
-    ...children.flat().map((child) => {
-      return DeleteBook(child);
-    })
-  );
-
-  if (piece) {
-    promises.push(ClearPiece(piece));
+  sectionData.childrenData.flat().forEach((bookData) => {
+    DeleteBook(bookData);
+  });
+  sectionData.childrenData.splice(0, sectionData.childrenData.length);
+  if (sectionData.piece) {
+    const { unhighlightDelayInfo, unhighlightDelayInfoIndex } =
+      thisBot.GetUnhighlightDelayInfo({ piece: sectionData.piece });
+    if (unhighlightDelayInfo)
+      thisBot.ClearUnhighlightDelay({
+        unhighlightDelayInfo,
+        unhighlightDelayInfoIndex,
+      });
+    if (thisBot.IsBiblePieceHighlighted({ piece: sectionData.piece }))
+      thisBot.RemovePieceFromHighlightedList({ piece: sectionData.piece });
+    BibleVizUtils.Functions.ReleaseLabelTransformerFromPiece({
+      piece: sectionData.piece,
+    });
+    ObjectPooler.ReleaseObject({
+      obj: sectionData.piece,
+      tag: sectionData.piece.tags.poolTag,
+      dimension: thisBot.tags.desiredDimension,
+    });
+    sectionData.piece = null;
+  }
+  if (sectionData.shadow) {
+    BibleVizUtils.Functions.ReleaseLabelTransformerFromPiece({
+      piece: sectionData.shadow,
+    });
+    ObjectPooler.ReleaseObject({
+      obj: sectionData.shadow,
+      tag: sectionData.shadow.tags.poolTag,
+      dimension: thisBot.tags.desiredDimension,
+    });
+    sectionData.shadow = null;
   }
 
-  if (shadow) {
-    promises.push(ClearPiece(shadow));
-  }
-
-  await Promise.all(promises);
+  sectionData.pieceInfo = null;
+  sectionData.parentDataIds = null;
+  sectionData.creationInfo = null;
 
   if (sectionDataIndex != null)
     thisBot.vars.stackSectionsData.splice(sectionDataIndex, 1);
@@ -232,7 +216,7 @@ async function DeleteSection(sectionData: StackSectionData) {
     thisBot.vars.lastInteractedStackSectionData = null;
 }
 
-async function DeleteTestament(testamentData: StackTestamentData) {
+function DeleteTestament(testamentData) {
   /**
    * Deletes a `StackTestamentData` object and its associated sections and books.
    *
@@ -241,23 +225,36 @@ async function DeleteTestament(testamentData: StackTestamentData) {
 
   const testamentDataIndex =
     thisBot.vars.stackTestamentsData.indexOf(testamentData);
+  testamentData.childrenData.forEach((data) => {
+    if (data instanceof StackSectionData) DeleteSection(data);
+    else if (data instanceof StackSectionBookData) DeleteBook(data);
+  });
 
-  const children = testamentData.clearChildren();
-  const piece = testamentData.clearPiece();
-  const promises: Promise<void>[] = [];
-
-  promises.push(
-    ...children.map((child) => {
-      if (child instanceof StackSectionData) return DeleteSection(child);
-      else return DeleteBook(child);
-    })
-  );
-
-  if (piece) {
-    promises.push(ClearPiece(piece));
+  testamentData.childrenData.splice(0, testamentData.childrenData.length);
+  if (testamentData.piece) {
+    const { unhighlightDelayInfo, unhighlightDelayInfoIndex } =
+      thisBot.GetUnhighlightDelayInfo({ piece: testamentData.piece });
+    if (unhighlightDelayInfo)
+      thisBot.ClearUnhighlightDelay({
+        unhighlightDelayInfo,
+        unhighlightDelayInfoIndex,
+      });
+    if (thisBot.IsBiblePieceHighlighted({ piece: testamentData.piece }))
+      thisBot.RemovePieceFromHighlightedList({ piece: testamentData.piece });
+    BibleVizUtils.Functions.ReleaseLabelTransformerFromPiece({
+      piece: testamentData.piece,
+    });
+    ObjectPooler.ReleaseObject({
+      obj: testamentData.piece,
+      tag: testamentData.piece.tags.poolTag,
+      dimension: thisBot.tags.desiredDimension,
+    });
+    testamentData.piece = null;
   }
 
-  await Promise.all(promises);
+  testamentData.pieceInfo = null;
+  testamentData.parentDataIds = null;
+  testamentData.creationInfo = null;
 
   if (testamentDataIndex != null)
     thisBot.vars.stackTestamentsData.splice(testamentDataIndex, 1);
@@ -268,29 +265,54 @@ async function DeleteTestament(testamentData: StackTestamentData) {
     thisBot.vars.lastInteractedStackTestamentData = null;
 }
 
-async function DeleteBible(bibleData: StackBibleData) {
+function DeleteBible(bibleData) {
   /**
    * Deletes a `StackBibleData` object and its associated testaments, sections, and static pieces.
    *
    * @param {StackBibleData} bibleData - The StackBibleData object to delete.
    */
 
+  // shout('OnBibleDeleted');
+  // if (globalThis?.SetCanvasTools) {
+  //     SetCanvasTools(tools => {
+  //         return tools.map(tool => {
+  //             if (tool.label === "Bible stack") {
+  //                 return {
+  //                     ...tool,
+  //                     active: true
+  //                 }
+  //             } else {
+  //                 return tool
+  //             }
+  //         })
+  //     })
+  // }
   const bibleDataIndex = thisBot.vars.stackBiblesData.indexOf(bibleData);
-  if (bibleData.staticBiblePieces) {
-    const clearedPieces = bibleData.clearStaticBiblePieces();
-    if (clearedPieces) {
-      for (const staticPiece of clearedPieces) {
-        await ObjectPooler.ReleaseObject({
-          obj: staticPiece,
-          tag: staticPiece.tags.poolTag,
-          dimension: thisBot.tags.desiredDimension,
+  const staticBiblePiecesKeys = Object.keys(bibleData.staticBiblePieces);
+  bibleData.childrenData.forEach((testamentData) => {
+    DeleteTestament(testamentData);
+  });
+  bibleData.childrenData.splice(0, bibleData.childrenData.length);
+  staticBiblePiecesKeys.forEach((key) => {
+    ObjectPooler.ReleaseObject({
+      obj: bibleData.staticBiblePieces[key],
+      tag: bibleData.staticBiblePieces[key].tags.poolTag,
+      dimension: thisBot.tags.desiredDimension,
+    });
+    bibleData.staticBiblePieces[key] = null;
+  });
+  console.log(`[Debug] DeletePiece.DeleteBible`, {
+    staticBiblePieces: staticBiblePiecesKeys.map((key) => {
+      const obj = bibleData.staticBiblePieces[key];
+      if (Array.isArray(obj)) {
+        return obj.map((bot) => {
+          return { ...bot };
         });
       }
-    }
-  }
-  const children = bibleData.clearChildren();
-  await Promise.all(children.map((child) => DeleteTestament(child)));
-
+      return { ...obj };
+    }),
+  });
+  bibleData.staticBiblePieces = null;
   if (bibleDataIndex != null)
     thisBot.vars.stackBiblesData.splice(bibleDataIndex, 1);
   if (

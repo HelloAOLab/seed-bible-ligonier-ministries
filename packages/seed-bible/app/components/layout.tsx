@@ -104,7 +104,6 @@ const Layout = ({ children, panelsNumber }) => {
           } catch {}
         }}
         className="layout"
-        style={{ background: "white" }}
       >
         <style>{`${
           spaces.find((e) => e.id === activeSpace)?.settings?.text?.root ||

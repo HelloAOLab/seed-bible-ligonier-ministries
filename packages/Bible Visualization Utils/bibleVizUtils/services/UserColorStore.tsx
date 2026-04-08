@@ -1,4 +1,5 @@
-import type { HexString } from "bibleVizUtils.models.commonTypes";
+import type { HexString } from "bibleVizUtils.functions.index";
+import { bibleVizUtilsEventManager } from "bibleVizUtils.services.EventManager";
 
 export interface UserIds {
   configId?: string;
@@ -9,17 +10,11 @@ export interface UserData extends UserIds {
   color: HexString;
 }
 
-interface EventManager {
-  emit(eventName: "UserColorStoreChanged"): void;
-}
-
-export class UserColorStore {
+class UserColorStore {
   #UserDataList: UserData[];
-  #eventManager: EventManager;
 
-  constructor(eventManager: EventManager) {
+  constructor() {
     this.#UserDataList = [];
-    this.#eventManager = eventManager;
   }
 
   getUserDataByIds(params: UserIds): UserData | undefined {
@@ -45,7 +40,7 @@ export class UserColorStore {
       data.color = color;
     } else this.#UserDataList.push({ ...params });
 
-    this.#eventManager.emit("UserColorStoreChanged");
+    bibleVizUtilsEventManager.emit("UserColorStoreChanged");
   }
 
   removeUserColor(params: UserIds): boolean {
@@ -54,7 +49,7 @@ export class UserColorStore {
       const index = this.#UserDataList.indexOf(data);
       if (index >= 0) {
         this.#UserDataList.splice(index, 1);
-        this.#eventManager.emit("UserColorStoreChanged");
+        bibleVizUtilsEventManager.emit("UserColorStoreChanged");
         return true;
       }
     }
@@ -75,3 +70,7 @@ export class UserColorStore {
     });
   }
 }
+
+const userColorStore: UserColorStore = new UserColorStore();
+
+export { userColorStore };

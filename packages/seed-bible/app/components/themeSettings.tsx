@@ -121,8 +121,8 @@ const builtinDefaultTheme = {
   // Main colors
   firstToolbarbutton: "#dfdede",
   primaryColor: "#FFFFFF",
-  secondaryColor: "#E07B4C",
-  tertiaryColor: "#FADDD1",
+  secondaryColor: "#859E3B",
+  tertiaryColor: "#EEF3DC",
   // Container backgrounds
   themeSideMenu: "#FFFFFF",
   panelBackground: "#F8FAFC",
@@ -130,22 +130,22 @@ const builtinDefaultTheme = {
   inputBackground: "#E8E8E8",
   sidebarShadow: "#E8E8E8",
   // Tab
-  tabSelection: "#E07B4C",
-  activeTabBackground: "#FADDD1",
-  activeTabText: "#E07B4C",
-  activeTabBorder: "#E07B4C",
-  activeTabFill: "#FADDD1",
+  tabSelection: "#859E3B",
+  activeTabBackground: "#EEF3DC",
+  activeTabText: "#859E3B",
+  activeTabBorder: "#859E3B",
+  activeTabFill: "#EEF3DC",
   simpleTabText: "#333333",
   inactiveTabText: "#333333",
   // Buttons
-  primaryButton: "#E07B4C",
+  primaryButton: "#859E3B",
   primaryButtonColor: "#FFFFFF",
-  primaryButtonBorder: "#E07B4C",
-  primaryButtonFill: "#E07B4C",
-  secondaryButton: "#D2691E",
+  primaryButtonBorder: "#859E3B",
+  primaryButtonFill: "#859E3B",
+  secondaryButton: "#6B7D2F",
   secondaryButtonColor: "#FFFFFF",
-  secondaryButtonBorder: "#D2691E",
-  secondaryButtonFill: "#D2691E",
+  secondaryButtonBorder: "#6B7D2F",
+  secondaryButtonFill: "#6B7D2F",
   tertiaryButtonColor: "#333333",
   buttonBorder: "#E1E3EA",
   // Scripture text
@@ -162,21 +162,21 @@ const builtinDefaultTheme = {
   descriptionTextColor: "#666666",
   menuTextColor: "#333333",
   breadcrumbsColor: "#666666",
-  sectionBackground: "#E07B4C",
+  sectionBackground: "#859E3B",
   spaceNameColor: "#333333",
   sideMenuIconsColor: "#333333",
-  selectedSpaceColor: "#E07B4C",
+  selectedSpaceColor: "#859E3B",
   unselectedSpaceColor: "#E1E3EA",
   spaceNameText: "#333333",
-  addButtonBackground: "#E07B4C",
-  addButtonIcon: "#E07B4C",
+  addButtonBackground: "#859E3B",
+  addButtonIcon: "#859E3B",
   selectPanelIcon: "#333333",
   openCloseMenuIcon: "#333333",
   moreIcon: "#666666",
   settingsIcon: "#666666",
   inactiveSpaceIndicator: "#E1E3EA",
-  activeSpaceIndicator: "#E07B4C",
-  profileAvatar: "#E07B4C",
+  activeSpaceIndicator: "#859E3B",
+  profileAvatar: "#859E3B",
   // Selection UI & toolbar
   toolbarBorder: "#E1E3EA",
   toolbarFill: "#FFFFFF",
@@ -189,7 +189,7 @@ const builtinDefaultTheme = {
   // Input fields
   inputTitleColor: "#333333",
   inputPlaceholderColor: "#999999",
-  inputActiveBorder: "#E07B4C",
+  inputActiveBorder: "#859E3B",
   inputActiveFill: "#FFFFFF",
   inputInactiveBorder: "#E1E3EA",
   inputInactiveFill: "#FFFFFF",
@@ -198,9 +198,9 @@ const builtinDefaultTheme = {
   inputPlaceholder: "#999999",
   // Branding
   logoColor: "#333333",
-  accentColor: "#E07B4C",
+  accentColor: "#859E3B",
   // Space selection
-  spaceSelection: "#E07B4C",
+  spaceSelection: "#859E3B",
   // Text colors
   text1: "#333333",
   text2: "#666666",
@@ -208,7 +208,7 @@ const builtinDefaultTheme = {
 
   // Bible arrangements - TaNaK order
   torahBorder: "#E1E3EA",
-  torahFill: "#E07B4C",
+  torahFill: "#859E3B",
   torahFont: "DM Sans",
   torahSize: "12",
   neviimBorder: "#E1E3EA",
@@ -229,7 +229,7 @@ const builtinDefaultTheme = {
   chapterColorFill: "#E1E3EA",
   // Bible arrangements - Traditional order
   pentateuchBorder: "#E1E3EA",
-  pentateuchFill: "#E07B4C",
+  pentateuchFill: "#859E3B",
   pentateuchFont: "DM Sans",
   pentateuchSize: "12",
   historicalBorder: "#E1E3EA",
@@ -245,23 +245,23 @@ const builtinDefaultTheme = {
   propheticFont: "DM Sans",
   propheticSize: "12",
 
-  primaryLight: "#FADDD1",
+  primaryLight: "#EEF3DC",
   onPrimaryLight: "#8B4513",
-  primaryBase: "#E07B4C",
+  primaryBase: "#859E3B",
   onPrimaryBase: "#FFFFFF",
-  primaryDark: "#C65D2D",
+  primaryDark: "#6B7D2F",
   onPrimaryDark: "#FFFFFF",
   secondaryLight: "#FFE4C4",
   onSecondaryLight: "#8B4513",
-  secondaryBase: "#D2691E",
+  secondaryBase: "#6B7D2F",
   onSecondaryBase: "#FFFFFF",
-  secondaryDark: "#A0522D",
+  secondaryDark: "#4F5C22",
   onSecondaryDark: "#FFFFFF",
-  tertiaryLight: "#FFEFD5",
-  onTertiaryLight: "#8B4513",
-  tertiaryBase: "#CD853F",
+  tertiaryLight: "#EEF3DC",
+  onTertiaryLight: "#4B5320",
+  tertiaryBase: "#859E3B",
   onTertiaryBase: "#FFFFFF",
-  tertiaryDark: "#A0522D",
+  tertiaryDark: "#4F5C22",
   onTertiaryDark: "#FFFFFF",
   background: "#FFFFFF",
   onBackground: "#333333",
@@ -399,7 +399,7 @@ const defaultThemes = [
       text3: "#F1F5F9",
       // Bible arrangements - TaNaK order
       torahBorder: "#666666",
-      torahFill: "#E07B4C",
+      torahFill: "#859E3B",
       torahFont: "DM Sans",
       torahSize: "12",
       neviimBorder: "#666666",
@@ -420,7 +420,7 @@ const defaultThemes = [
       chapterColorFill: "#666666",
       // Bible arrangements - Traditional order
       pentateuchBorder: "#666666",
-      pentateuchFill: "#E07B4C",
+      pentateuchFill: "#859E3B",
       pentateuchFont: "DM Sans",
       pentateuchSize: "12",
       historicalBorder: "#666666",
@@ -491,7 +491,7 @@ const defaultThemes = [
       unselectedSpaceColor: "#DDD6FE",
       spaceNameText: "#4C1D95",
       addButtonBackground: "transparent",
-      addButtonIcon: "#E07B4C",
+      addButtonIcon: "#859E3B",
       selectPanelIcon: "#4C1D95",
       openCloseMenuIcon: "#4C1D95",
       moreIcon: "#6B7280",
@@ -4602,7 +4602,7 @@ const BibleArrangementsSectionContent = ({
             {t("fill")}
           </span>
           <SmallColorPicker
-            value={colors[fillField] || "#E07B4C"}
+            value={colors[fillField] || "#859E3B"}
             onChange={(e) => onColorChange(fillField, e.target.value)}
           />
         </div>

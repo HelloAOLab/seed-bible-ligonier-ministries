@@ -43,7 +43,7 @@ function parseContent(content) {
 }
 
 function useBibleData({
-  initialTranslation = "AAB",
+  initialTranslation = "ESV",
   initialBookId = "GEN",
   initialChapter = 1,
   tab = null,
@@ -65,8 +65,8 @@ function useBibleData({
       setLoading(true);
       try {
         const url = customUrl
-          ? `https://vmfnri.helloao.org${customUrl}`
-          : `https://vmfnri.helloao.org/api/${
+          ? `https://ligonier.helloao.org${customUrl}`
+          : `https://ligonier.helloao.org/api/${
               forcedTranslation || translation
             }/${bookId}/${chapter}.json`;
 

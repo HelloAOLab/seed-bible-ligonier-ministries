@@ -10,9 +10,9 @@
 - **Parameters**:
   - `bookId` (string): Bible book identifier (e.g., "GEN", "EXO", "MAT")
   - `chapterNo` (number): Chapter number to open (1-based index)
-  - `translationId` (string): Translation code (e.g., "AAB", "KJV", "NIV")
+  - `translationId` (string): Translation code (e.g., "ESV", "KJV", "NIV")
   - `chapterUrl?` (string, optional): Direct URL to chapter data if available
-- **Example**: `globalThis.Open("GEN", 1, "AAB")`
+- **Example**: `globalThis.Open("GEN", 1, "ESV")`
 
 ### `OpenNextChapter()`
 
@@ -318,7 +318,7 @@
 - **Type**: Function
 - **Purpose**: Changes the current Bible translation for the displayed text
 - **Parameters**:
-  - `translationId` (string): Translation code to switch to (e.g., "AAB", "KJV", "NIV")
+  - `translationId` (string): Translation code to switch to (e.g., "ESV", "KJV", "NIV")
 
 ### `ToggleVerseHighlight(verseNumber, toggleState?)`
 

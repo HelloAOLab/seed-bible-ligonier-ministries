@@ -13,7 +13,6 @@ import type {
   BookInterface,
   TranslationInterface,
 } from "introduction.searchBar.Interfaces";
-
 const {
   useState,
   useEffect,
@@ -30,68 +29,68 @@ const {
 const PsalmsData: BookInterface[] = [
   {
     id: "PSA",
-    translationId: "AAB",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "1 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 41,
     firstChapterNumber: 1,
-    firstChapterApiLink: "/api/AAB/PSA/1.json",
+    firstChapterApiLink: "/api/ESV/PSA/1.json",
     lastChapterNumber: 41,
-    lastChapterApiLink: "/api/AAB/PSA/41.json",
+    lastChapterApiLink: "/api/ESV/PSA/41.json",
   },
   {
     id: "PSA",
-    translationId: "AAB",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "2 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 31,
     firstChapterNumber: 42,
-    firstChapterApiLink: "/api/AAB/PSA/42.json",
+    firstChapterApiLink: "/api/ESV/PSA/42.json",
     lastChapterNumber: 72,
-    lastChapterApiLink: "/api/AAB/PSA/72.json",
+    lastChapterApiLink: "/api/ESV/PSA/72.json",
   },
   {
     id: "PSA",
-    translationId: "AAB",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "3 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 17,
     firstChapterNumber: 73,
-    firstChapterApiLink: "/api/AAB/PSA/73.json",
+    firstChapterApiLink: "/api/ESV/PSA/73.json",
     lastChapterNumber: 89,
-    lastChapterApiLink: "/api/AAB/PSA/89.json",
+    lastChapterApiLink: "/api/ESV/PSA/89.json",
   },
   {
     id: "PSA",
-    translationId: "AAB",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "4 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 16,
     firstChapterNumber: 90,
-    firstChapterApiLink: "/api/AAB/PSA/90.json",
+    firstChapterApiLink: "/api/ESV/PSA/90.json",
     lastChapterNumber: 106,
-    lastChapterApiLink: "/api/AAB/PSA/106.json",
+    lastChapterApiLink: "/api/ESV/PSA/106.json",
   },
   {
     id: "PSA",
-    translationId: "AAB",
+    translationId: "ESV",
     name: "Psalms",
     commonName: "5 Psalms",
     title: "Psalms",
     order: 19,
     numberOfChapters: 20,
     firstChapterNumber: 107,
-    firstChapterApiLink: "/api/AAB/PSA/107.json",
+    firstChapterApiLink: "/api/ESV/PSA/107.json",
     lastChapterNumber: 150,
-    lastChapterApiLink: "/api/AAB/PSA/150.json",
+    lastChapterApiLink: "/api/ESV/PSA/150.json",
   },
 ];
 
@@ -150,8 +149,8 @@ const SearchBar = (props: { openSidebar: boolean }) => {
   const [selectedTranslation, setSelectedTranslation] = useState(
     thePage.masks?.selectedTranslation || {
       languageEnglishName: "English",
-      id: "AAB",
-      shortName: "AAB",
+      id: "ESV",
+      shortName: "ESV",
     }
   );
   const [showCustomTranslation, setShowCustomTranslation] = useState(false);
@@ -297,7 +296,7 @@ const SearchBar = (props: { openSidebar: boolean }) => {
     setInputValue?: (s: string) => void;
   }) => {
     const available_translations_req = await web.get(
-      "https://vmfnri.helloao.org/api/available_translations.json"
+      "https://ligonier.helloao.org/api/available_translations.json"
     );
     const { type, value, setInputValue } = props;
     if (type === "id") {
@@ -318,6 +317,7 @@ const SearchBar = (props: { openSidebar: boolean }) => {
           const translationValue = {
             ...trValue.value,
           };
+          console.log(apiTranslations, "apiTranslations");
           if (
             apiTranslations[
               translationValue.languageEnglishName.toLowerCase()
@@ -595,11 +595,6 @@ const SearchBar = (props: { openSidebar: boolean }) => {
       }
     }
     setInputValue("");
-    if (globalThis?.ActiveMoreApp) {
-      (globalThis as any).RemoveApplicationByLabel(ActiveMoreApp);
-      (globalThis as any).makingApp = null;
-      globalThis?.SetActiveMoreApp(null);
-    }
   };
 
   const focusOnBook = useCallback(
@@ -681,16 +676,16 @@ const SearchBar = (props: { openSidebar: boolean }) => {
     } else {
       web
         .get(
-          `https://vmfnri.helloao.org/api/${selectedTranslation.id}/books.json`
+          `https://ligonier.helloao.org/api/${selectedTranslation.id}/books.json`
         )
         .then((e) => {
           !thePage.masks?.translationInitiated &&
             ChangeTranslation(
               selectedTranslation.id,
               e.data.books,
-              "https://vmfnri.helloao.org"
+              "https://ligonier.helloao.org"
             );
-          // ChangeTranslation(selectedTranslation.id, book0, "https://vmfnri.helloao.org");
+          // ChangeTranslation(selectedTranslation.id, book0, "https://ligonier.helloao.org");
           setBooksData([...e.data.books]);
         })
         .catch((e) => {
@@ -733,7 +728,7 @@ const SearchBar = (props: { openSidebar: boolean }) => {
     let allTranslations = [];
     if (!thePage.masks?.allTranslations) {
       web
-        .get("https://vmfnri.helloao.org/api/available_translations.json")
+        .get("https://ligonier.helloao.org/api/available_translations.json")
         .then((request) => {
           if (request.status === 200) {
             allTranslations = request.data.translations;
@@ -1020,7 +1015,6 @@ const SearchBar = (props: { openSidebar: boolean }) => {
             windowSize={windowSize}
             systemTranslation={systemTranslation}
             query={query}
-            setQuery={setQuery}
           />
         )}
         {selectingTranslation && (
@@ -1061,7 +1055,6 @@ const SideBarBooks = (props: {
   windowSize: number;
   systemTranslation: { [key: string]: string };
   query: string;
-  setQuery: (s: string) => void;
 }) => {
   const {
     booksData,
@@ -1075,7 +1068,6 @@ const SideBarBooks = (props: {
     windowSize,
     systemTranslation,
     query,
-    setQuery,
   } = props;
   const [lastBookClicked, setLastBookClicked] = useState(-1);
   const [bookData, setBookData] = useState<BookInterface | null>(null);
@@ -1173,52 +1165,24 @@ const SideBarBooks = (props: {
     return bookName;
   }, []);
 
-  const scrollIntoView = useCallback((bookId: string) => {
-    const bookTabElement = document.getElementById(`booktab-${bookId}`);
-    if (bookTabElement) {
-      bookTabElement.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      if (!bookTabElement.classList.contains("sidebar-selected-itm")) {
-        bookTabElement.click();
-      }
-    }
-  }, []);
-
   const selectBookSelectorBook = useCallback(
-    (bookId: string) => {
+    (bookId) => {
       if (!bookId) {
         setBookData(null);
         setLastBookClicked(-1);
         setChT(0);
         return;
       }
-      const book =
-        booksData.find((b: BookInterface) => b.id === bookId) ||
-        thePage.masks?.booksData?.find((b: BookInterface) => b.id === bookId) ||
-        null;
+      const book = booksData.find((b) => b.id === bookId);
       if (book) {
-        const bookTabElement = document.getElementById(`booktab-${book.id}`);
-        if (bookTabElement) {
-          scrollIntoView(bookId);
-        }
-        {
-          if (book.order > 39 && selectedTestament === 0) {
-            setSelectedTestament(1);
-            setTimeout(() => {
-              scrollIntoView(bookId);
-            }, 100);
-          } else if (book.order <= 39 && selectedTestament === 1) {
-            setSelectedTestament(0);
-            setTimeout(() => {
-              scrollIntoView(bookId);
-            }, 100);
-          }
-        }
+        handleClick({
+          index: booksData.indexOf(book),
+          book,
+          cht: book.order > 39 ? 1 : 0,
+        });
       }
     },
-    [booksData, selectedTestament]
+    [booksData, handleClick]
   );
   useEffect(() => {
     const sortedBooks = sortBooksByTestament(booksData);
@@ -1286,7 +1250,6 @@ const SideBarBooks = (props: {
                         onClick={() => {
                           handleClick({ index, book, cht: 0 });
                         }}
-                        id={`booktab-${book.id}`}
                       >
                         <span
                           style={{
@@ -1329,7 +1292,6 @@ const SideBarBooks = (props: {
                           dontOpen={dontOpen}
                           setBookData={setBookData}
                           selectedTranslation={selectedTranslation}
-                          setQuery={setQuery}
                         />
                       </div>
                     )}
@@ -1359,7 +1321,6 @@ const SideBarBooks = (props: {
                         onClick={() => {
                           handleClick({ index, book, cht: 1 });
                         }}
-                        id={`booktab-${book.id}`}
                       >
                         <span
                           style={{
@@ -1407,7 +1368,6 @@ const SideBarBooks = (props: {
                           dontOpen={dontOpen}
                           setBookData={setBookData}
                           selectedTranslation={selectedTranslation}
-                          setQuery={setQuery}
                         />
                       </div>
                     )}
@@ -1443,7 +1403,6 @@ const SideBarBooks = (props: {
                         onClick={() => {
                           handleClick({ index, book });
                         }}
-                        id={`booktab-${book.id}`}
                       >
                         <span
                           style={{
@@ -1485,7 +1444,6 @@ const SideBarBooks = (props: {
                           dontOpen={dontOpen}
                           setBookData={setBookData}
                           selectedTranslation={selectedTranslation}
-                          setQuery={setQuery}
                         />
                       </div>
                     )}
@@ -1521,7 +1479,6 @@ const SideBarBooks = (props: {
                         onClick={() => {
                           handleClick({ index, book });
                         }}
-                        id={`booktab-${book.id}`}
                       >
                         <span
                           style={{
@@ -1563,7 +1520,6 @@ const SideBarBooks = (props: {
                           dontOpen={dontOpen}
                           setBookData={setBookData}
                           selectedTranslation={selectedTranslation}
-                          setQuery={setQuery}
                         />
                       </div>
                     )}
@@ -1600,7 +1556,6 @@ const SideBarBooks = (props: {
                         onClick={() => {
                           handleClick({ index, book });
                         }}
-                        id={`booktab-${book.id}`}
                       >
                         <span
                           style={{
@@ -1642,7 +1597,6 @@ const SideBarBooks = (props: {
                           dontOpen={dontOpen}
                           setBookData={setBookData}
                           selectedTranslation={selectedTranslation}
-                          setQuery={setQuery}
                         />
                       </div>
                     )}
@@ -1682,7 +1636,6 @@ const SideBarChapters = (props: {
   setBookData: (book: BookInterface) => void;
   selectedTranslation: TranslationInterface;
   onlineUsers: any;
-  setQuery: (s: string) => void;
 }) => {
   const {
     bookData,
@@ -1691,31 +1644,18 @@ const SideBarChapters = (props: {
     setBookData,
     selectedTranslation,
     onlineUsers,
-    setQuery,
   } = props;
   const [highLightedButtonsID, setHighlightedButtonID] = useState<
     Record<number, boolean>
   >({});
 
-  const handleChapterClick = async (props: {
+  const handleChapterClick = (props: {
     bookName: string;
     chapterNo: number;
     bookData: BookInterface;
     [key: string]: any;
   }) => {
-    if (globalThis?.ActiveMoreApp) {
-      (globalThis as any).RemoveApplicationByLabel(ActiveMoreApp);
-      (globalThis as any).makingApp = null;
-      globalThis?.SetActiveMoreApp(null);
-      await os.sleep(100);
-    }
-    try {
-      if (globalThis.IsMobileNow()) {
-        setOpenOnMobile(false);
-      }
-    } catch (e) {}
     const { bookName, chapterNo, bookData, ...data } = props;
-    setQuery("");
     if (globalThis?.findNameRank) {
       const booksDetails = globalThis.findNameRank(bookName);
       const dataItem = {
@@ -1822,10 +1762,6 @@ const SideBarChapters = (props: {
             globalThis.UpdateTab(tab);
             globalThis.MakingNewTab = false;
             setOpenSidebar(false);
-            setTimeout(() => {
-              globalThis?.RemoveApplicationByLabel(globalThis.ActiveMoreApp);
-              globalThis?.setActiveMoreApp(null);
-            }, 100);
           } else {
             let chapterUrl = bookData.firstChapterApiLink.replace(
               "1.json",
@@ -1839,10 +1775,6 @@ const SideBarChapters = (props: {
             );
             setOpenSidebar((prev) => !prev);
             setCurrentExperience(0);
-            setTimeout(() => {
-              globalThis?.RemoveApplicationByLabel(globalThis.ActiveMoreApp);
-              globalThis?.setActiveMoreApp(null);
-            }, 100);
           }
           // MainApp2({ action: 'addStudyNotes', props: { book: bookName, bookId: data.id, chapter: chapterNo, forced: true } })
         }, 0);
