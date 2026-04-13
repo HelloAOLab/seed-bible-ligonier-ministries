@@ -67,6 +67,7 @@ const AttachLinkItem = (props: any) => {
     isPlaylistNestedSupported = false,
     isPlaylistNestedPlayAble = false,
     autoPlayToggle = null,
+    isDeleteShow = false,
   } = props;
   const [editDateModal, setEditDateModal] = useState(false);
   const datePickerRef = useRef<any>(null);
@@ -565,7 +566,7 @@ const AttachLinkItem = (props: any) => {
                 </span>
               </p>
             )}
-          {creatingPlaylist && !viewOnly && (
+          {((creatingPlaylist && !viewOnly) || isDeleteShow) && (
             <p
               className={`${
                 isMobile && "visible"

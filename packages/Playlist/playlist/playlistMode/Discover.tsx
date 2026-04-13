@@ -44,6 +44,7 @@ const Discover = (props: any) => {
   const [selectedChip, setSelectedChip] = useState<any>({
     All: true,
   });
+
   const [query, setQuery] = useState("");
 
   const [renamingPlaylist, setRenamingPlaylist] = useState(false);
@@ -259,6 +260,7 @@ const Discover = (props: any) => {
       !renamingPlaylist &&
       (isAll || selectedChip["Annotations"]) ? (
         <AnnotationList
+          isPlayingPlaylist={IsPlaylistPlaying}
           annotationSources={annotationSources}
           setAnnotationData={setAnnotationData}
           tagsSources={tagsSources}
