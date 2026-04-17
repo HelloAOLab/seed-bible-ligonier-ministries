@@ -1,4 +1,4 @@
-const { useState, useRef, useLayoutEffect, useMemo } = os.appHooks;
+const { useState, useRef, useLayoutEffect } = os.appHooks;
 
 const G = globalThis as any;
 const { Input } = G.Components;
@@ -12,23 +12,18 @@ const itemKeys: any = [
   // "pinnedItems",
   "shared",
   "playlist",
+  "annotations",
   // "bookmarks",
 ];
 
-if (DEV_ENV) {
-  itemKeys.push("annotations");
-}
 const items = [
   "All",
   // "Pinned Items",
   "Shared",
   "Playlist",
+  "Annotations",
   // "Bookmarks",
 ];
-
-if (DEV_ENV) {
-  items.push("Annotations");
-}
 
 const Discover = (props: any) => {
   const {
@@ -52,9 +47,7 @@ const Discover = (props: any) => {
 
   const [query, setQuery] = useState("");
 
-  const [renamingPlaylist, setRenamingPlaylist] = useState(
-    G.OpenModalEditName || false
-  );
+  const [renamingPlaylist, setRenamingPlaylist] = useState(false);
 
   useLayoutEffect(() => {
     G.SetRenamingPlaylist = setRenamingPlaylist;
@@ -79,11 +72,12 @@ const Discover = (props: any) => {
 
     const scrollLeft = el.scrollLeft;
     const maxScrollLeft = el.scrollWidth - el.clientWidth;
-    if (scrollLeft >= maxScrollLeft - 20) {
-      setPos("right");
-    } else if (scrollLeft <= 20) {
-      // Use -1 for tiny rounding error
+
+    if (scrollLeft <= 20) {
       setPos("left");
+    } else if (scrollLeft >= maxScrollLeft - 20) {
+      // Use -1 for tiny rounding error
+      setPos("right");
     } else {
       setPos("mid");
     }
@@ -152,13 +146,6 @@ const Discover = (props: any) => {
     }
   };
 
-  const [showRightArrow, showLeftArrow] = useMemo(() => {
-    return [
-      pos !== "right" && pos !== "noscroll",
-      pos !== "left" && pos !== "noscroll",
-    ];
-  }, [pos]);
-
   return (
     <div
       style={{
@@ -222,11 +209,7 @@ const Discover = (props: any) => {
           >
             <div
               className="align-center chips-tag-container"
-              style={{
-                width: "100%",
-                paddingRight: showRightArrow ? "2rem" : "0",
-                paddingLeft: showLeftArrow ? "2rem" : "0",
-              }}
+              style={{ width: "100%" }}
               ref={scrollRef}
             >
               {items.map((ele, index) => {
@@ -240,12 +223,12 @@ const Discover = (props: any) => {
                 );
               })}
             </div>
-            {showLeftArrow && (
+            {pos !== "left" && pos !== "noscroll" && (
               <div className="chip-tag arrow left" onClick={scrollLeftByWidth}>
                 <span class="material-symbols-outlined">chevron_backward</span>
               </div>
             )}
-            {showRightArrow && (
+            {pos !== "right" && pos !== "noscroll" && (
               <div
                 className="chip-tag arrow right"
                 onClick={scrollRightByWidth}
@@ -275,7 +258,6 @@ const Discover = (props: any) => {
 
       {!editingPlaylist &&
       !renamingPlaylist &&
-      DEV_ENV &&
       (isAll || selectedChip["Annotations"]) ? (
         <AnnotationList
           isPlayingPlaylist={IsPlaylistPlaying}

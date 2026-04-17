@@ -37,7 +37,7 @@ describe("load", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / AAB");
+    ).toBe("Genesis 1 / ESV More Resources");
   });
 
   test("should add the book ID and chapter number to the URL", async () => {
@@ -50,7 +50,7 @@ describe("load", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / AAB");
+    ).toBe("Genesis 1 / ESV More Resources");
 
     await delay(1000); // Wait a moment to ensure URL is updated
 
@@ -73,7 +73,7 @@ describe("load", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Matthew 5 / KJAV");
+    ).toBe("Matthew 5 / KJAV More Resources");
   });
 
   test("load translationId", async () => {
@@ -87,7 +87,7 @@ describe("load", () => {
       .waitHandle();
     expect(
       mergeWhitespace(await bookTitle?.evaluate((el) => el.textContent))
-    ).toBe("Genesis 1 / KJAV");
+    ).toBe("Genesis 1 / KJAV More Resources");
 
     const v28 = await seedBibleFrame.locator("#v-28").waitHandle();
     const v28Text = await v28?.evaluate((el) => el.textContent);

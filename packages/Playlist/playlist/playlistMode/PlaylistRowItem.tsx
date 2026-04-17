@@ -288,19 +288,10 @@ const PlaylistRowItem = (props: any) => {
         severity: "error",
       });
     }
-
-    const authBot = await os.requestAuthBotInBackground();
-
-    if (!authBot?.id) {
-      return ShowNotification({
-        message: t("pleaseLoginToUseFeature"),
-        severity: "error",
-      });
-    }
-
     setLoading(true);
     let shareProfileName = "Guest";
     let shareProfilePic = defaultProfile;
+    const authBot = await os.requestAuthBotInBackground();
     if (authBot?.id) {
       const data = await os.getData(
         thisBot.tags.keyFetchAccountData,
@@ -342,7 +333,7 @@ const PlaylistRowItem = (props: any) => {
     // const encryptedText = API.encrypt()(stringItems);
 
     const result = await os.recordData(
-      authBot?.id,
+      authBot.id,
       playlistObj.id,
       playlistObj,
       {
@@ -350,7 +341,7 @@ const PlaylistRowItem = (props: any) => {
       }
     );
 
-    const recordShareKey = `${authBot?.id}^_^${playlistObj.id}`;
+    const recordShareKey = `${authBot.id}^_^${playlistObj.id}`;
 
     if (result.success) {
       const shareURL: any = `https://ao.bot/?${key}=${deployBot}&Playlist=${recordShareKey}&noGridPortal=true`;
@@ -555,9 +546,6 @@ const PlaylistRowItem = (props: any) => {
         <div
           onClick={(e) => {
             e.preventDefault();
-            if (onSelectPlaylist) {
-              onSelectPlaylist(id);
-            }
             openContextMenu(e);
           }}
           onTouchStart={handleTouchStart}
@@ -826,19 +814,7 @@ const PlaylistRowItem = (props: any) => {
                       return;
                     }
                     setShowMoreOptions(false);
-                    G.SetRenamingPlaylistEditTitle?.(true);
-                    G.SetEditData?.((prev: any) => ({
-                      ...prev,
-                      id,
-                      name,
-                      description,
-                      icon,
-                      isCustomColor,
-                      color,
-                      isCustomIcon,
-                      selectedTags,
-                      access,
-                    }));
+
                     G[`SetEditModal`]({
                       id,
                       name,

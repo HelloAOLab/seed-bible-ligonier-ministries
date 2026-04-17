@@ -2,8 +2,10 @@ node_modules
 dist
 .DS_Store
 package-lock.json
+.env
 .claude
 bun.lock
 .vscode/*
 !.vscode/settings.json
 ./cursor/*
+.env

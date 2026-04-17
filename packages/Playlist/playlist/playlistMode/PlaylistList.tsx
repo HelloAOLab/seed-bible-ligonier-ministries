@@ -1,14 +1,9 @@
 const { useState, useLayoutEffect, useRef } = os.appHooks;
 const G = globalThis as any;
-const { LoaderSecondary } = G.Components;
 
 const PlaylistRowItem = await thisBot.PlaylistRowItem();
 
 const PlaylistList = (props: any) => {
-  const [playlistLoading, setPlaylistLoading] = useState(
-    G.IsPlaylistLoading || false
-  );
-
   const {
     selectedChip,
     extraActions = () => {},
@@ -135,32 +130,13 @@ const PlaylistList = (props: any) => {
     };
   }, [toggle, opendedList, playingPlaylist]);
 
-  useLayoutEffect(() => {
-    G.SetPlaylistLoading = setPlaylistLoading;
-    return () => {
-      G.SetPlaylistLoading = null;
-    };
-  }, []);
-
   return (
     <>
       <div
         onClick={() => extraActions()}
         style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
       >
-        {playlistLoading && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
-            <LoaderSecondary />
-          </div>
-        )}
-        {playLists.length === 0 && !playlistLoading && (
+        {playLists.length === 0 && (
           <p>{isLayers ? t("noLayersToShow") : t("noPlaylistsToShow")}</p>
         )}
         {!playlistLoading &&

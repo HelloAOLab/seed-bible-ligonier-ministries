@@ -4,23 +4,8 @@ const G = globalThis as any;
 const items = [
   {
     icon: <MenuIcon name="file_export" />,
-    title: () => {
-      return !G[`defaultcreatingPlaylist`] &&
-        !G[`defaultnamingPlaylist`] &&
-        DEV_ENV
-        ? !G.IsPlaylistPlaying
-          ? t("annotate")
-          : t("addToQueue")
-        : null;
-    },
+    title: () => (!G.IsPlaylistPlaying ? t("annotate") : t("addToQueue")),
     onClick: (selectedItem: any) => {
-      if (
-        G[`defaultcreatingPlaylist`] ||
-        G[`defaultnamingPlaylist`] ||
-        !DEV_ENV
-      ) {
-        return;
-      }
       const dataTempItems: any[] = [];
       const booksDetails = G.findNameRank(selectedItem.book);
 
@@ -220,20 +205,8 @@ const items = [
   // },
   {
     icon: <MenuIcon name="playlist_add" />,
-    title: () =>
-      G.IsPlaylistPlaying ||
-      G[`defaultcreatingPlaylist`] ||
-      G[`defaultnamingPlaylist`]
-        ? null
-        : t("addToPlaylist"),
+    title: t("addToPlaylist"),
     onClick: (selectedItem: any) => {
-      if (
-        G.IsPlaylistPlaying ||
-        G[`defaultcreatingPlaylist`] ||
-        G[`defaultnamingPlaylist`]
-      ) {
-        return;
-      }
       const dataTempItems: any[] = [];
       const joinedAndGroupedVerses: {
         verse: number | number[];

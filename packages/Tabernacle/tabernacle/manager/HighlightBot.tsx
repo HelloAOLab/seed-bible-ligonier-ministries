@@ -1,13 +1,4 @@
-import { HexToRgb } from "bibleVizUtils.functions.index";
-import type { Bot } from "../../../../typings/AuxLibraryDefinitions";
-
-const {
-  bot,
-  cameraFocus,
-}: {
-  bot: Bot;
-  cameraFocus: boolean;
-} = that;
+const { bot, cameraFocus } = that;
 
 // const baseGlow = getBot("system", "tabernacle.glow");
 const baseCone = getBot("system", "tabernacle.cone");
@@ -76,14 +67,14 @@ return Promise.all([
       zoom: 40,
     }),
   ColorLerper.LerpTag({
-    startingColor: HexToRgb({ hexColor: "#ffffff" }),
-    endingColor: HexToRgb({ hexColor: "#8df5f3" }),
+    startingColor: BibleVizUtils.Functions.HexToRgb({ hexColor: "#ffffff" }),
+    endingColor: BibleVizUtils.Functions.HexToRgb({ hexColor: "#8df5f3" }),
     durationInSeconds: blinkDuration / 2,
     bot,
     tag: BibleVizUtils.Data.tags.InterpolatableColorTags.Color,
   }).then(() => {
     return ColorLerper.LerpTag({
-      endingColor: HexToRgb({ hexColor: "#ffffff" }),
+      endingColor: BibleVizUtils.Functions.HexToRgb({ hexColor: "#ffffff" }),
       durationInSeconds: blinkDuration / 2,
       bot,
       tag: BibleVizUtils.Data.tags.InterpolatableColorTags.Color,

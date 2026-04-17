@@ -141,6 +141,21 @@ export async function initI18n(): Promise<any> {
   // Load translations from bot tags
   resources = loadTranslations();
 
+  // Provide React shim for react-i18next CDN compatibility.
+  // CasualOS uses Preact; react-i18next expects window.React.createContext.
+  if (!(globalThis as any).React) {
+    const appHooks = (os as any).appHooks ?? {};
+    (globalThis as any).React = {
+      createContext: appHooks.createContext ?? ((v) => ({ _default: v })),
+      useState: appHooks.useState,
+      useEffect: appHooks.useEffect,
+      useContext: appHooks.useContext,
+      useRef: appHooks.useRef,
+      useMemo: appHooks.useMemo,
+      useCallback: appHooks.useCallback,
+    };
+  }
+
   // Load scripts sequentially
   for (const src of i18nScripts) {
     await loadScript(src);

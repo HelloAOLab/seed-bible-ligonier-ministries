@@ -146,10 +146,6 @@ const CreatePlaylistUI = (props: any) => {
   const [embedding, setEmbedding] = useState<any>(null);
 
   useLayoutEffect(() => {
-    setItemSelected(null);
-  }, [embedding]);
-
-  useLayoutEffect(() => {
     G.SelectedItemIDForAttachments = null;
   }, []);
 
@@ -168,9 +164,6 @@ const CreatePlaylistUI = (props: any) => {
 
   const [searchText, setSearchText] = useState("");
 
-  const [dataWarning, setDataWarning] = useState(false);
-  const [loseProgressWarning, setLoseProgressWarning] = useState(false);
-
   const creatingPlaylistRef = useRef(null);
 
   const [regenrateUI, setRegenrateUI] = useState(false);
@@ -187,9 +180,7 @@ const CreatePlaylistUI = (props: any) => {
   const [mergeMode, setMergeMode] = useState(false);
   const [renderAgain, setRenderAgain] = useState(0);
 
-  const [checklist, setChecklist] = useState(
-    G.ChecklistEnabledRestorePlaylist || false
-  );
+  const [checklist, setChecklist] = useState(false);
   const [readingPlan, setReadingPlan] = useState(false);
   const [currentFormat, setCurrentFormat] = useState("MM-DD-YYYY");
 
@@ -197,7 +188,7 @@ const CreatePlaylistUI = (props: any) => {
 
   const [systemPrompt, setSystemPrompt] = useState(G.SYSTEM_PROMPT || "");
 
-  const isEdit = useRef(G.EditIDRestore || false);
+  const isEdit = useRef(false);
   const [openModalName, setOpenModalName] = useState(isCreate);
 
   const [autoGenerateOn, setAutoGenerateOn] = useState(false);
@@ -221,28 +212,10 @@ const CreatePlaylistUI = (props: any) => {
   // Features
   const [customColor, setCustomColor] = useState("#D3643329");
   const [selectedColor, setSelectedColor] = useState("#D9D9D9");
-  const [publishAccess, setPublishAccess] = useState(
-    G.PublishAccessRestorePlaylist || "public"
-  );
-  const [selectedIcon, setSelectedIcon] = useState(
-    G.SelectedIconRestorePlaylist || null
-  );
-  const [description, setDescription] = useState(
-    G.DescriptionRestorePlaylist || ""
-  );
-  const [customIcon, setCustomIcon] = useState(
-    G.CustomIconRestorePlaylist || G.DEFAULT_UPLOAD_ICON
-  );
-
-  // Restore publish access, custom color, custom icon, selected color, selected icon, description
-  useLayoutEffect(() => {
-    G.PublishAccessRestorePlaylist = publishAccess;
-    G.CustomIconRestorePlaylist = customIcon;
-    G.SelectedIconRestorePlaylist = selectedIcon;
-    G.DescriptionRestorePlaylist = description;
-    G.ChecklistEnabledRestorePlaylist = checklist;
-    G.EditIDRestore = isEdit.current;
-  }, [publishAccess, customIcon, selectedIcon, description, checklist]);
+  const [publishAccess, setPublishAccess] = useState("public");
+  const [selectedIcon, setSelectedIcon] = useState(null);
+  const [description, setDescription] = useState("");
+  const [customIcon, setCustomIcon] = useState(G.DEFAULT_UPLOAD_ICON);
 
   const setEditModal = (params: any) => {
     const {
@@ -1009,33 +982,6 @@ const CreatePlaylistUI = (props: any) => {
 
   const showPlaylistPosition = useRef(getPosition());
 
-  const onClickSave = () => {
-    if (!playList.length)
-      return ShowNotification({
-        message: t("pleaseAddSomeItemsToSavePlaylist"),
-        severity: "error",
-      });
-    if (layers) {
-      const checkEmbed = playList.some(
-        (ele: any) => !ele.additionalInfo.layers?.length
-      );
-      if (checkEmbed) {
-        setLayersWarning(true);
-        return;
-      }
-    }
-    G.RetainDataData = false;
-    G.RetainDataSelectedType = null;
-    G.RetainDataName = "";
-    G.RetainDataLink = "";
-    G.RetainDataLinkState = null;
-    G.RetainDataLinkStateType = "";
-    G.RetainDataLinkStateSubType = "";
-    G.RetainDataLinkStateIsValid = false;
-    setOpenAttachLink(false);
-    startCreatingPlaylist("", playList, id);
-  };
-
   return (
     <div
       style={{
@@ -1335,7 +1281,7 @@ const CreatePlaylistUI = (props: any) => {
             style={{
               ...showMorePosition.current,
               width: "250px",
-              maxHeight: "350px",
+              maxHeight: "400px",
               left: "none",
               right: "4rem",
               padding: "1rem",
@@ -1643,11 +1589,7 @@ const CreatePlaylistUI = (props: any) => {
                   <span className="color-inherit">{t("delete")}</span>
                 </Button>
                 {!!embedding && isSomethingChecked && (
-                  <Button
-                    onClick={onEmbedItems}
-                    secondaryAlt
-                    color="var(--secondaryColor)"
-                  >
+                  <Button onClick={onEmbedItems} secondaryAlt color="#3B82F6">
                     <span
                       style={{ marginRight: "0.5rem" }}
                       class="material-symbols-outlined unfollow color-inherit"
@@ -1706,7 +1648,7 @@ const CreatePlaylistUI = (props: any) => {
                     onDisembed(values);
                   }}
                   secondaryAlt
-                  color="var(--secondaryColor)"
+                  color="#3B82F6"
                 >
                   <span
                     style={{ marginRight: "0.5rem" }}
@@ -1892,6 +1834,8 @@ const CreatePlaylistUI = (props: any) => {
                   } else {
                     onClickSave();
                   }
+                  setOpenAttachLink(false);
+                  startCreatingPlaylist("", playList, id);
                 }}
                 secondary
               >
@@ -1902,6 +1846,63 @@ const CreatePlaylistUI = (props: any) => {
                   {t("revertToPrevious")}
                 </Button>
               )}
+              {!!playList?.length && false && (
+                <p
+                  onClick={() => {
+                    const jsonStr = JSON.stringify(playList, null, 2);
+                    os.download(jsonStr, `${name}.json`);
+                  }}
+                  style={{ width: "100%", padding: "0" }}
+                  className="playlist-action self-start"
+                >
+                  <span class="material-symbols-outlined unfollow">
+                    download
+                  </span>
+                  <span>{t("downloadJSON")}</span>
+                </p>
+              )}
+              {false && !regenrateUI && (
+                <p
+                  onClick={() => {
+                    setOpenAttachLink(false);
+                    setRegenrateUI(true);
+                  }}
+                  style={{ width: "100%", padding: "0" }}
+                  className="playlist-action self-start"
+                >
+                  <span class="material-symbols-outlined unfollow">
+                    animated_images
+                  </span>
+                  <span>
+                    {hasGenrated ? t("regenerate") : t("generate")}{" "}
+                    {isLayers ? t("layers") : t("playlist")}
+                  </span>
+                </p>
+              )}
+              {!!playLists.length && false && (
+                <p
+                  onClick={() => {
+                    setOpenModal(true);
+                  }}
+                  style={{ width: "100%", padding: "0" }}
+                  className="playlist-action self-start"
+                >
+                  <span class="material-symbols-outlined unfollow">
+                    content_copy
+                  </span>
+                  <span>{t("copyOtherPlaylists")}</span>
+                </p>
+              )}
+              <Button
+                onClick={() => {
+                  isTempEdit.current = false;
+                  setPlaylist([]);
+                  setCreatingPlaylist(false);
+                }}
+                secondaryAlt
+              >
+                {t("reset")}
+              </Button>
             </div>
             <p
               style={{ width: "10px", height: "10px" }}

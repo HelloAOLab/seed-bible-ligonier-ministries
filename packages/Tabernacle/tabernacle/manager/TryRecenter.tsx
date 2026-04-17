@@ -1,8 +1,3 @@
-import {
-  MakePortalFree,
-  MakePortalRestrict,
-} from "bibleVizUtils.functions.index";
-
 if (!thisBot.vars.appId) return;
 
 const center = new Vector3(0, 0, 0);
@@ -14,7 +9,7 @@ const isFocusPointInsideArea = focusPointToCenterDistance <= threshold;
 const shouldRecenter = !isFocusPointInsideArea;
 
 if (shouldRecenter) {
-  MakePortalRestrict();
+  BibleVizUtils.Functions.MakePortalRestrict();
   const duration = 1;
   const easing = { type: "sinusoidal", mode: "inout" };
   await os.focusOn(
@@ -24,5 +19,5 @@ if (shouldRecenter) {
       easing,
     }
   );
-  MakePortalFree();
+  BibleVizUtils.Functions.MakePortalFree();
 }

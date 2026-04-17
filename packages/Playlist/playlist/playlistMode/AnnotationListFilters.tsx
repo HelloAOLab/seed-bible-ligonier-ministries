@@ -31,7 +31,6 @@ const AnnotationListFilters = (props: any) => {
     annotationSources,
     tagsSources,
     currentOpenedBook,
-    showAtBottom,
     handleClose,
   } = props;
   const refInput = useRef(null);
