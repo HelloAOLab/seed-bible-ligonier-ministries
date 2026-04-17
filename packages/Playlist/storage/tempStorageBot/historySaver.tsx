@@ -99,7 +99,6 @@ if (sharedPlaylist) {
     const [authBotId, playlistId] = sharedPlaylist.split(G.RECORD_SEPARATOR);
     if (!!authBotId && !!playlistId) {
       const res = await os.getData(authBotId, playlistId);
-
       if (res.success) {
         const playlistData = res.data;
         const index = playlistsPresent.findIndex(

@@ -1020,26 +1020,26 @@ const CreatePlaylistUI = (props: any) => {
                     onClickSave();
                   }, 100);
                 } else {
-                  isTempEdit.current = false;
-                  setPlaylist([]);
-                  setCreatingPlaylist(false);
+                  G[`${id}currentPlaylist`] = [];
+                  thisBot.resetPlaylistGlobalStateVars();
+                  if (setTab) setTab("discover");
                 }
                 setDataWarning(false);
                 setLoseProgressWarning(false);
                 setLoading(false);
               }}
             >
-              {dataWarning ? t("addAndSave") : t("confirm")}
+              {dataWarning ? t("saveWithAttachment") : t("discardChanges")}
             </Button>
             {dataWarning && (
               <Button
                 disabled={loading}
-                secondary
+                secondaryAlt
                 onClick={() => {
                   onClickSave();
                 }}
               >
-                {t("ignoreAndSave")}
+                {t("saveWithoutAttachments")}
               </Button>
             )}
             <Button
@@ -1292,7 +1292,9 @@ const CreatePlaylistUI = (props: any) => {
             <p>
               <b>{t("publishSettings")}</b>
             </p>
-            <span style={{ fontSize: "10px" }}>{t("publishSettingsDesc")}</span>
+            <span style={{ fontSize: "12px" }}>
+              {t("publishSettingsDescPlaylist")}
+            </span>
             <div
               className="more-menu-items"
               onClick={() => {
@@ -1324,7 +1326,7 @@ const CreatePlaylistUI = (props: any) => {
             <p>
               <b style={{ marginTop: "10px" }}>{t("playlistSettings")}</b>
             </p>
-            <span style={{ fontSize: "10px" }}>
+            <span style={{ fontSize: "12px" }}>
               {t("playlistSettingsTooltip")}
             </span>
             <div
@@ -1497,8 +1499,13 @@ const CreatePlaylistUI = (props: any) => {
                   marginRight: "0.5rem",
                 }}
                 onClick={(e) => {
-                  G[`${id}currentPlaylist`] = [];
-                  if (setTab) setTab("discover");
+                  if (playList.length) {
+                    setLoseProgressWarning(true);
+                  } else {
+                    G[`${id}currentPlaylist`] = [];
+                    thisBot.resetPlaylistGlobalStateVars();
+                    if (setTab) setTab("discover");
+                  }
                 }}
               >
                 {t("cancel")}
