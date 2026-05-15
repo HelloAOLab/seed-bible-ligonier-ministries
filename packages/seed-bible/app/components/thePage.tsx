@@ -2336,6 +2336,9 @@ function ThePage({
           .more-resources {
             display: none !important;
           }
+          .bookTitleRow {
+            display: none !important;
+          }
         }
 
         .mobile-header-content {
@@ -2623,6 +2626,7 @@ function ThePage({
                   </div>
                 )}
                 <div
+                  className="bookTitleRow"
                   style={{
                     display: "flex",
                     alignItems: "center",
