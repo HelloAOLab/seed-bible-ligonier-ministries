@@ -32,13 +32,13 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false);
 
   const [translationEnabled, setTranslationEnabled] = useState(
-    masks?.translationEnabled || true
+    masks?.translationEnabled || false
   );
   const [highlightEnabled, setHighlightEnabled] = useState(
     masks?.highlightEnabled || true
   );
-  const [annoucementTimer, setAnnouncementTimer] = useState<number | null>(
-    masks?.annoucementTimer || null
+  const [annoucementTimer, setAnnouncementTimer] = useState<number>(
+    masks?.annoucementTimer || 0
   );
 
   const fetchBroadcasterId = async (token: string) => {
@@ -215,6 +215,7 @@ function App() {
     clientId,
     translationEnabled,
     highlightEnabled,
+    annoucementTimer,
   ]);
   return (
     <>

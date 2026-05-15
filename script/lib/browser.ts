@@ -21,9 +21,8 @@ declare global {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 // declare const aux: any;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 // declare let __name: (any: any) => any;
 
 /**
@@ -322,6 +321,8 @@ export async function loadInst(
 
 export const DEFAULT_EXTENSIONS = [
   "seed-bible",
+  "ext_twitchPub",
+  // "ext_twitchSub",
   "BookSelector",
   "Object Pooler",
   "GeoImporter",
@@ -335,7 +336,7 @@ export const DEFAULT_EXTENSIONS = [
   "StudyNote",
   "Playlist",
   "Calendar",
-  "Tabernacle",
+  // "Tabernacle",
 ];
 
 export async function loadSeedBible(

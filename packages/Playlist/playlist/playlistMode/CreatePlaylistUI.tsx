@@ -276,7 +276,8 @@ const CreatePlaylistUI = (props: any) => {
     idRec: string,
     newValueContent: Record<string, any>,
     parentId: string | null = null,
-    fullData = false
+    fullData = false,
+    isQuotedText = undefined
   ) => {
     setPlaylist((prev: any[]) => {
       const old = [...prev];
@@ -291,11 +292,16 @@ const CreatePlaylistUI = (props: any) => {
               old[parentIdx].additionalInfo.layers[idx] = {
                 ...newValueContent,
               };
+            } else {
               old[parentIdx].additionalInfo.layers[idx] = {
                 ...old[parentIdx].additionalInfo.layers[idx],
                 content: newValueContent,
               };
-            } else {
+              if (isQuotedText !== undefined) {
+                old[parentIdx].additionalInfo.layers[
+                  idx
+                ].additionalInfo.isQuotedText = isQuotedText;
+              }
             }
           }
         }
@@ -306,6 +312,9 @@ const CreatePlaylistUI = (props: any) => {
             old[idx] = { ...newValueContent };
           } else {
             old[idx] = { ...old[idx], content: newValueContent };
+            if (isQuotedText !== undefined) {
+              old[idx].additionalInfo.isQuotedText = isQuotedText;
+            }
           }
         }
       }
@@ -1336,7 +1345,7 @@ const CreatePlaylistUI = (props: any) => {
               <div
                 className="align-center"
                 onClick={() => {
-                  setChecklist((p) => !p);
+                  setChecklist((p: boolean) => !p);
                 }}
               >
                 {checklist ? (
@@ -1828,7 +1837,9 @@ const CreatePlaylistUI = (props: any) => {
                 onClick={() => {
                   if (
                     G.RetainDataData ||
-                    (G.RetainDataName && G.RetainDataSelectedType === "TEXT")
+                    (G.RetainDataName && G.RetainDataSelectedType === "TEXT") ||
+                    (G.RetainDataLink &&
+                      G.LINKS_TYPES[G.RetainDataSelectedType.toUpperCase()])
                   ) {
                     setDataWarning(true);
                   } else {

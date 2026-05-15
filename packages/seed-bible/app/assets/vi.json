@@ -117,6 +117,11 @@
   "error": "Lỗi",
   "success": "Thành công",
   "confirm": "Bạn có chắc không?",
+  "openLinkInNewTab": "Đang mở liên kết bên ngoài",
+  "openLinkInNewTabConfirm": "Điều này sẽ đưa bạn đến một trang web bên ngoài trong một tab mới.",
+  "openLinkButton": "Mở liên kết",
+  "convertThisToPlaylist": "Lưu thành danh sách phát mới",
+  "infoTextToConvertPLaylist": "Toàn bộ hàng đợi đang phát của bạn sẽ được lưu thành một danh sách phát mới.",
   "noResults": "Không tìm thấy kết quả",
   "from": "Từ",
   "to": "Đến",
@@ -303,5 +308,8 @@
   "publishSettingsDescPlaylist": "Danh sach phat cua ban se co san cho moi nguoi neu de o che do cong khai. Neu de o che do rieng tu, chi ban moi co quyen truy cap.",
   "playlistActions": "Cai dat danh sach phat",
   "playlistActionsDesc": "Dieu chinh cach danh sach phat cua ban hoat dong trong khi phat.",
-  "movePlaybarInside": "Giu thanh phat ben trong trinh phat"
+  "movePlaybarInside": "Giu thanh phat ben trong trinh phat",
+  "quotedTextModalDisplayOn": "Hien thi dang modal dang bat.",
+  "quotedTextModalDisplayDescription": "Khi bat, muc nay se hien thi trong cua so dang trich dan.",
+  "headingText": "Van ban tieu de"
 }

@@ -117,6 +117,11 @@
   "error": "ስህተት",
   "success": "ተሳክቷል",
   "confirm": "እርግጠኛ ነዎት?",
+  "openLinkInNewTab": "የውጭ ሊንክ በመክፈት ላይ",
+  "openLinkInNewTabConfirm": "ይህ በአዲስ ትር ወደ ውጫዊ ድር ጣቢያ ይወስድዎታል።",
+  "openLinkButton": "ሊንክ ክፈት",
+  "convertThisToPlaylist": "እንደ አዲስ የማጫወቻ ዝርዝር አስቀምጥ",
+  "infoTextToConvertPLaylist": "መላው የአሁኑ መጫወቻ ወረፋዎ እንደ አዲስ የማጫወቻ ዝርዝር ይቀመጣል።",
   "noResults": "ምንም ውጤት አልተገኘም",
   "from": "ከ",
   "to": "እስከ",
@@ -303,5 +308,8 @@
   "publishSettingsDescPlaylist": "የእርስዎ የተጫዋች ዝርዝር ከሆነ ለሁሉም ይገኛል። የግል ከሆነ ግን እርስዎ ብቻ መዳረሻ ይኖርዎታል።",
   "playlistActions": "የተጫዋች ዝርዝር ቅንብሮች",
   "playlistActionsDesc": "የተጫዋች ዝርዝርዎ በመጫወት ጊዜ እንዴት እንደሚሰራ ያስተካክሉ።",
-  "movePlaybarInside": "የማጫወቻ አሞሌውን በማጫወቻው ውስጥ አቆይ"
+  "movePlaybarInside": "የማጫወቻ አሞሌውን በማጫወቻው ውስጥ አቆይ",
+  "quotedTextModalDisplayOn": "የሞዳል ማሳያ በርቷል።",
+  "quotedTextModalDisplayDescription": "በርቶ ሲሆን ይህ ንጥል እንደ ጥቅስ በሞዳል ይታያል።",
+  "headingText": "የአርዕስት ጽሑፍ"
 }

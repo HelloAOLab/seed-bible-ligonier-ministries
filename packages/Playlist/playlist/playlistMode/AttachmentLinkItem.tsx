@@ -112,9 +112,17 @@ const AttachLinkItem = (props: any) => {
   }
 
   const isVideoItem = G.IsVideoAttachment(data);
+  const isTextType = data.type === "heading" || data.type === "text";
+  const isQuotedText = data.additionalInfo.IsQuotedText;
 
   const toggleAutoPlay = () => {
     if (autoPlayToggle) autoPlayToggle(originalIndex, pId, data.id);
+  };
+
+  const toggleIsQuoteText = (e: any) => {
+    if (playingPlaylist) return;
+    e.stopPropagation();
+    G.SetIsQuotedText(true);
   };
 
   const comparator = playingPlaylist ? 1 : 0;
@@ -349,7 +357,7 @@ const AttachLinkItem = (props: any) => {
               G.ADDING_TOPLAYLIST_TIMEOUT = null;
               // thisBot.RenderLinkContent(data);
               onClick({ dataItem: data, index: originalIndex });
-              if (checklistEnabled) {
+              if (checklistEnabled && !checkListData[data.id]) {
                 editDataFromPlaylist(data.id);
               }
               // globalThis.SetCurreIndexPlaylist && globalThis.SetCurreIndexPlaylist(index, playListSubIndex);
@@ -358,7 +366,7 @@ const AttachLinkItem = (props: any) => {
             if (clickPass) {
               // thisBot.RenderLinkContent(data);
               onClick({ dataItem: data, index: originalIndex });
-              if (checklistEnabled) {
+              if (checklistEnabled && !checkListData[data.id]) {
                 editDataFromPlaylist(data.id);
               }
               // globalThis.SetCurreIndexPlaylist && globalThis.SetCurreIndexPlaylist(index, playListSubIndex);
@@ -410,7 +418,7 @@ const AttachLinkItem = (props: any) => {
                 //     "_blank",
                 //     "noopener,noreferrer"
                 // );
-                os.openURL(link);
+                G.SetOpenExternalLink && G.SetOpenExternalLink(link);
               }, 200);
               return;
             }
@@ -419,6 +427,7 @@ const AttachLinkItem = (props: any) => {
               G.SetMediaURL(null);
               if (data.additionalInfo.type === "voice-recording") {
                 G.SetMediaURL(data.additionalInfo.link);
+                G.SetFileName && G.SetFileName(data.content);
                 return;
               }
             }
@@ -515,6 +524,22 @@ const AttachLinkItem = (props: any) => {
               />
             </p>
           )}
+
+          {((isTextType && !!toggleIsQuoteText) ||
+            (isTextType && isQuotedText && playingPlaylist)) && (
+            <p
+              className={`end-icon without-right-margin ${isQuotedText ? "active" : ""} ${`${
+                isMobile && "visible"
+              }`}`}
+              onClick={(e) => {
+                if (playingPlaylist) return;
+                e.stopPropagation();
+                toggleIsQuoteText(e);
+              }}
+            >
+              <span class="material-symbols-outlined">home_max</span>
+            </p>
+          )}
           {editAbleTypes[data.additionalInfo.type || data.type] &&
             creatingPlaylist &&
             !viewOnly && (
@@ -536,6 +561,7 @@ const AttachLinkItem = (props: any) => {
                     data: data.link,
                     link: data.additionalInfo.link,
                     mediaType: data.additionalInfo.type,
+                    isQuotedText: data.additionalInfo.isQuotedText,
                   });
                 }}
               >
