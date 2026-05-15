@@ -2333,6 +2333,9 @@ function ThePage({
           .mobile-header {
             display: flex;
           }
+          .more-resources {
+            display: none !important;
+          }
         }
 
         .mobile-header-content {
