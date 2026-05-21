@@ -117,6 +117,11 @@
   "error": "تېروتنه",
   "success": "بریالی",
   "confirm": "ایا ډاډه یاست؟",
+  "openLinkInNewTab": "هر بهرني لینک پرانیستل",
+  "openLinkInNewTabConfirm": "دا به تاسو په نوي ټاب کې یو بیرني ویب پاڼې ته بوزي.",
+  "openLinkButton": "لینک پرانیزئ",
+  "convertThisToPlaylist": "د نوې پلی لیست په توګه خوندي کړئ",
+  "infoTextToConvertPLaylist": "ستاسو ټوله روانه کتار به د نوې پلی لیست په توګه خوندي شي.",
   "noResults": "هیڅ پایله ونه موندل شوه",
   "from": "له",
   "to": "تر",
@@ -303,5 +308,8 @@
   "publishSettingsDescPlaylist": "ستاسې پلې لېسټ که عام وي، نو ټولو ته به موجود وي. که شخصي وي، نو يوازې تاسو به ورته لاسرسی لرئ.",
   "playlistActions": "د پلې لېسټ امستنې",
   "playlistActionsDesc": "دا تنظيم کړئ چې ستاسې پلې لېسټ د غږېدو پر مهال څنګه چلند وکړي.",
-  "movePlaybarInside": "د غږولو پټه د پلير دننه وساتئ"
+  "movePlaybarInside": "د غږولو پټه د پلير دننه وساتئ",
+  "quotedTextModalDisplayOn": "د موډال ښودنه چاله ده.",
+  "quotedTextModalDisplayDescription": "کله چې چاله وي، دا توکی به د اقتباس په څېر موډال کې ښودل شي.",
+  "headingText": "د سرلیک متن"
 }

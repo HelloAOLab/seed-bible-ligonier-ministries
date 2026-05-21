@@ -21,6 +21,7 @@ const ShowPlayingContentAnnotation =
 const EditRichText = await thisBot.EditRichText();
 const EditAttachment = await thisBot.EditAttachment();
 const AddToPlaylist = await thisBot.AddToPlaylist();
+const ConfirmLinkModal = await thisBot.ConfirmLinkModal();
 
 const bibleVizUtils = getBot("system", "bibleVizUtils.main");
 
@@ -94,6 +95,8 @@ const Playlist = () => {
   const [openModal, setOpenModal] = useState(false);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const [openExternalLink, setOpenExternalLink] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     G.SetSidebarOpen = setSidebarOpen;
@@ -339,27 +342,42 @@ const Playlist = () => {
   const isLayers = tab === "discover";
 
   const [editRichText, setEditRichText] = useState({
-    id: null,
-    text: null,
-    parentID: null,
+    id: G.EditRichText?.id,
+    text: G.EditRichText?.text,
+    parentID: G.EditRichText?.parentID,
+    isQuotedText: G.EditRichText?.isQuotedText,
   });
 
-  const [editAttachmentItem, setEditAttachmentItem] = useState({
-    id: null,
-    parentID: null,
-    selectedType: "",
-    name: "",
-    data: "",
-    link: "",
-    mediaType: "",
-    text: null,
-  });
+  // Restore edit rich text data
+  useLayoutEffect(() => {
+    G.EditRichText = { ...editRichText };
+  }, [editRichText]);
+
+  const [editAttachmentItem, setEditAttachmentItem] = useState(
+    G.EditAttachmentItem || {
+      id: null,
+      parentID: null,
+      selectedType: "",
+      name: "",
+      data: "",
+      link: "",
+      mediaType: "",
+      text: null,
+      isQuotedText: false,
+    }
+  );
+
+  // Restore edit attachment item data
+  useLayoutEffect(() => {
+    G.EditAttachmentItem = { ...editAttachmentItem };
+  }, [editAttachmentItem]);
 
   const onCloseEditRichText = () => {
     setEditRichText({
       id: null,
       text: null,
       parentID: null,
+      isQuotedText: false,
     });
   };
 
@@ -373,6 +391,7 @@ const Playlist = () => {
       data: "",
       link: "",
       mediaType: "",
+      isQuotedText: false,
     });
   };
 
@@ -414,6 +433,14 @@ const Playlist = () => {
     document.addEventListener("keyup", onKeyUp);
     document.addEventListener("keydown", onKeyDown);
 
+    G.SetOpenExternalLinkHigh = (link: string) => {
+      if (isMobile) {
+        setOpenExternalLink(link);
+      } else {
+        os.openURL(link);
+      }
+    };
+
     return () => {
       G.makingPlaylist = false;
       document.removeEventListener("keyup", onKeyUp);
@@ -445,6 +472,7 @@ const Playlist = () => {
       G.SetAnnotationData = null;
       G.SetPlaylistForforcedHeight && G.SetPlaylistForforcedHeight(0);
       G.SetShowAddToPlaylist = null;
+      G.SetOpenExternalLinkHigh = null;
     };
   }, []);
 
@@ -485,11 +513,13 @@ const Playlist = () => {
           parentID={editRichText.parentID}
           onClose={onCloseEditRichText}
           contentId={editRichText.id}
+          isQuotedText={editRichText.isQuotedText}
           text={editRichText.text}
         />
       )}
       {!!editAttachmentItem.id && (
         <EditAttachment
+          isQuotedText={editAttachmentItem.isQuotedText}
           parentID={editAttachmentItem.parentID}
           onClose={onCloseEditAttachmentItem}
           contentId={editAttachmentItem.id}
@@ -498,6 +528,13 @@ const Playlist = () => {
           data={editAttachmentItem.data}
           link={editAttachmentItem.link}
           mediaType={editAttachmentItem.mediaType}
+        />
+      )}
+
+      {openExternalLink && (
+        <ConfirmLinkModal
+          onClose={() => setOpenExternalLink(null)}
+          link={openExternalLink}
         />
       )}
 
