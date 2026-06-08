@@ -667,6 +667,120 @@ function detectAndSplitLists(text) {
   return [{ type: "text", content: text }];
 }
 
+// Unicode small-capital letters -> lowercase ASCII. The corrected JSON ships the
+// divine name as Unicode small caps ("Lᴏʀᴅ"). We render it instead as ordinary
+// letters styled with CSS `font-variant: small-caps`, so the whole word stays in
+// ONE font (the surrounding text font) with a matching weight — the rare Unicode
+// glyphs otherwise fall back to a different font and look mismatched.
+const SMALL_CAP_TO_LOWER = {
+  ᴀ: "a",
+  ʙ: "b",
+  ᴄ: "c",
+  ᴅ: "d",
+  ᴇ: "e",
+  ɢ: "g",
+  ʜ: "h",
+  ɪ: "i",
+  ᴊ: "j",
+  ᴋ: "k",
+  ʟ: "l",
+  ᴍ: "m",
+  ɴ: "n",
+  ᴏ: "o",
+  ᴘ: "p",
+  ʀ: "r",
+  ᴛ: "t",
+  ᴜ: "u",
+  ᴠ: "v",
+  ᴡ: "w",
+  ʏ: "y",
+  ᴢ: "z",
+};
+function toAsciiSmallCaps(s) {
+  let out = "";
+  for (const ch of String(s)) out += SMALL_CAP_TO_LOWER[ch] || ch;
+  return out;
+}
+
+/**
+ * Parse a plain string for inline study-note markup and return an array of
+ * Preact nodes (plain strings interleaved with styled elements).
+ *
+ * Supported markup (the full set found in the RSB notes):
+ *   *text*            -> italic   (markdown emphasis, used by the corrected JSON)
+ *   <i>…</i> / <em>…  -> italic   (legacy HTML emphasis)
+ *   <small>…</small>  -> divine-name small caps (legacy HTML)
+ *   Lᴏʀᴅ / Gᴏᴅ        -> divine-name small caps (Unicode small caps in the
+ *                        corrected JSON; rendered via CSS small-caps)
+ *
+ * Any orphan/unbalanced emphasis tags are stripped so a raw tag is never shown
+ * to the reader. Citations are split out *before* this runs, so they are never
+ * affected.
+ *
+ * @param {string} text
+ * @param {string} keyPrefix - unique prefix for child keys
+ * @returns {Array|string} nodes for JSX, or the plain string if no markup
+ */
+function renderInlineMarkup(text, keyPrefix = "m") {
+  if (text == null) return text;
+  const str = String(text);
+  // Fast path: nothing to parse — no markup chars and no small-cap glyphs.
+  if (!/[*<ᴀ-ᴯʀ]/.test(str)) return str;
+
+  // One token = a balanced <i>/<em>/<small> span, a *…* markdown span, or a run
+  // of Unicode small-cap glyphs (the divine name Lᴏʀᴅ/Gᴏᴅ, optional leading cap).
+  const tokenRE =
+    /<i>([\s\S]*?)<\/i>|<em>([\s\S]*?)<\/em>|<small>([\s\S]*?)<\/small>|\*([^*\n]+?)\*|([A-Za-z]?[ᴀ-ᴯʀ]+)/gi;
+  // Scrub leftover unbalanced markup from the plain (non-token) segments so a
+  // raw tag or stray asterisk is never shown. Balanced *…* / <i>…</i> spans are
+  // already captured as tokens above, so only genuinely orphaned markup (e.g. an
+  // odd or newline-split asterisk from a future content edit) is removed here.
+  const stripOrphans = (s) =>
+    s.replace(/<\/?(?:i|em|small)>/gi, "").replace(/\*/g, "");
+
+  const nodes = [];
+  let last = 0;
+  let k = 0;
+  let m;
+  while ((m = tokenRE.exec(str)) !== null) {
+    if (m.index > last) {
+      const plain = stripOrphans(str.slice(last, m.index));
+      if (plain) nodes.push(plain);
+    }
+    if (m[3] != null) {
+      // legacy <small> -> divine-name small caps. Inner is upper-case
+      // ("ORD"/"OD"); lower-case it so font-variant: small-caps synthesizes
+      // true small capitals.
+      nodes.push(
+        <span key={`${keyPrefix}-sc-${k++}`} className="sn-smallcaps">
+          {m[3].toLowerCase()}
+        </span>
+      );
+    } else if (m[5] != null) {
+      // Unicode small-cap divine name (Lᴏʀᴅ / Gᴏᴅ). Convert to ASCII letters and
+      // render with CSS small-caps so the whole word is one font and stays
+      // upright even inside an italic section title (RSB convention).
+      nodes.push(
+        <span key={`${keyPrefix}-dn-${k++}`} className="sn-smallcaps">
+          {toAsciiSmallCaps(m[5])}
+        </span>
+      );
+    } else {
+      const inner = m[1] != null ? m[1] : m[2] != null ? m[2] : m[4];
+      const ik = `${keyPrefix}-i-${k++}`;
+      // Recurse so nested markup (e.g. <small> inside <i>) is parsed too.
+      nodes.push(<i key={ik}>{renderInlineMarkup(inner, ik)}</i>);
+    }
+    last = tokenRE.lastIndex;
+  }
+  if (last < str.length) {
+    const plain = stripOrphans(str.slice(last));
+    if (plain) nodes.push(plain);
+  }
+  if (nodes.length === 0) return stripOrphans(str);
+  return nodes;
+}
+
 function parseCitationReferences(citation, defaultBookId, contextChapter) {
   // remove surrounding parens
   let inner = citation.slice(1, -1).trim();
@@ -2378,7 +2492,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                   style={{ marginLeft: "4px" }}
                                   onClick={() => highlightSectionWord(sec)}
                                 >
-                                  {sec}
+                                  {renderInlineMarkup(sec, `sec-${vIdx}`)}
                                 </span>
                               </>
                             );
@@ -2428,7 +2542,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                   style={{ marginLeft: "4px" }}
                                   onClick={() => highlightSectionWord(tail)}
                                 >
-                                  {tail}
+                                  {renderInlineMarkup(tail, `tail-${vIdx}`)}
                                 </span>
                               )}
                             </>
@@ -2452,7 +2566,10 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                   key={`${keyPrefix}-${i}`}
                                   className="verseText"
                                 >
-                                  {chunk.text}
+                                  {renderInlineMarkup(
+                                    chunk.text,
+                                    `${keyPrefix}-${i}`
+                                  )}
                                 </span>
                               ) : (
                                 <span
@@ -2637,7 +2754,7 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
 
                 {!!passage.sectionTitle && (
                   <div className="cite-section-title">
-                    {passage.sectionTitle}
+                    {renderInlineMarkup(passage.sectionTitle, `cite-st-${i}`)}
                   </div>
                 )}
 
