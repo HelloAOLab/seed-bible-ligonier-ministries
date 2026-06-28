@@ -17,6 +17,7 @@
     "lint:fix": "eslint packages --fix",
     "pattern": "tsx script/pattern.ts",
     "build": "tsx script/build.ts",
+    "upload:study-notes": "tsx script/uploadStudyNotes.ts",
     "inject-study-note-tags": "tsx script/injectStudyNoteTags.ts",
     "check:aux": "tsx script/check.ts",
     "check:ts": "tsc-silent --project ./tsconfig.json --suppressConfig ./tsc-silent.config.cjs",

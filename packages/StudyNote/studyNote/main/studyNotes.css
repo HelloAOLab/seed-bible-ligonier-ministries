@@ -106,6 +106,20 @@
   letter-spacing: 0.01em;
 }
 
+/* Topical subhead embedded in a note (RSB convention) — a short italic,
+   Title-Case phrase the print edition sets on its own line between notes
+   (e.g. Gen 1:5 "The Days of Creation"). Promoted from inline emphasis to a
+   block so it no longer runs straight into the following sentence. */
+.sn-subhead {
+  display: block;
+  font-family: var(--text-verse-font, "EB Garamond", serif);
+  font-size: 20px;
+  font-style: italic;
+  font-weight: var(--text-verse-weight, 400);
+  line-height: 1.6;
+  margin: 0.9em 0 0.35em;
+}
+
 /* .highlighted {
   border: 2px solid rgba(200, 160, 0, 0.9);
   background-color: rgba(255, 235, 59, 0.3);
@@ -140,12 +154,17 @@
   cursor: pointer;
   font-size: 20px;
   line-height: 1.6;
-  transition: color 0.3s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
   margin: 0;
+  border-radius: 4px;
 }
 
 .studyCitation:hover {
-  color: #abc952;
+  /* Highlight ONLY the individual reference under the cursor. */
+  color: #5f7a27;
+  background-color: rgba(133, 158, 59, 0.18);
 }
 
 /* the dark, blurred overlay */
