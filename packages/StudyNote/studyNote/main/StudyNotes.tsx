@@ -622,6 +622,49 @@ function detectAndSplitLists(text) {
   return [{ type: "text", content: text }];
 }
 
+/**
+ * Split a plain-text run so that an embedded RSB *subhead* becomes its own
+ * block. A subhead is the rare topical heading the print edition sets on its
+ * own line between notes (e.g. Gen 1:5 "The Days of Creation"). In the source
+ * JSON it is inline markdown emphasis sitting between a finished sentence and
+ * the start of the next, so left alone it runs straight into the following
+ * text.
+ *
+ * The guard is intentionally strict — the phrase must FOLLOW sentence-ending
+ * punctuation, be a Title-Case run of 2–7 words wrapped in *…*, and be FOLLOWED
+ * by the capital letter that opens the next sentence — so ordinary inline
+ * italics are never promoted: foreign terms (*yom*, *ehyeh*) start lowercase,
+ * and a one-word italic title used mid-sentence (*Commentary*) lacks the second
+ * word the pattern requires. Across the full RSB corpus this matches exactly one
+ * phrase ("The Days of Creation").
+ *
+ * @param {string} text
+ * @returns {Array<{type:'text'|'subhead', text:string}>}
+ */
+function splitOutSubheads(text) {
+  if (!text || typeof text !== "string" || text.indexOf("*") === -1)
+    return [{ type: "text", text: text || "" }];
+
+  const re =
+    /([.!?]["”'’)\]]*\s+)\*([A-Z][A-Za-z]+(?: [A-Za-z][A-Za-z]+){1,6})\*\s+(?=[A-Z])/g;
+
+  const parts = [];
+  let last = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    // Everything up to and including the punctuation that closes the previous
+    // sentence stays with the preceding text.
+    const before = text.slice(last, m.index) + m[1];
+    if (before) parts.push({ type: "text", text: before });
+    parts.push({ type: "subhead", text: m[2] });
+    // Skip past the "*subhead* " run; the next sentence's capital is a lookahead
+    // so it is left in place for the following text part.
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ type: "text", text: text.slice(last) });
+  return parts.length ? parts : [{ type: "text", text }];
+}
+
 // Unicode small-capital letters -> lowercase ASCII. The corrected JSON ships the
 // divine name as Unicode small caps ("Lᴏʀᴅ"). We render it instead as ordinary
 // letters styled with CSS `font-variant: small-caps`, so the whole word stays in
@@ -2646,14 +2689,29 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                               </ol>
                             );
                           }
-                          // text segment
-                          return (
-                            <span key={`text-${segIdx}`}>
-                              {renderTextWithCitations(
-                                segment.content,
-                                `text-${segIdx}`
-                              )}
-                            </span>
+                          // text segment — promote any embedded RSB subhead
+                          // (e.g. Gen 1:5 "The Days of Creation") to its own
+                          // block so it doesn't run inline into the next sentence.
+                          return splitOutSubheads(segment.content).map(
+                            (piece, pIdx) =>
+                              piece.type === "subhead" ? (
+                                <div
+                                  key={`sub-${segIdx}-${pIdx}`}
+                                  className="sn-subhead"
+                                >
+                                  {renderInlineMarkup(
+                                    piece.text,
+                                    `sub-${segIdx}-${pIdx}`
+                                  )}
+                                </div>
+                              ) : (
+                                <span key={`text-${segIdx}-${pIdx}`}>
+                                  {renderTextWithCitations(
+                                    piece.text,
+                                    `text-${segIdx}-${pIdx}`
+                                  )}
+                                </span>
+                              )
                           );
                         });
                       })()}
