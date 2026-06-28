@@ -253,10 +253,16 @@ function splitWithCitations(text, currentBookId = null, currentChapter = null) {
       );
 
       if (allValid) {
-        // Split into individual per-book citations so each is independently clickable
+        // A single citation group, e.g. "(Ex. 20:11; 31:13, 17)". Render it as ONE
+        // parenthetical (matching the print) — opening "(", the references separated
+        // by "; ", then ")" — but keep EACH reference individually clickable (as a
+        // "bare" citation, parens stripped) so a specific book can be selected. The
+        // most-recent book prefix carries to numeric-only references.
+        result.push({ text: "(", type: "plain" });
         let currentGroupBookContext = groupBookContext;
-        semiChunks.forEach((ch) => {
-          // Check if this chunk has a book prefix to update context
+        semiChunks.forEach((ch, idx) => {
+          if (idx > 0) result.push({ text: "; ", type: "plain" });
+
           const chunkBookMatch = ch.match(/^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i);
           if (chunkBookMatch) {
             const bookPart = chunkBookMatch[1].trim();
@@ -272,15 +278,15 @@ function splitWithCitations(text, currentBookId = null, currentChapter = null) {
             }
           }
 
-          // Numeric-only refs (e.g., "43:10") inherit the most recent book context
           const isNumericOnly = /^\d+:\d+/.test(ch);
-
           result.push({
-            text: `(${ch})`,
+            text: ch,
             type: "citation",
+            bare: true,
             contextBook: isNumericOnly ? currentGroupBookContext : null,
           });
         });
+        result.push({ text: ")", type: "plain" });
         continue; // Skip to next group
       }
     }
@@ -306,66 +312,46 @@ function splitWithCitations(text, currentBookId = null, currentChapter = null) {
 
       let flag = chunk.includes("cf");
 
-      if (chunk.includes(",") && !validRefRE.test(chunk) && !flag) {
+      // Only treat a comma-bearing chunk as a multi-reference list if it actually
+      // contains a chapter:verse pattern. Otherwise it is prose that merely happens
+      // to contain a comma — e.g. "averaging 30,000 years" (a number) or
+      // "unlike, e.g., 1 Corinthians" (a parenthetical aside). Splitting those on
+      // commas wrapped fragments in their own parens and (for 3+ parts) dropped the
+      // last fragment, so they must fall through to be kept as one plain group.
+      if (
+        chunk.includes(",") &&
+        !validRefRE.test(chunk) &&
+        !flag &&
+        /\d+:\d+/.test(chunk)
+      ) {
         let splitParts = chunk.split(",").map((c) => c.trim());
 
-        if (splitParts.length > 2) {
-          for (let i = 0; i < splitParts.length - 1; i++) {
-            if (looksLikeBook(splitParts[i])) {
-              if (validRefRE.test(splitParts[i] + splitParts[i + 1])) {
-                result.push({
-                  text: `(${splitParts[i] + ". " + splitParts[i + 1]})`,
-                  type: "citation",
-                });
-              } else {
-                if (validRefRE.test(splitParts[i])) {
-                  result.push({ text: `(${splitParts[i]})`, type: "citation" });
-                } else {
-                  // anything else remains plain
-                  result.push({ text: `(${splitParts[i]})`, type: "plain" });
-                }
-              }
-            } else {
-              // test validity
-              if (getTheLettersOnly.test(splitParts[i])) {
-                if (
-                  validRefRE.test(splitParts[i]) &&
-                  looksLikeBook(splitParts[i])
-                ) {
-                  result.push({ text: `(${splitParts[i]})`, type: "citation" });
-                } else {
-                  // anything else remains plain
-                  result.push({ text: `(${splitParts[i]})`, type: "plain" });
-                }
-              } else {
-                if (validRefRE.test(splitParts[i])) {
-                  result.push({ text: `(${splitParts[i]})`, type: "citation" });
-                } else {
-                  // anything else remains plain
-                  result.push({ text: `(${splitParts[i]})`, type: "plain" });
-                }
-              }
-            }
+        // Process EVERY part (the previous `i < length - 1` loop silently dropped
+        // the final reference of a 3+ item list, e.g. "Rom 5:1" in
+        // "(John 1:3, Acts 14:15, Rom 5:1)").
+        for (let i = 0; i < splitParts.length; i++) {
+          const part = splitParts[i];
+          // A bare book name split from its reference ("Gen, 1:1" / "cf. Rom. 5:12"):
+          // recombine the two and skip the consumed part.
+          if (
+            i + 1 < splitParts.length &&
+            looksLikeBook(part) &&
+            validRefRE.test(part + splitParts[i + 1])
+          ) {
+            result.push({
+              text: `(${part + ". " + splitParts[i + 1]})`,
+              type: "citation",
+            });
+            i++; // consumed splitParts[i + 1]
+            continue;
           }
-        } else {
-          splitParts.forEach((ref) => {
-            const wrapped = `(${ref})`;
-            // test validity
-            if (getTheLettersOnly.test(ref)) {
-              if (validRefRE.test(ref) && looksLikeBook(ref)) {
-                result.push({ text: wrapped, type: "citation" });
-              } else {
-                // anything else remains plain
-                result.push({ text: wrapped, type: "plain" });
-              }
-            } else {
-              if (validRefRE.test(ref)) {
-                result.push({ text: wrapped, type: "citation" });
-              } else {
-                // anything else remains plain
-                result.push({ text: wrapped, type: "plain" });
-              }
-            }
+          // Otherwise classify the part on its own — never drop it.
+          const isCitation = getTheLettersOnly.test(part)
+            ? validRefRE.test(part) && looksLikeBook(part)
+            : validRefRE.test(part);
+          result.push({
+            text: `(${part})`,
+            type: isCitation ? "citation" : "plain",
           });
         }
       } else if (chunk.includes(".") && !validRefRE.test(chunk) && flag) {
@@ -374,63 +360,32 @@ function splitWithCitations(text, currentBookId = null, currentChapter = null) {
           .map((c) => c.trim())
           .filter(Boolean);
 
-        if (splitParts.length > 2) {
-          for (let i = 0; i < splitParts.length - 1; i++) {
-            if (looksLikeBook(splitParts[i])) {
-              if (validRefRE.test(splitParts[i] + splitParts[i + 1])) {
-                result.push({
-                  text: `(${splitParts[i] + ". " + splitParts[i + 1]})`,
-                  type: "citation",
-                });
-              } else {
-                if (validRefRE.test(splitParts[i])) {
-                  result.push({ text: `(${splitParts[i]})`, type: "citation" });
-                } else {
-                  // anything else remains plain
-                  result.push({ text: `(${splitParts[i]})`, type: "plain" });
-                }
-              }
-            } else {
-              // test validity
-              if (getTheLettersOnly.test(splitParts[i])) {
-                if (
-                  validRefRE.test(splitParts[i]) &&
-                  looksLikeBook(splitParts[i])
-                ) {
-                  result.push({ text: `(${splitParts[i]})`, type: "citation" });
-                } else {
-                  // anything else remains plain
-                  result.push({ text: `(${splitParts[i]})`, type: "plain" });
-                }
-              } else {
-                if (validRefRE.test(splitParts[i])) {
-                  result.push({ text: `(${splitParts[i]})`, type: "citation" });
-                } else {
-                  // anything else remains plain
-                  result.push({ text: `(${splitParts[i]})`, type: "plain" });
-                }
-              }
-            }
+        // Process EVERY part (the previous `i < length - 1` loop silently dropped
+        // the final reference of a 3+ item list, e.g. "Rom 5:1" in
+        // "(John 1:3, Acts 14:15, Rom 5:1)").
+        for (let i = 0; i < splitParts.length; i++) {
+          const part = splitParts[i];
+          // A bare book name split from its reference ("Gen, 1:1" / "cf. Rom. 5:12"):
+          // recombine the two and skip the consumed part.
+          if (
+            i + 1 < splitParts.length &&
+            looksLikeBook(part) &&
+            validRefRE.test(part + splitParts[i + 1])
+          ) {
+            result.push({
+              text: `(${part + ". " + splitParts[i + 1]})`,
+              type: "citation",
+            });
+            i++; // consumed splitParts[i + 1]
+            continue;
           }
-        } else {
-          splitParts.forEach((ref) => {
-            const wrapped = `(${ref})`;
-            // test validity
-            if (getTheLettersOnly.test(ref)) {
-              if (validRefRE.test(ref) && looksLikeBook(ref)) {
-                result.push({ text: wrapped, type: "citation" });
-              } else {
-                // anything else remains plain
-                result.push({ text: wrapped, type: "plain" });
-              }
-            } else {
-              if (validRefRE.test(ref)) {
-                result.push({ text: wrapped, type: "citation" });
-              } else {
-                // anything else remains plain
-                result.push({ text: wrapped, type: "plain" });
-              }
-            }
+          // Otherwise classify the part on its own — never drop it.
+          const isCitation = getTheLettersOnly.test(part)
+            ? validRefRE.test(part) && looksLikeBook(part)
+            : validRefRE.test(part);
+          result.push({
+            text: `(${part})`,
+            type: isCitation ? "citation" : "plain",
           });
         }
       } else {
@@ -702,6 +657,13 @@ function toAsciiSmallCaps(s) {
   return out;
 }
 
+// The exact set of Unicode small-cap letters we recognize, derived from the map
+// above so the matcher and the converter can never drift apart. (A hard-coded
+// range `[ᴀ-ᴯʀ]` previously missed the small caps in the IPA block — ʙ ɢ ʜ ɪ ʟ ɴ ʏ
+// — so a word like "ᴡʜᴏ" rendered as "ᴡHᴏ".)
+const SMALL_CAP_CHARS = Object.keys(SMALL_CAP_TO_LOWER).join("");
+const SMALL_CAP_PROBE_RE = new RegExp(`[*<${SMALL_CAP_CHARS}]`);
+
 /**
  * Parse a plain string for inline study-note markup and return an array of
  * Preact nodes (plain strings interleaved with styled elements).
@@ -725,12 +687,17 @@ function renderInlineMarkup(text, keyPrefix = "m") {
   if (text == null) return text;
   const str = String(text);
   // Fast path: nothing to parse — no markup chars and no small-cap glyphs.
-  if (!/[*<ᴀ-ᴯʀ]/.test(str)) return str;
+  if (!SMALL_CAP_PROBE_RE.test(str)) return str;
 
   // One token = a balanced <i>/<em>/<small> span, a *…* markdown span, or a run
   // of Unicode small-cap glyphs (the divine name Lᴏʀᴅ/Gᴏᴅ, optional leading cap).
-  const tokenRE =
-    /<i>([\s\S]*?)<\/i>|<em>([\s\S]*?)<\/em>|<small>([\s\S]*?)<\/small>|\*([^*\n]+?)\*|([A-Za-z]?[ᴀ-ᴯʀ]+)/gi;
+  const tokenRE = new RegExp(
+    "<i>([\\s\\S]*?)</i>|<em>([\\s\\S]*?)</em>|<small>([\\s\\S]*?)</small>" +
+      "|\\*([^*\\n]+?)\\*|([A-Za-z]?[" +
+      SMALL_CAP_CHARS +
+      "]+)",
+    "gi"
+  );
   // Scrub leftover unbalanced markup from the plain (non-token) segments so a
   // raw tag or stray asterisk is never shown. Balanced *…* / <i>…</i> spans are
   // already captured as tokens above, so only genuinely orphaned markup (e.g. an
@@ -2576,8 +2543,11 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                   key={`${keyPrefix}-${i}`}
                                   className="studyCitation clickableCursor"
                                   onMouseEnter={(e) => {
+                                    // Hover only highlights the individual reference
+                                    // under the cursor (see `.studyCitation:hover`);
+                                    // the citation popup opens on click, not on hover.
                                     e.stopPropagation();
-                                    scheduleOpenPopupOnHover(e, chunk.text);
+                                    overCitationRef.current = true;
                                   }}
                                   onMouseLeave={() => {
                                     clearHoverOpenTimer();
@@ -2628,13 +2598,21 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                                       : offsetTop - gap;
                                     const effectiveBookId =
                                       chunk.contextBook || bookId;
+                                    // Members of a grouped citation are stored as
+                                    // "bare" refs (no surrounding parens) so the whole
+                                    // group renders as a single parenthetical while each
+                                    // reference stays individually clickable. Restore the
+                                    // parens here for parsing/lookup.
+                                    const citeText = chunk.bare
+                                      ? `(${chunk.text})`
+                                      : chunk.text;
                                     const refs = parseCitationReferences(
-                                      chunk.text,
+                                      citeText,
                                       effectiveBookId,
                                       contextChapterRef.current + 1
                                     );
                                     const newPopup = {
-                                      text: chunk.text,
+                                      text: citeText,
                                       refs,
                                       clientX,
                                       clientY,
@@ -2767,7 +2745,8 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                     }
                     style={{ cursor: "pointer" }}
                   >
-                    [{v.number}] {v.text}
+                    [{v.number}]{" "}
+                    {renderInlineMarkup(v.text, `cite-verse-${v.number}`)}
                   </p>
                 ))}
 
