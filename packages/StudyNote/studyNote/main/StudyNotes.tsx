@@ -81,436 +81,195 @@ function getBookNameById(id) {
   return book ? book.realName : null;
 }
 
+// Leading scripture reference at the start of a study-note section header. Captures the
+// chapter:verse, an optional verse-part letter (5a/5b), any comma/dash verse continuations
+// ("5:4, 5", "9:15, 16, 33", "80:14b–19"), and an optional cross-chapter end ("1:1–2:3").
+// An optional "N BookName" prefix is tolerated but not expected in section fields.
+const SECTION_LEAD_REF =
+  /^(\s*(?:[1-3]\s+[A-Za-z]+\.?\s+)?)(\d+:\d+[a-c]?(?:\s*[,–‐-]\s*(?:\d+:)?\d+[a-c]?)*)/;
+
 /**
- * Splits a string into an array of { text, type } chunks,
- * where type === 'citation' for each individual parenthetical ref,
- * and 'plain' for everything else.
+ * Parse a section header ("5:4, 5 the earth trembled . . .") into its parts by SLICE, so
+ * the rendered pieces are verbatim substrings of the source and no character is ever
+ * dropped (the old reconstruction regex stopped at a comma and lost 755 keyword phrases).
+ * Returns null when there is no leading reference (the caller renders the whole string).
+ *
+ * @returns {{before:string, refText:string, tail:string, verses:number[]}|null}
+ */
+function parseSectionHeading(sec) {
+  const m = sec.match(SECTION_LEAD_REF);
+  if (!m) return null;
+  const before = m[1]; // usually "" for study-note sections
+  const refText = m[2]; // e.g. "5:4, 5" / "12:3–15" / "3:16"
+  // tail keeps its verbatim leading separator (a space, or punctuation like the "." in
+  // "38:24. Let no one know.") so before + refText + tail === sec exactly.
+  return {
+    before,
+    refText,
+    tail: sec.slice(m.index + m[0].length),
+    verses: sectionRefVerses(refText),
+  };
+}
+
+// Expand a heading reference into the exact, ordered, de-duplicated set of verse numbers
+// it names within its chapter: "9:15, 16, 33" -> [15, 16, 33] (not 15..33); "12:3–15" ->
+// [3..15]. A cross-chapter range ("1:1–2:3") yields the start verse only, since the panel
+// shows a single chapter.
+function sectionRefVerses(refText) {
+  const verses = [];
+  const seen = new Set();
+  const add = (n) => {
+    if (!seen.has(n)) {
+      seen.add(n);
+      verses.push(n);
+    }
+  };
+  let chapter = null;
+  for (let tok of refText.split(",")) {
+    tok = tok.trim();
+    if (!tok) continue;
+    const nums = tok.split(/\s*[–‐-]\s*/).map((part) => {
+      const mm = part.match(/(?:(\d+):)?(\d+)[a-c]?/);
+      if (!mm) return null;
+      if (mm[1] != null) chapter = parseInt(mm[1], 10);
+      return { ch: chapter, v: parseInt(mm[2], 10) };
+    });
+    if (nums.some((x) => x == null)) continue;
+    if (nums.length === 1) {
+      add(nums[0].v);
+    } else {
+      const [lo, hi] = nums;
+      if (lo.ch === hi.ch) for (let v = lo.v; v <= hi.v; v++) add(v);
+      else add(lo.v);
+    }
+  }
+  return verses;
+}
+
+/**
+ * Split note text into { text, type } chunks for rendering. type === "citation" marks a
+ * scripture-reference substring (wrapped in a clickable span); "plain" is everything else.
+ *
+ * This linkifies references IN PLACE: it only wraps reference substrings and never adds,
+ * drops, or reorders characters, so concatenating every chunk's text reproduces the input
+ * exactly. Parentheses, separators (";" / ","), discourse prefixes ("cf.", "e.g."), and
+ * quoted prose stay as plain chunks — so a parenthetical is never exploded and a quote can
+ * never migrate across a paren.
+ *
+ * A reference SPAN (book-prefixed or numeric "C:V" with its comma continuations and an
+ * optional "note" suffix, or a "v./vv." shorthand) becomes one citation chunk, handed
+ * whole to parseCitationReferences, which resolves lists and rolling chapters. Numeric-only
+ * spans carry the surrounding book context. Chapter-only refs ("chs. 1; 2; 7; 10") are left
+ * plain on purpose: the resolver can't turn a chapter list into verses, so linking them
+ * would be a dead click — and plain is exactly what the print shows.
  *
  * @param {string} text - The text to split
- * @param {string} currentBookId - Current book ID (e.g., "GEN") for self-reference detection
- * @param {number} currentChapter - Current chapter number for self-reference detection
+ * @param {string} currentBookId - Current book ID (e.g., "GEN") for numeric-ref context
  */
-function splitWithCitations(text, currentBookId = null, currentChapter = null) {
-  // very loose pre-split on parens:
-  const citationRE = /\([^)]*\)/g;
-
-  const hasDigit = (s) => /\d/.test(s);
-
-  // our Five citation‐formats:
-  // 1) BookName[.] Chapter:Verse[-Verse][ note/notes]
-  // 2) BookName[.] Chapter:Verse[-Verse][ note/notes],[ note/notes]
-  // 3) pure numeric Chapter:Verse[-Verse]
-  // 4) v. N or vv. N–N (with optional " note" or " notes")
-  // 5) bare BookName[.]
-  const validRefRE = new RegExp(
-    [
-      // 1) e.g. "John 1:3", "1 Kings 4:12–14", "Ps. 102:25–27", "John 1:3 notes"
-      "^(?:[1-3]\\s+)?[A-Za-z]+\\.?\\s*\\d+:\\d+(?:[-–]\\d+)?(?:\\s+(?:and\\s+)?notes?)?$",
-
-      // 2) e.g. "John 1:3", "1 Kings 4:12–14", "Ps. 102:25–27, 28"
-      "^(?:[1-3]\\s+)?[A-Za-z]+\\.?\\s*\\d+:\\d+" +
-        "(?:[-–]\\d+)?" +
-        "(?:,\\s*(?:\\d+:)?\\d+(?:[-–]\\d+)?)*" +
-        "(?:\\s+(?:and\\s+)?notes?)?$",
-
-      // 3) pure numeric "43:10" or "3:1–6"
-      "^\\d+:\\d+(?:[-–]\\d+)?" +
-        "(?:,\\s*(?:\\d+:)?\\d+(?:[-–]\\d+)?)*" +
-        "(?:\\s+(?:and\\s+)?notes?)?$",
-
-      // 4) v./vv. shorthand "(v. 8)", "(vv. 1–16)", "(vv. 14-20 notes)"
-      "^vv?\\.\\s*\\d+(?:[-–]\\d+)?" +
-        "(?:,\\s*(?:\\d+:)?\\d+(?:[-–]\\d+)?)*" +
-        "(?:\\s+(?:and\\s+)?notes?)?$",
-
-      // 5) bare book only: "(John)", "(1 Kings)", "(Ps.)"
-      "^(?:[1-3]\\s+)?[A-Za-z]+\\.?(?:\\s+(?:and\\s+)?notes?)?$",
-
-      // 6) Cross-chapter range: "21:1–22:5" (chapter:verse–chapter:verse)
-      "^\\d+:\\d+[-–]\\d+:\\d+(?:\\s+(?:and\\s+)?notes?)?$",
-
-      // 7) Book + Chapter only: "Lev. 25", "Gen 1", "1 Kings 2"
-      "^(?:[1-3]\\s+)?[A-Za-z]+\\.?\\s+\\d+$",
-    ].join("|"),
-    "i"
-  );
-
-  const getTheLettersOnly = new RegExp(["^(?:[1-3]\\s+)?[A-Za-z]+\\.?$"]);
-
-  // NEW: Pattern to detect "Book Chapter" format WITHOUT verse (e.g., "Gen 1", "1 Kings 2")
-  // These should NOT be treated as clickable citations
-  const bookChapterOnlyRE = /^(?:[1-3]\s+)?[A-Za-z]+\.?\s+\d+$/i;
-
-  // Helper to check if text is a "Book Chapter" pattern (should be plain, not citation)
-  const isBookChapterOnly = (s) => bookChapterOnlyRE.test(s.trim());
-
-  // helper: does this alpha‐prefix match any book?
-  function looksLikeBook(prefix) {
+function splitWithCitations(text, currentBookId = null) {
+  const resolveBookId = (prefix) => {
+    if (!prefix) return null;
     const norm = prefix
       .toUpperCase()
       .replace(/\.$/, "")
       .replaceAll(",", "")
       .trim();
-
-    // reject too-short alpha chunks outright
-    if (norm.length < 2) return false;
-
-    return bibleBooks.some(
-      (b) => b.id === norm || b.name.startsWith(norm) || b.name.includes(norm)
+    if (norm.length < 2) return null;
+    const b = bibleBooks.find(
+      (x) => x.id === norm || x.name.startsWith(norm) || x.name.includes(norm)
     );
-  }
+    return b ? b.id : null;
+  };
 
-  // Helper: extract book ID from plain text context like "in Leviticus" or "from Genesis"
-  // Returns the book ID if found, null otherwise
-  function extractContextBookFromText(plainText) {
-    if (!plainText) return null;
+  // A book prefix: optional 1-3, a capitalised word, optional dot. Tight enough to fire
+  // only on real book tokens ("Gen.", "1 Sam.", "Ps.", "John"), never on lowercase prose.
+  const BOOK = "(?:[1-3]\\s+)?[A-Z][A-Za-z]*\\.?";
+  const DASH = "[\\u2013\\u2014-]"; // – — -
+  const CV = `\\d+:\\d+(?:${DASH}\\d+(?::\\d+)?)?`; // 3:16 | 3:16-18 | 1:1-2:3
+  const CONT = `(?:\\s*,\\s*(?:${BOOK}\\s+)?(?:\\d+:)?\\d+(?:${DASH}\\d+)?)*`; // ", 4", ", 30:7"
+  const NOTE = "(?:\\s+(?:and\\s+)?notes?)?";
+  const refRE = new RegExp(
+    "(" +
+      `${BOOK}\\s+${CV}${CONT}${NOTE}` + // Gen. 38:2 | 1 Sam. 23:2, 4, 9–12
+      "|" +
+      `vv?\\.\\s*\\d+(?:${DASH}\\d+)?(?:\\s*,\\s*\\d+(?:${DASH}\\d+)?)*${NOTE}` + // vv. 4, 5
+      "|" +
+      `${CV}${CONT}${NOTE}` + // 17:47 | 31:13, 17  (numeric, needs book context)
+      ")",
+    "g"
+  );
+  const bookAtStartRE = /^(?:[1-3]\s+)?[A-Z][A-Za-z]*\.?/;
 
-    // Patterns that indicate a book context: "in Book", "from Book", "see Book", "Book says"
-    // Also matches standalone book names at end of text before citations
-    const contextPatterns = [
-      /\b(?:in|from|see|cf\.|cf)\s+((?:[1-3]\s+)?[A-Za-z]+)\.?\s*$/i, // "in Leviticus" at end
-      /\b((?:[1-3]\s+)?[A-Za-z]+)\s+(?:says|states|records|describes)\b/i, // "Leviticus says"
-      /\b(?:and|or)\s+((?:[1-3]\s+)?[A-Za-z]+)\s*$/i, // "and Deuteronomy" at end
-    ];
-
-    for (const pattern of contextPatterns) {
-      const match = plainText.match(pattern);
-      if (match) {
-        const bookName = match[1].trim();
-        // Verify it's actually a book name
-        const norm = bookName.toUpperCase().replace(/\.$/, "").trim();
-        const book = bibleBooks.find(
-          (b) =>
-            b.id === norm || b.name.startsWith(norm) || b.name.includes(norm)
-        );
-        if (book) {
-          return book.id;
-        }
+  // Linkify the inside of one parenthetical: emit reference spans as citations and the
+  // gaps between them as plain, tracking the most-recent book so numeric-only refs resolve.
+  const linkifyInner = (inner, result, seedBook) => {
+    let contextBook = seedBook || null;
+    let last = 0;
+    let m;
+    refRE.lastIndex = 0;
+    while ((m = refRE.exec(inner)) !== null) {
+      const span = m[0];
+      if (span.length === 0) {
+        refRE.lastIndex++;
+        continue;
       }
+      if (m.index > last) {
+        result.push({ text: inner.slice(last, m.index), type: "plain" });
+      }
+      const bookAtStart = span.match(bookAtStartRE);
+      if (bookAtStart) {
+        const id = resolveBookId(bookAtStart[0]);
+        if (id) contextBook = id;
+      }
+      const numericOnly = /^\d/.test(span) || /^vv?\./.test(span);
+      result.push({
+        text: span,
+        type: "citation",
+        bare: true,
+        contextBook: numericOnly ? contextBook || null : null,
+      });
+      last = m.index + span.length;
     }
-    return null;
-  }
-
-  // split into plain vs "(…)" segments
-  const parts = text.split(citationRE) || [];
-  const matches = text.match(citationRE) || [];
+    if (last < inner.length) {
+      result.push({ text: inner.slice(last), type: "plain" });
+    }
+  };
 
   const result = [];
-  let contextBook = null; // Track book context from plain text (e.g., "in Leviticus")
+  const groupRE = /\(([^)]*)\)/g;
+  let last = 0;
+  let m;
+  let contextBook = null;
+  const contextFromText = (s) => {
+    const mm = s.match(
+      /\b(?:in|from|see|cf\.?)\s+((?:[1-3]\s+)?[A-Z][A-Za-z]+)\.?\s*$/
+    );
+    return mm ? resolveBookId(mm[1]) : null;
+  };
 
-  for (let i = 0; i < parts.length; i++) {
-    // 1) push any leading plain text
-    if (parts[i]) {
-      result.push({ text: parts[i], type: "plain" });
-      // Check if this plain text contains a book context for subsequent citations
-      const detectedBook = extractContextBookFromText(parts[i]);
-      if (detectedBook) {
-        contextBook = detectedBook;
-      }
+  while ((m = groupRE.exec(text)) !== null) {
+    if (m.index > last) {
+      const plain = text.slice(last, m.index);
+      result.push({ text: plain, type: "plain" });
+      const cb = contextFromText(plain);
+      if (cb) contextBook = cb;
     }
-
-    // 2) now handle the "(...)" that got removed by split()
-    const group = matches[i];
-    if (!group) continue;
-
-    // strip the parens and trim
-    const inner = group.slice(1, -1).trim();
-
-    // Track book context within this parenthetical group
-    // e.g., in "(Ex. 28:3; 35:31)", the "Ex." sets the context for "35:31"
-    let groupBookContext = null;
-
-    // Check if this contains semicolons - if so, check if all parts are valid citations
-    // If all parts are valid, keep as one citation group
-    if (inner.includes(";")) {
-      const semiChunks = inner
-        .split(";")
-        .map((c) => c.trim())
-        .filter(Boolean);
-
-      // Check if first chunk has a book prefix to set context
-      const firstChunk = semiChunks[0];
-      const bookPrefixMatch = firstChunk.match(
-        /^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i
-      );
-      if (bookPrefixMatch) {
-        const bookPart = bookPrefixMatch[1].trim();
-        const normBook = bookPart.toUpperCase().replace(/\.$/, "").trim();
-        const foundBook = bibleBooks.find(
-          (b) =>
-            b.id === normBook ||
-            b.name.startsWith(normBook) ||
-            b.name.includes(normBook)
-        );
-        if (foundBook) {
-          groupBookContext = foundBook.id;
-        }
-      }
-
-      // Check if all chunks are valid citations
-      const allValid = semiChunks.every(
-        (ch) => validRefRE.test(ch) || /^\d+:\d+/.test(ch)
-      );
-
-      if (allValid) {
-        // A single citation group, e.g. "(Ex. 20:11; 31:13, 17)". Render it as ONE
-        // parenthetical (matching the print) — opening "(", the references separated
-        // by "; ", then ")" — but keep EACH reference individually clickable (as a
-        // "bare" citation, parens stripped) so a specific book can be selected. The
-        // most-recent book prefix carries to numeric-only references.
-        result.push({ text: "(", type: "plain" });
-        let currentGroupBookContext = groupBookContext;
-        semiChunks.forEach((ch, idx) => {
-          if (idx > 0) result.push({ text: "; ", type: "plain" });
-
-          const chunkBookMatch = ch.match(/^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i);
-          if (chunkBookMatch) {
-            const bookPart = chunkBookMatch[1].trim();
-            const normBook = bookPart.toUpperCase().replace(/\.$/, "").trim();
-            const foundBook = bibleBooks.find(
-              (b) =>
-                b.id === normBook ||
-                b.name.startsWith(normBook) ||
-                b.name.includes(normBook)
-            );
-            if (foundBook) {
-              currentGroupBookContext = foundBook.id;
-            }
-          }
-
-          const isNumericOnly = /^\d+:\d+/.test(ch);
-          result.push({
-            text: ch,
-            type: "citation",
-            bare: true,
-            contextBook: isNumericOnly ? currentGroupBookContext : null,
-          });
-        });
-        result.push({ text: ")", type: "plain" });
-        continue; // Skip to next group
-      }
-    }
-
-    // If not a simple semicolon-separated citation group, process chunks individually
-    const chunks = inner
-      .split(";")
-      .map((chunk) => chunk.trim())
-      .filter(Boolean);
-
-    chunks.forEach((chunk) => {
-      // 🚫 No numbers => never a citation
-      if (!hasDigit(chunk)) {
-        result.push({ text: `(${chunk})`, type: "plain" });
-        return;
-      }
-
-      // Handle "cf" prefix: strip for validation, keep in display
-      // Matches: "cf Rom. 5:12-21", "cf. Gen 1:1", "cf vv. 1-3"
-      const cfMatch = chunk.match(/^(cf\.?\s*)(.+)$/i);
-      const cfPrefix = cfMatch ? cfMatch[1] : "";
-      const chunkWithoutCf = cfMatch ? cfMatch[2].trim() : chunk;
-
-      let flag = chunk.includes("cf");
-
-      // Only treat a comma-bearing chunk as a multi-reference list if it actually
-      // contains a chapter:verse pattern. Otherwise it is prose that merely happens
-      // to contain a comma — e.g. "averaging 30,000 years" (a number) or
-      // "unlike, e.g., 1 Corinthians" (a parenthetical aside). Splitting those on
-      // commas wrapped fragments in their own parens and (for 3+ parts) dropped the
-      // last fragment, so they must fall through to be kept as one plain group.
-      if (
-        chunk.includes(",") &&
-        !validRefRE.test(chunk) &&
-        !flag &&
-        /\d+:\d+/.test(chunk)
-      ) {
-        let splitParts = chunk.split(",").map((c) => c.trim());
-
-        // Process EVERY part (the previous `i < length - 1` loop silently dropped
-        // the final reference of a 3+ item list, e.g. "Rom 5:1" in
-        // "(John 1:3, Acts 14:15, Rom 5:1)").
-        for (let i = 0; i < splitParts.length; i++) {
-          const part = splitParts[i];
-          // A bare book name split from its reference ("Gen, 1:1" / "cf. Rom. 5:12"):
-          // recombine the two and skip the consumed part.
-          if (
-            i + 1 < splitParts.length &&
-            looksLikeBook(part) &&
-            validRefRE.test(part + splitParts[i + 1])
-          ) {
-            result.push({
-              text: `(${part + ". " + splitParts[i + 1]})`,
-              type: "citation",
-            });
-            i++; // consumed splitParts[i + 1]
-            continue;
-          }
-          // Otherwise classify the part on its own — never drop it.
-          const isCitation = getTheLettersOnly.test(part)
-            ? validRefRE.test(part) && looksLikeBook(part)
-            : validRefRE.test(part);
-          result.push({
-            text: `(${part})`,
-            type: isCitation ? "citation" : "plain",
-          });
-        }
-      } else if (chunk.includes(".") && !validRefRE.test(chunk) && flag) {
-        let splitParts = chunk
-          .split(".")
-          .map((c) => c.trim())
-          .filter(Boolean);
-
-        // Process EVERY part (the previous `i < length - 1` loop silently dropped
-        // the final reference of a 3+ item list, e.g. "Rom 5:1" in
-        // "(John 1:3, Acts 14:15, Rom 5:1)").
-        for (let i = 0; i < splitParts.length; i++) {
-          const part = splitParts[i];
-          // A bare book name split from its reference ("Gen, 1:1" / "cf. Rom. 5:12"):
-          // recombine the two and skip the consumed part.
-          if (
-            i + 1 < splitParts.length &&
-            looksLikeBook(part) &&
-            validRefRE.test(part + splitParts[i + 1])
-          ) {
-            result.push({
-              text: `(${part + ". " + splitParts[i + 1]})`,
-              type: "citation",
-            });
-            i++; // consumed splitParts[i + 1]
-            continue;
-          }
-          // Otherwise classify the part on its own — never drop it.
-          const isCitation = getTheLettersOnly.test(part)
-            ? validRefRE.test(part) && looksLikeBook(part)
-            : validRefRE.test(part);
-          result.push({
-            text: `(${part})`,
-            type: isCitation ? "citation" : "plain",
-          });
-        }
-      } else {
-        // test validity
-        // Handle "Book Chapter" patterns (e.g., "Lev. 25", "Gen 1", "cf Gen 1")
-        // These ARE valid citations if they reference a DIFFERENT book
-        // If it's the SAME book (and optionally same chapter), output as plain text
-        if (isBookChapterOnly(chunkWithoutCf)) {
-          // Extract the book part and chapter number (from chunkWithoutCf)
-          const bookPartMatch = chunkWithoutCf.match(
-            /^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*(\d+)?$/i
-          );
-          if (bookPartMatch && looksLikeBook(bookPartMatch[1])) {
-            // Get the book ID from the reference
-            const refBookNorm = bookPartMatch[1]
-              .toUpperCase()
-              .replace(/\.$/, "")
-              .trim();
-            const refBook = bibleBooks.find(
-              (b) =>
-                b.id === refBookNorm ||
-                b.name.startsWith(refBookNorm) ||
-                b.name.includes(refBookNorm)
-            );
-            const refBookId = refBook ? refBook.id : null;
-            const refChapter = bookPartMatch[2]
-              ? parseInt(bookPartMatch[2], 10)
-              : null;
-
-            // Check if this is a self-reference (same book AND same chapter)
-            const isSameBook =
-              refBookId && currentBookId && refBookId === currentBookId;
-            const isSameChapter =
-              refChapter === null ||
-              (currentChapter && refChapter === currentChapter);
-            const isSelfReference = isSameBook && isSameChapter;
-
-            if (isSelfReference) {
-              // Self-reference: output as plain text WITHOUT parentheses
-              result.push({ text: chunk, type: "plain" });
-            } else {
-              // Cross-reference: output as citation
-              result.push({ text: `(${chunk})`, type: "citation" });
-            }
-          } else {
-            result.push({ text: chunk, type: "plain" }); // Unknown book, no parens
-          }
-        } else if (getTheLettersOnly.test(chunkWithoutCf)) {
-          // Bare alpha → only a citation if it's a real book (John, Ps., 1 Kings, etc.)
-          if (
-            validRefRE.test(chunkWithoutCf) &&
-            looksLikeBook(chunkWithoutCf)
-          ) {
-            result.push({ text: `(${chunk})`, type: "citation" });
-          } else {
-            result.push({ text: `(${chunk})`, type: "plain" });
-          }
-        } else {
-          // Mixed/numeric forms still rely on validRefRE
-          // For numeric-only refs, use groupBookContext first, then contextBook from preceding plain text
-          // Use chunkWithoutCf for validation, chunk for display
-          if (validRefRE.test(chunkWithoutCf)) {
-            // Check if this has a book prefix - if so, extract and set groupBookContext
-            const bookPrefixMatch = chunkWithoutCf.match(
-              /^((?:[1-3]\s+)?[A-Za-z]+\.?)\s*\d/i
-            );
-            if (bookPrefixMatch) {
-              const bookPart = bookPrefixMatch[1].trim();
-              const normBook = bookPart.toUpperCase().replace(/\.$/, "").trim();
-              const foundBook = bibleBooks.find(
-                (b) =>
-                  b.id === normBook ||
-                  b.name.startsWith(normBook) ||
-                  b.name.includes(normBook)
-              );
-              if (foundBook) {
-                groupBookContext = foundBook.id;
-              }
-            }
-
-            // Check if this is a numeric-only citation (no book prefix)
-            const isNumericOnly = /^\d+:\d+/.test(chunkWithoutCf);
-            // Priority: groupBookContext (from first ref in group) > contextBook (from plain text) > null
-            const effectiveContext = isNumericOnly
-              ? groupBookContext || contextBook
-              : null;
-
-            result.push({
-              text: `(${chunk})`,
-              type: "citation",
-              contextBook: effectiveContext,
-            });
-          } else {
-            result.push({ text: `(${chunk})`, type: "plain" });
-          }
-        }
-      }
-    });
-  }
-
-  // Post-processing: Merge standalone "(cf)" or "(cf.)" with following citation
-  // Handles cases where source has "(cf) (Rom. 5:12)" as separate elements
-  const mergedResult = [];
-  for (let i = 0; i < result.length; i++) {
-    const current = result[i];
-    const next = result[i + 1];
-
-    // Check if current is a standalone cf (plain text, content is just "cf" variants)
-    const isCfOnly =
-      current.type === "plain" && /^\(cf\.?\)$/i.test(current.text);
-
-    if (isCfOnly && next && next.type === "citation") {
-      // Merge: add "cf " to the beginning of the next citation
-      const citationInner = next.text.slice(1, -1); // Remove parens
-      mergedResult.push({
-        ...next,
-        text: `(cf ${citationInner})`,
-      });
-      i++; // Skip the next item since we merged it
+    const inner = m[1];
+    // No linkable reference (chapter:verse or v./vv.) => pure prose (or a chapter-only
+    // "chs."/"ch." group); keep the whole parenthetical verbatim as plain text.
+    if (!/\d+:\d+|vv?\.\s*\d/.test(inner)) {
+      result.push({ text: `(${inner})`, type: "plain" });
     } else {
-      mergedResult.push(current);
+      result.push({ text: "(", type: "plain" });
+      linkifyInner(inner, result, contextBook || currentBookId);
+      result.push({ text: ")", type: "plain" });
     }
+    last = m.index + m[0].length;
   }
-
-  return mergedResult;
+  if (last < text.length) {
+    result.push({ text: text.slice(last), type: "plain" });
+  }
+  return result;
 }
 
 /**
@@ -1415,14 +1174,17 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
       };
     }
 
-    // Parse each section header like "3:16 Some title"
+    // Parse each section header like "3:16 Some title" or "5:4, 5 Some title". The shared
+    // slice-based parser keeps the full title (the keyword phrase is never truncated at a
+    // comma); ch/v are the first chapter/verse of the reference for the lookup below.
     const parsed = noteBook.sections.map((sec) => {
       const secStr = String(sec.section ?? "");
-      const m = /(\d+):(\d+)(?:\s+(.*))?/.exec(secStr);
+      const h = parseSectionHeading(secStr);
+      const cv = h ? h.refText.match(/^(\d+):(\d+)/) : null;
       return {
-        ch: m ? Number(m[1]) : null,
-        v: m ? Number(m[2]) : null,
-        title: m ? (m[3] || "").trim() : "",
+        ch: cv ? Number(cv[1]) : null,
+        v: cv ? Number(cv[2]) : null,
+        title: h ? h.tail.trim() : "",
         content: Array.isArray(sec.content)
           ? sec.content
           : [String(sec.content ?? "")],
@@ -2488,13 +2250,9 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                       <h3 className={`verseNumber`}>
                         {(() => {
                           const sec = verse.section.toString();
-                          // find verse reference with optional range (e.g., "1:1-2:3" or "3:16")
-                          // Updated to capture ranges like "1:1-2:3" properly
-                          const m = sec.match(
-                            /(\d+:\d+(?:[-–]\d+(?::\d+)?)?)(?:\s+(.*))?/
-                          );
+                          const parsed = parseSectionHeading(sec);
 
-                          if (!m)
+                          if (!parsed)
                             return (
                               <>
                                 <span
@@ -2507,50 +2265,37 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                               </>
                             );
 
-                          // m[1] = full verse reference (e.g., "1:1-2:3" or "3:16")
-                          // m[2] = optional tail text (e.g., "Some phrase")
-                          const verseRef = m[1]; // e.g. "1:1-2:3" or "3:16"
-                          const tail = m[2] || ""; // "Some phrase" or ''
-
-                          // Extract the first verse number for highlighting (e.g., "1" from "1:1-2:3")
-                          const firstVerseMatch = verseRef.match(/:(\d+)/);
-                          const firstVerseNum = firstVerseMatch
-                            ? firstVerseMatch[1]
-                            : verseRef;
-
-                          // Extract the end verse number for range highlighting (e.g., "5" from "4:1-5" or "4:1–5")
-                          const rangeMatch = verseRef.match(/:(\d+)[-–](\d+)/);
-                          const startVerse = parseInt(firstVerseNum, 10);
-                          const endVerse = rangeMatch
-                            ? parseInt(rangeMatch[2], 10)
-                            : startVerse;
-
-                          // Get the book name prefix (e.g., "GENESIS " from "GENESIS 1:1-2:3")
-                          const before = sec.slice(0, m.index).trim() || "";
+                          const {
+                            before,
+                            refText: verseRef,
+                            tail,
+                            verses,
+                          } = parsed;
 
                           return (
                             <>
                               <span
                                 className="clickableCursor"
                                 onClick={() => {
-                                  if (endVerse > startVerse) {
-                                    highlightVerses({
-                                      start: startVerse,
-                                      end: endVerse,
-                                    });
+                                  if (verses.length > 1) {
+                                    highlightVerses(verses);
                                   } else {
-                                    highlightSectionNumber(firstVerseNum);
+                                    highlightSectionNumber(
+                                      verses.length ? verses[0] : verseRef
+                                    );
                                   }
                                 }}
                               >
-                                {before} {verseRef}
+                                {before}
+                                {verseRef}
                               </span>
 
-                              {tail && (
+                              {tail.trim() && (
                                 <span
                                   className="clickableCursor"
-                                  style={{ marginLeft: "4px" }}
-                                  onClick={() => highlightSectionWord(tail)}
+                                  onClick={() =>
+                                    highlightSectionWord(tail.trim())
+                                  }
                                 >
                                   {renderInlineMarkup(tail, `tail-${vIdx}`)}
                                 </span>
@@ -2565,113 +2310,111 @@ function StudyNotesWithoutWrap({ chapter, onStudyNoteChange }) {
                         const fullContent = verse.content.join(" ");
                         const segments = detectAndSplitLists(fullContent);
 
-                        // Helper to render text with citations
-                        // Pass current book and chapter for self-reference detection
-                        const currentChapter = contextChapterRef.current + 1;
+                        // Helper to render text with citations. Numeric-only refs resolve
+                        // against the current book; the chapter context is applied later,
+                        // at click time, by parseCitationReferences.
                         const renderTextWithCitations = (text, keyPrefix) =>
-                          splitWithCitations(text, bookId, currentChapter).map(
-                            (chunk, i) =>
-                              chunk.type === "plain" ? (
-                                <span
-                                  key={`${keyPrefix}-${i}`}
-                                  className="verseText"
-                                >
-                                  {renderInlineMarkup(
-                                    chunk.text,
-                                    `${keyPrefix}-${i}`
-                                  )}
-                                </span>
-                              ) : (
-                                <span
-                                  key={`${keyPrefix}-${i}`}
-                                  className="studyCitation clickableCursor"
-                                  onMouseEnter={(e) => {
-                                    // Hover only highlights the individual reference
-                                    // under the cursor (see `.studyCitation:hover`);
-                                    // the citation popup opens on click, not on hover.
-                                    e.stopPropagation();
-                                    overCitationRef.current = true;
-                                  }}
-                                  onMouseLeave={() => {
-                                    clearHoverOpenTimer();
-                                    overCitationRef.current = false;
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    overCitationRef.current = true;
-                                    const { clientX, clientY } = e;
-                                    const containerRect =
-                                      containerRef.current.getBoundingClientRect() || {
-                                        width: 0,
-                                      };
-                                    const targetEl = e.currentTarget;
-                                    const targetRect =
-                                      targetEl.getBoundingClientRect();
-                                    const margin = 15;
-                                    const gap = 5;
-                                    const popupWidth = Math.min(
-                                      containerRect.width * 0.6,
-                                      480
-                                    );
-                                    const {
-                                      offsetLeft,
-                                      offsetTop,
-                                      offsetWidth,
-                                      offsetHeight,
-                                    } = e.target;
-                                    const centerPivotX =
-                                      offsetLeft + offsetWidth / 4;
-                                    const ideal = centerPivotX - popupWidth / 2;
-                                    const realLeft = Math.max(
-                                      margin,
-                                      Math.min(
-                                        ideal,
-                                        containerRect.width -
-                                          15 -
-                                          margin -
-                                          popupWidth
-                                      )
-                                    );
-                                    const distanceFromViewportTop =
-                                      targetRect.top;
-                                    const isBelow =
-                                      distanceFromViewportTop < 300;
-                                    const relY = isBelow
-                                      ? offsetTop + offsetHeight + gap
-                                      : offsetTop - gap;
-                                    const effectiveBookId =
-                                      chunk.contextBook || bookId;
-                                    // Members of a grouped citation are stored as
-                                    // "bare" refs (no surrounding parens) so the whole
-                                    // group renders as a single parenthetical while each
-                                    // reference stays individually clickable. Restore the
-                                    // parens here for parsing/lookup.
-                                    const citeText = chunk.bare
-                                      ? `(${chunk.text})`
-                                      : chunk.text;
-                                    const refs = parseCitationReferences(
-                                      citeText,
-                                      effectiveBookId,
-                                      contextChapterRef.current + 1
-                                    );
-                                    const newPopup = {
-                                      text: citeText,
-                                      refs,
-                                      clientX,
-                                      clientY,
-                                      relX: realLeft,
-                                      relY,
-                                      margin: offsetHeight,
-                                      isBelow,
+                          splitWithCitations(text, bookId).map((chunk, i) =>
+                            chunk.type === "plain" ? (
+                              <span
+                                key={`${keyPrefix}-${i}`}
+                                className="verseText"
+                              >
+                                {renderInlineMarkup(
+                                  chunk.text,
+                                  `${keyPrefix}-${i}`
+                                )}
+                              </span>
+                            ) : (
+                              <span
+                                key={`${keyPrefix}-${i}`}
+                                className="studyCitation clickableCursor"
+                                onMouseEnter={(e) => {
+                                  // Hover only highlights the individual reference
+                                  // under the cursor (see `.studyCitation:hover`);
+                                  // the citation popup opens on click, not on hover.
+                                  e.stopPropagation();
+                                  overCitationRef.current = true;
+                                }}
+                                onMouseLeave={() => {
+                                  clearHoverOpenTimer();
+                                  overCitationRef.current = false;
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  overCitationRef.current = true;
+                                  const { clientX, clientY } = e;
+                                  const containerRect =
+                                    containerRef.current.getBoundingClientRect() || {
+                                      width: 0,
                                     };
-                                    setNextPopup(newPopup);
-                                    switchPopup(newPopup);
-                                    fetchCitationDataForRefs(refs);
-                                  }}
-                                >
-                                  {chunk.text}
-                                </span>
-                              )
+                                  const targetEl = e.currentTarget;
+                                  const targetRect =
+                                    targetEl.getBoundingClientRect();
+                                  const margin = 15;
+                                  const gap = 5;
+                                  const popupWidth = Math.min(
+                                    containerRect.width * 0.6,
+                                    480
+                                  );
+                                  const {
+                                    offsetLeft,
+                                    offsetTop,
+                                    offsetWidth,
+                                    offsetHeight,
+                                  } = e.target;
+                                  const centerPivotX =
+                                    offsetLeft + offsetWidth / 4;
+                                  const ideal = centerPivotX - popupWidth / 2;
+                                  const realLeft = Math.max(
+                                    margin,
+                                    Math.min(
+                                      ideal,
+                                      containerRect.width -
+                                        15 -
+                                        margin -
+                                        popupWidth
+                                    )
+                                  );
+                                  const distanceFromViewportTop =
+                                    targetRect.top;
+                                  const isBelow = distanceFromViewportTop < 300;
+                                  const relY = isBelow
+                                    ? offsetTop + offsetHeight + gap
+                                    : offsetTop - gap;
+                                  const effectiveBookId =
+                                    chunk.contextBook || bookId;
+                                  // Members of a grouped citation are stored as
+                                  // "bare" refs (no surrounding parens) so the whole
+                                  // group renders as a single parenthetical while each
+                                  // reference stays individually clickable. Restore the
+                                  // parens here for parsing/lookup.
+                                  const citeText = chunk.bare
+                                    ? `(${chunk.text})`
+                                    : chunk.text;
+                                  const refs = parseCitationReferences(
+                                    citeText,
+                                    effectiveBookId,
+                                    contextChapterRef.current + 1
+                                  );
+                                  const newPopup = {
+                                    text: citeText,
+                                    refs,
+                                    clientX,
+                                    clientY,
+                                    relX: realLeft,
+                                    relY,
+                                    margin: offsetHeight,
+                                    isBelow,
+                                  };
+                                  setNextPopup(newPopup);
+                                  switchPopup(newPopup);
+                                  fetchCitationDataForRefs(refs);
+                                }}
+                              >
+                                {chunk.text}
+                              </span>
+                            )
                           );
 
                         return segments.map((segment, segIdx) => {
